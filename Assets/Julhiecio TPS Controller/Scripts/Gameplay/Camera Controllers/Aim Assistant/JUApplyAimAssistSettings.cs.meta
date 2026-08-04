@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: a9a0c6a21dba3d54f938dfbc1805392b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251334
+  packageName: JU TPS 3 - Third Person Shooter GameKit + Vehicle Physics
+  packageVersion: 3.3.9
+  assetPath: Assets/Julhiecio TPS Controller/Scripts/Gameplay/Camera Controllers/Aim
+    Assistant/JUApplyAimAssistSettings.cs
+  uploadId: 929334

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: e38d2cc0d3a150f4d91bfe03b372b707
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 23800000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251334
+  packageName: JU TPS 3 - Third Person Shooter GameKit + Vehicle Physics
+  packageVersion: 3.3.9
+  assetPath: Assets/Julhiecio TPS Controller/Demos/Demo Scenes/AI/Examples/Move Inside
+    Area/AI Move Random Inside Area/NavMesh.asset
+  uploadId: 929334
