@@ -3366,6 +3366,7 @@ GameObject:
   - component: {fileID: 641301982}
   - component: {fileID: 641301981}
   - component: {fileID: 641301980}
+  - component: {fileID: 641301986}
   m_Layer: 0
   m_Name: Enemy_Dummy
   m_TagString: Enemy
@@ -3385,12 +3386,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7a84cac240507d4783dfa7163abcd15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
-  maxHealth: 50
-  currentHealth: 0
   moveSpeed: 3.5
   attackDamage: 10
   attackRange: 1.5
-  hitVFX: {fileID: 0}
   deathVFX: {fileID: 0}
 --- !u!195 &641301981
 NavMeshAgent:
@@ -3509,6 +3507,40 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &641301986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 641301979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa2549d042f8b6d41bb6289069865f19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JU.JUHealth
+  _protection: 0
+  _health: 50
+  _maxHealth: 50
+  _isInvencible: 0
+  _healthRegeneration:
+    Delay: 0
+    Speed: 0
+  _spawnOnHit: {fileID: 0}
+  _spawnOnDamage: {fileID: 0}
+  _spawnOnDie: {fileID: 0}
+  _onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  _onDamage:
+    m_PersistentCalls:
+      m_Calls: []
+  _onHealthAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  _onResetHealth:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &649189998
 PrefabInstance:
   m_ObjectHideFlags: 0
