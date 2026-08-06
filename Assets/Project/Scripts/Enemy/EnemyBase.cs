@@ -102,4 +102,30 @@ public class EnemyBase : MonoBehaviour
         // 0.1초 후 적 오브젝트 완전히 파괴
         Destroy(gameObject, 0.1f);
     }
+
+    private void OnEnemyDeath()
+    {
+        if (isDead) return;
+        isDead = true;
+
+        Debug.Log($"[적 사망!] {gameObject.name} 처치됨!");
+
+        // ⭐ 추가된 한 줄: 웨이브 매니저에 처치 알림 전달
+        if (WaveManager.Instance != null)
+        {
+            WaveManager.Instance.OnEnemyKilled();
+        }
+
+        if (agent.enabled)
+        {
+            agent.isStopped = true;
+        }
+
+        if (deathVFX != null)
+        {
+            Instantiate(deathVFX, transform.position, Quaternion.identity);
+        }
+
+        Destroy(gameObject, 0.1f);
+    }
 }
