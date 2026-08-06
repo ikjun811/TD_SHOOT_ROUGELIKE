@@ -103,7 +103,7 @@ public class EnemyBase : MonoBehaviour
         Destroy(gameObject, 0.1f);
     }
 
-    private void OnEnemyDeath()
+    /*private void OnEnemyDeath()
     {
         if (isDead) return;
         isDead = true;
@@ -127,5 +127,5 @@ public class EnemyBase : MonoBehaviour
         }
 
         Destroy(gameObject, 0.1f);
-    }
+    }*/
 }

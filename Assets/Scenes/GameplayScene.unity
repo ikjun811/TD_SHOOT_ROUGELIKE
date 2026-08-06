@@ -3898,6 +3898,64 @@ Transform:
   - {fileID: 1365418290}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &766447417
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 766447419}
+  - component: {fileID: 766447418}
+  m_Layer: 0
+  m_Name: WaveManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &766447418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766447417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55e567727d364eb47aacf71ce6d0b7b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaveManager
+  currentRound: 1
+  maxRound: 50
+  baseKillsPerRound: 10
+  extraKillsPerRound: 5
+  normalEnemyPrefab: {fileID: 0}
+  eliteEnemyPrefab: {fileID: 0}
+  spawnPoints: []
+  spawnInterval: 2
+  maxConcurrentEnemies: 15
+  targetKillsThisRound: 0
+  currentKillsCount: 0
+  currentEnemiesAlive: 0
+  isWaveActive: 0
+  hasTriggered50PercentEvent: 0
+--- !u!4 &766447419
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766447417}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.89407, y: 0.09099, z: -0.98865}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &775347951
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7415,6 +7473,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4385385259812168692, guid: 57eec4180c5142843a3c4d8bfba4a156, type: 3}
+      propertyPath: PauseButton
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4730250152755223780, guid: 57eec4180c5142843a3c4d8bfba4a156, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -9848,3 +9910,4 @@ SceneRoots:
   - {fileID: 2120986319}
   - {fileID: 1119716075}
   - {fileID: 641301985}
+  - {fileID: 766447419}
