@@ -89,7 +89,13 @@ public class EnemyBase : MonoBehaviour
 
         Debug.Log($"[적 사망!] {gameObject.name} 처치됨!");
 
-        // ⭐ 추가된 한 줄: 웨이브 매니저에 처치 알림 전달
+        // 아이템 드랍 시도
+        if (ItemDropManager.Instance != null && WaveManager.Instance != null)
+        {
+            ItemDropManager.Instance.TryDropItem(transform.position, 1); // 현재 라운드 수 전달
+        }
+
+        // 웨이브 매니저에 처치 알림 전달
         if (WaveManager.Instance != null)
         {
             WaveManager.Instance.OnEnemyKilled();
