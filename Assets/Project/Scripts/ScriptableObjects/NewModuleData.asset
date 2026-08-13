@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: NewModuleData
   m_EditorClassIdentifier: Assembly-CSharp::ModuleDataSO
   moduleName: 
-  rarity: 0
+  rarity: 1
   moduleIcon: {fileID: 0}
   isUniqueModule: 0
   width: 2
   height: 2
   shapeGrid: 01010101
-  statType: 0
+  statType: 1
   statValue: 0
