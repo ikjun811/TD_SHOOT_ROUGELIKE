@@ -32,6 +32,9 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private bool isWaveActive = false;
     [SerializeField] private bool hasTriggered50PercentEvent = false;
 
+    [Header("Round Clear Delay Settings")]
+    [SerializeField] private float roundClearDelay = 2.5f; // 라운드 클리어 후 대기시간 (초)
+
     private Transform playerTransform;
 
     private void Awake()
@@ -186,14 +189,31 @@ public class WaveManager : MonoBehaviour
     private void CompleteRound()
     {
         isWaveActive = false;
-        StopAllCoroutines();
+        StopAllCoroutines(); // 스폰 루틴 정지
 
+        // 2.5초 유예 대기 연출 루틴 시작
+        StartCoroutine(RoundClearSequence());
+    }
+
+    private IEnumerator RoundClearSequence()
+    {
         Debug.Log($"🎉 [ROUND {currentRound} CLEAR!] 라운드를 클리어했습니다.");
 
-        //  정비 단계 진입 호출
+        // 1. 맵에 떨어진 아이템들을 먼저 자석으로 흡수 연출!
+        if (ItemDropManager.Instance != null)
+        {
+            ItemDropManager.Instance.CollectAllRemainingDropsOnField();
+        }
+
+        // 2. 지정된 대기시간(2.5초) 동안 플레이어가 여운을 즐기도록 대기
+        Debug.Log($"⏳ {roundClearDelay}초 후 정비 단계로 진입합니다...");
+        yield return new WaitForSeconds(roundClearDelay);
+
+        // 3. 2.5초 후 정비 단계 진입 및 일시정지!
         if (MaintenanceManager.Instance != null)
         {
             MaintenanceManager.Instance.EnterMaintenanceStage();
         }
     }
+
 }
