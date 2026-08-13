@@ -189,6 +189,11 @@ public class WaveManager : MonoBehaviour
         StopAllCoroutines();
 
         Debug.Log($"🎉 [ROUND {currentRound} CLEAR!] 라운드를 클리어했습니다.");
-        Debug.Log("--> 정비 단계(Maintenance Stage)로 이동합니다.");
+
+        //  정비 단계 진입 호출
+        if (MaintenanceManager.Instance != null)
+        {
+            MaintenanceManager.Instance.EnterMaintenanceStage();
+        }
     }
 }

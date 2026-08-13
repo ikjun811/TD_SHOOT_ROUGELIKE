@@ -23,9 +23,16 @@ public class MaintenanceManager : MonoBehaviour
     public void EnterMaintenanceStage()
     {
         isInMaintenance = true;
-        Time.timeScale = 0f; // 전투 정지
 
-        Debug.Log("🛠️ [정비 단계 진입] 전투가 일시정지되었습니다. 무기와 모듈을 정비하세요.");
+        // 1. 맵에 떨어진 미수거 아이템들 전체 자동 수거!
+        if (ItemDropManager.Instance != null)
+        {
+            ItemDropManager.Instance.CollectAllRemainingDropsOnField();
+        }
+
+        Time.timeScale = 0f; // 2. 전투 정지
+
+        Debug.Log("[정비 단계 진입] 전투가 일시정지되었습니다. 무기와 모듈을 정비하세요.");
 
         // TODO: 정비 UI Canvas 활성화
     }

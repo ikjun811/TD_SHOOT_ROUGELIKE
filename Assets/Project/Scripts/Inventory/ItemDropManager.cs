@@ -87,4 +87,34 @@ public class ItemDropManager : MonoBehaviour
             else if (module != null) droppedItem.SetupModule(module);
         }
     }
+
+    public void CollectAllRemainingDropsOnField()
+    {
+        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>(FindObjectsSortMode.None);
+
+        int collectedCount = 0;
+        foreach (var item in remainingItems)
+        {
+            if (PlayerInventory.Instance != null)
+            {
+                if (item.category == DroppedItem.ItemCategory.Weapon && item.weaponData != null)
+                {
+                    PlayerInventory.Instance.AddWeapon(item.weaponData);
+                    collectedCount++;
+                }
+                else if (item.category == DroppedItem.ItemCategory.Module && item.moduleData != null)
+                {
+                    PlayerInventory.Instance.AddModule(item.moduleData);
+                    collectedCount++;
+                }
+            }
+            // 필드 아이템 오브젝트 삭제
+            Destroy(item.gameObject);
+        }
+
+        if (collectedCount > 0)
+        {
+            Debug.Log($" [자석 수거] 맵에 떨어진 아이템 {collectedCount}개를 자동으로 모두 수거했습니다!");
+        }
+    }
 }
