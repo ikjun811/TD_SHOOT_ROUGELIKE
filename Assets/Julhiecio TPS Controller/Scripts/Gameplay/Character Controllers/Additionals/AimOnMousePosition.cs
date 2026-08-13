@@ -14,8 +14,8 @@ namespace JUTPS.ActionScripts
         public float NormalOffset = 0.1f;
         public bool PreventResetingAimPosition;
 
-        [Header("Top Down Flat Aim Settings")]
-        [Tooltip("체크 시 마우스 위치와 관계없이 조준 높이가 가슴 높이로 고정되어 수평 사격")]
+        [Header("Top Down Flat Aim Settings ⭐")]
+        [Tooltip("체크 시 마우스 위치와 관계없이 조준 높이가 가슴 높이로 고정되어 수평 사격됩니다.")]
         public bool LockToChestHeight = true;
         public float CustomChestHeightOffset = 1.2f;
 
@@ -39,54 +39,38 @@ namespace JUTPS.ActionScripts
 
             if (TwoDimensional)
             {
-                // Create a ray on mouse position
+                // 2D 모드 로직
                 Ray MouseRay = cam.ScreenPointToRay(mousePosition);
-
-                // Get Pivot Position
                 Vector3 pivotPosition = transform.position;
                 pivotPosition.y = TPSCharacter.HumanoidSpine.position.y;
 
-                // Get Mouse Position
                 Vector3 MousePosition = MouseRay.origin + MouseRay.direction * Vector3.Distance(pivotPosition, MouseRay.origin);
                 MousePosition.z = transform.position.z;
 
-                // Get Horizontal Distance
                 Vector3 mousePosNoHeight = MousePosition; mousePosNoHeight.y = pivotPosition.y;
                 float HorizontalDistance = Vector3.Distance(pivotPosition, mousePosNoHeight);
 
-                // Modify mouse position
                 MousePosition.z = Mathf.Lerp(TPSCharacter.transform.position.z - 3f, pivotPosition.z, HorizontalDistance);
-                // Set Aim Position
                 AimPosition = Vector3.Lerp(AimPosition, MousePosition, 10 * Time.deltaTime);
 
-                // Draw Line Current Position
                 Debug.DrawLine(pivotPosition, AimPosition, Color.red);
             }
             else
             {
-                var crosshairRayLayer = !TPSCharacter.MyPivotCamera ? default : TPSCharacter.MyPivotCamera.CrosshairRaycastLayerMask;
-                Physics.Raycast(cam.ScreenPointToRay(mousePosition), out var hit, float.MaxValue, crosshairRayLayer);
+                //  3D 물리 콜라이더(상자, 벽, 몬스터)를 치지 않는 무한 가상 평면 연산
+                float chestY = (TPSCharacter != null && TPSCharacter.HumanoidSpine != null)
+                    ? TPSCharacter.HumanoidSpine.position.y
+                    : transform.position.y + CustomChestHeightOffset;
 
-                if (PreventResetingAimPosition)
-                {
-                    if (hit.point != Vector3.zero)
-                        AimPosition = Vector3.Lerp(AimPosition, hit.point + hit.normal * NormalOffset, 15 * Time.deltaTime);
-                }
-                else
-                {
-                    AimPosition = Vector3.Lerp(AimPosition, hit.point + hit.normal * NormalOffset, 15 * Time.deltaTime);
-                    if (hit.point == Vector3.zero)
-                        AimPosition = Vector3.zero;
-                }
+                // 플레이어 가슴 높이에 위치한 무한 수평 평면 생성
+                Plane aimPlane = new Plane(Vector3.up, new Vector3(0, chestY, 0));
+                Ray ray = cam.ScreenPointToRay(mousePosition);
 
-                // 탑다운 수평 사격 핵심 보정 로직 추가
-                if (LockToChestHeight && TPSCharacter != null)
+                // 평면과의 무한 교점 계산 (장애물에 전혀 방해받지 않음)
+                if (aimPlane.Raycast(ray, out float enterDistance))
                 {
-                    float chestY = TPSCharacter.HumanoidSpine != null
-                        ? TPSCharacter.HumanoidSpine.position.y
-                        : transform.position.y + CustomChestHeightOffset;
-
-                    AimPosition.y = chestY; // 높이를 가슴 높이로 완벽 고정
+                    Vector3 targetPoint = ray.GetPoint(enterDistance);
+                    AimPosition = Vector3.Lerp(AimPosition, targetPoint, 25 * Time.deltaTime);
                 }
             }
 

@@ -1718,8 +1718,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 291201139}
-  - component: {fileID: 291201138}
-  - component: {fileID: 291201137}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -1727,41 +1725,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &291201137
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 291201136}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c296c76dfdd7a3428476641bda06f09, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ItemDropManager
-  droppedItemPrefab: {fileID: 5058950208300852019, guid: a2b0b58425cb8614e965951010a749b4, type: 3}
-  allWeapons:
-  - {fileID: 11400000, guid: 0e87924da603efe4b88cea1a37928b95, type: 2}
-  allModules:
-  - {fileID: 11400000, guid: 7a6b7c79a25761949a646a2ceab5c4ce, type: 2}
-  overallDropChance: 0.4
---- !u!114 &291201138
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 291201136}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d275c862eca8764db7d30dd81760f3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
-  collectedWeapons: []
-  collectedModules: []
-  equippedWeapons:
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!4 &291201139
 Transform:
   m_ObjectHideFlags: 0
@@ -1774,7 +1737,11 @@ Transform:
   m_LocalPosition: {x: 23.05945, y: 0, z: 18.59931}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2034358463}
+  - {fileID: 1676788888}
+  - {fileID: 1146563095}
+  - {fileID: 1362691748}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &302980045
@@ -4832,6 +4799,55 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d9a38f0076629b5429763dc8bced5153, type: 3}
   m_PrefabInstance: {fileID: 1130183988}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1146563094
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1146563095}
+  - component: {fileID: 1146563096}
+  m_Layer: 0
+  m_Name: PlayerInventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1146563095
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146563094}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 291201139}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1146563096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146563094}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d275c862eca8764db7d30dd81760f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
+  collectedWeapons: []
+  collectedModules: []
+  equippedWeapons:
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!1 &1175588744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5798,6 +5814,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1313289360}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1362691747
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1362691748}
+  - component: {fileID: 1362691749}
+  m_Layer: 0
+  m_Name: ItemDropManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1362691748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362691747}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 291201139}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1362691749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362691747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c296c76dfdd7a3428476641bda06f09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemDropManager
+  droppedItemPrefab: {fileID: 5058950208300852019, guid: a2b0b58425cb8614e965951010a749b4, type: 3}
+  allWeapons:
+  - {fileID: 11400000, guid: 0e87924da603efe4b88cea1a37928b95, type: 2}
+  allModules:
+  - {fileID: 11400000, guid: 7a6b7c79a25761949a646a2ceab5c4ce, type: 2}
+  overallDropChance: 0.4
 --- !u!1001 &1365418289
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7614,6 +7680,54 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 57eec4180c5142843a3c4d8bfba4a156, type: 3}
+--- !u!1 &1676788887
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1676788888}
+  - component: {fileID: 1676788889}
+  m_Layer: 0
+  m_Name: MaintenanceManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1676788888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676788887}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 291201139}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1676788889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676788887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b8e6e4ce51fa714d8b5072f62720bb4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MaintenanceManager
+  vaultWeapons: []
+  vaultModules: []
+  maxVaultCapacity: 3
+  isInMaintenance: 0
 --- !u!1001 &1721454031
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8911,6 +9025,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4149660459875782956, guid: 00d6a4c994033214b8094882e33624c2, type: 3}
   m_PrefabInstance: {fileID: 2016579178}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2034358462
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2034358463}
+  - component: {fileID: 2034358464}
+  m_Layer: 0
+  m_Name: GridInventorySystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2034358463
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2034358462}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 291201139}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2034358464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2034358462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c9485ff839875849b3ce0735258cd95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridInventorySystem
+  gridWidth: 8
+  gridHeight: 8
+  placedModules: []
 --- !u!1 &2034392993
 GameObject:
   m_ObjectHideFlags: 0
