@@ -103,4 +103,14 @@ public class ItemDropManager : MonoBehaviour
             item.StartFlyingToPlayer(playerObj.transform);
         }
     }
+
+    // 공중 비행 중인 아이템 강제 수거 안전망
+    public void EnsureAllItemsCollected()
+    {
+        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>(FindObjectsSortMode.None);
+        foreach (var item in remainingItems)
+        {
+            item.ForceInstantCollect();
+        }
+    }
 }

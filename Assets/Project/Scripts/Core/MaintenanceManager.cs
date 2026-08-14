@@ -24,17 +24,14 @@ public class MaintenanceManager : MonoBehaviour
     {
         isInMaintenance = true;
 
-        // 1. 맵에 떨어진 미수거 아이템들 전체 자동 수거!
+        //  안전망: 아직 도착 못한 공중 아이템 강제 처리
         if (ItemDropManager.Instance != null)
         {
-            ItemDropManager.Instance.CollectAllRemainingDropsOnField();
+            ItemDropManager.Instance.EnsureAllItemsCollected();
         }
 
-        Time.timeScale = 0f; // 2. 전투 정지
-
-        Debug.Log("[정비 단계 진입] 전투가 일시정지되었습니다. 무기와 모듈을 정비하세요.");
-
-        // TODO: 정비 UI Canvas 활성화
+        Time.timeScale = 0f; // 전투 일시정지
+        Debug.Log("[정비 단계 진입] 모든 전리품 보장 수거 완료.");
     }
 
     // 정비 완료 버튼 클릭 시 호출
@@ -73,4 +70,6 @@ public class MaintenanceManager : MonoBehaviour
         Debug.Log($"🔒 [금고] 무기 보관 성공: {weapon.weaponName}");
         return true;
     }
+
+
 }

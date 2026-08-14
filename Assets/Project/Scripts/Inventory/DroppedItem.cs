@@ -14,11 +14,11 @@ public class DroppedItem : MonoBehaviour
     [SerializeField] private Light itemLight;
     [SerializeField] private float rotateSpeed = 90f;
 
-    [Header("Magnet Fly Juice")]
+    [Header("Magnet Fly Juice ⭐")]
     private bool isFlyingToPlayer = false;
     private Transform targetPlayer;
-    private float currentFlySpeed = 8f;
-    private float flyAcceleration = 35f; // 날아오면서 점점 빨라지는 가속도
+    private float currentFlySpeed = 10f;
+    private float flyAcceleration = 40f;
 
     private void Start()
     {
@@ -27,32 +27,29 @@ public class DroppedItem : MonoBehaviour
 
     private void Update()
     {
-        // 플레이어를 향해 빨려 들어가는 비행 연출 중일 때
         if (isFlyingToPlayer && targetPlayer != null)
         {
-            Vector3 targetPos = targetPlayer.position + Vector3.up * 1.0f; // 가슴 높이
+            Vector3 targetPos = targetPlayer.position + Vector3.up * 1.0f;
 
             // 플레이어를 향해 가속 비행
             transform.position = Vector3.MoveTowards(transform.position, targetPos, currentFlySpeed * Time.deltaTime);
             currentFlySpeed += flyAcceleration * Time.deltaTime;
 
-            // 다가올수록 크기가 작아지는 쏙 흡수 연출
-            transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, 3f * Time.deltaTime);
+            // 크기 축소 연출
+            transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, 4f * Time.deltaTime);
 
-            // 플레이어에 도착하면 획득 처리 및 파괴
-            if (Vector3.Distance(transform.position, targetPos) < 0.5f)
+            // 도착 시 획득
+            if (Vector3.Distance(transform.position, targetPos) < 0.6f)
             {
                 CollectAndDestroy();
             }
         }
         else
         {
-            // 평소 기본 빙글빙글 회전
             transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime, Space.World);
         }
     }
 
-    // ItemDropManager에서 호출하는 세팅 함수들
     public void SetupWeapon(WeaponDataSO data)
     {
         category = ItemCategory.Weapon;
@@ -67,15 +64,24 @@ public class DroppedItem : MonoBehaviour
         SetupVisuals();
     }
 
-    // 자석 흡수 시작 함수
+    // 자석 연출 시작 (거리 비례 속도 보정)
     public void StartFlyingToPlayer(Transform player)
     {
         targetPlayer = player;
         isFlyingToPlayer = true;
 
-        // 충돌체 무력화 (날아오는 동안 추가 충돌 방지)
+        // 거리에 비례하여 출발 속도 연산 (멀리 있을수록 더 폭발적으로 시작)
+        float distance = Vector3.Distance(transform.position, player.position);
+        currentFlySpeed = Mathf.Max(12f, distance * 2.0f);
+
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
+    }
+
+    // 안전망: 공중에 떠있는 상태로 정비 단계 진입 시 강제 획득
+    public void ForceInstantCollect()
+    {
+        CollectAndDestroy();
     }
 
     private void SetupVisuals()
@@ -104,7 +110,6 @@ public class DroppedItem : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // 직접 발로 걸어서 주웠을 때
         if (!isFlyingToPlayer && other.CompareTag("Player"))
         {
             CollectAndDestroy();
