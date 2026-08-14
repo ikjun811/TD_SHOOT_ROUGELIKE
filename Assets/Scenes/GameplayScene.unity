@@ -3793,6 +3793,7 @@ MonoBehaviour:
   currentEnemiesAlive: 0
   isWaveActive: 0
   hasTriggered50PercentEvent: 0
+  roundClearDelay: 2.5
 --- !u!4 &766447419
 Transform:
   m_ObjectHideFlags: 0
@@ -9839,8 +9840,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: AllowBareHands
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       propertyPath: LocomotionMode
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: ItemToEquipOnStart
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       propertyPath: WhatIsGround.m_Bits
