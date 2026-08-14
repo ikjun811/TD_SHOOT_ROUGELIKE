@@ -91,30 +91,16 @@ public class ItemDropManager : MonoBehaviour
     public void CollectAllRemainingDropsOnField()
     {
         DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>(FindObjectsSortMode.None);
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
 
-        int collectedCount = 0;
+        if (playerObj == null || remainingItems.Length == 0) return;
+
+        Debug.Log($"🧲 [자석 연출] 맵에 떨어진 아이템 {remainingItems.Length}개가 플레이어에게 날아옵니다!");
+
         foreach (var item in remainingItems)
         {
-            if (PlayerInventory.Instance != null)
-            {
-                if (item.category == DroppedItem.ItemCategory.Weapon && item.weaponData != null)
-                {
-                    PlayerInventory.Instance.AddWeapon(item.weaponData);
-                    collectedCount++;
-                }
-                else if (item.category == DroppedItem.ItemCategory.Module && item.moduleData != null)
-                {
-                    PlayerInventory.Instance.AddModule(item.moduleData);
-                    collectedCount++;
-                }
-            }
-            // 필드 아이템 오브젝트 삭제
-            Destroy(item.gameObject);
-        }
-
-        if (collectedCount > 0)
-        {
-            Debug.Log($" [자석 수거] 맵에 떨어진 아이템 {collectedCount}개를 자동으로 모두 수거했습니다!");
+            // 즉시 파괴하지 않고, 플레이어로 가속 비행 시작!
+            item.StartFlyingToPlayer(playerObj.transform);
         }
     }
 }
