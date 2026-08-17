@@ -50,6 +50,13 @@ namespace JUTPS
             ItemToEquipOnStart = 0;
         }
 
+        [Header("Custom Top-Down Dash Settings ")]
+        public float DashDistance = 5f;        // 대시 거리
+        public float DashDuration = 0.15f;     // 대시 걸리는 시간 (초)
+        public float DashCooldown = 0.6f;      // 대시 쿨타임
+        private float lastDashTime = -10f;
+        public bool IsDashing { get; private set; }
+
         protected override void Start()
         {
             IEnumerator EquipeSelectedItem()
@@ -221,9 +228,9 @@ namespace JUTPS
             }
 
             //Jump
-            if (Inputs.IsJumpTriggered && IsJumping == false)
+            if (Inputs.IsJumpTriggered || Input.GetKeyDown(KeyCode.Space))
             {
-                _Jump();
+                Dash();
             }
             //New Jump Delay
             _NewJumpDelay(0.2f, DecreaseSpeedOnJump);
@@ -363,6 +370,43 @@ namespace JUTPS
             // >>> Force Block Firing Mode
             if (HoldableItemInUseRightHand) { if (HoldableItemInUseRightHand.BlockFireMode) { FiringMode = false; FiringModeIK = false; } }
         }
+
+        public virtual void Dash()
+        {
+            if (Time.time < lastDashTime + DashCooldown || IsDashing || IsDead) return;
+
+            StartCoroutine(DashRoutine());
+        }
+
+        private IEnumerator DashRoutine()
+        {
+            IsDashing = true;
+            lastDashTime = Time.time;
+
+            // 이동 입력(WASD) 방향, 입력이 없으면 캐릭터 정면
+            Vector3 dashDir = new Vector3(HorizontalX, 0f, VerticalY).normalized;
+            if (dashDir == Vector3.zero)
+            {
+                dashDir = transform.forward;
+            }
+
+            Debug.Log("💨 [대시 발동!] 플레이어 슬라이딩 이동");
+
+            float timer = 0f;
+            float dashSpeed = DashDistance / DashDuration;
+
+            while (timer < DashDuration)
+            {
+                timer += Time.deltaTime;
+
+                rb.MovePosition(rb.position + dashDir * (dashSpeed * Time.deltaTime));
+
+                yield return null;
+            }
+
+            IsDashing = false;
+        }
+
         #endregion
 
 
