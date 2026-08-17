@@ -383,14 +383,30 @@ namespace JUTPS
             IsDashing = true;
             lastDashTime = Time.time;
 
-            // 이동 입력(WASD) 방향, 입력이 없으면 캐릭터 정면
-            Vector3 dashDir = new Vector3(HorizontalX, 0f, VerticalY).normalized;
+            //  [카메라 시점 기준 방향 보정 연산]
+            Vector3 camForward = Vector3.forward;
+            Vector3 camRight = Vector3.right;
+
+            if (Camera.main != null)
+            {
+                camForward = Camera.main.transform.forward;
+                camRight = Camera.main.transform.right;
+
+                // 수평 평면(XZ)으로 고정 및 정규화
+                camForward.y = 0f;
+                camRight.y = 0f;
+                camForward.Normalize();
+                camRight.Normalize();
+            }
+
+            // 모니터 화면에 보이는 기준대로 WASD 방향 계산
+            Vector3 dashDir = (camRight * HorizontalX + camForward * VerticalY).normalized;
+
+            // 아무 방향키도 누르지 않았을 때는 캐릭터가 바라보는 정면으로 대시
             if (dashDir == Vector3.zero)
             {
                 dashDir = transform.forward;
             }
-
-            Debug.Log("💨 [대시 발동!] 플레이어 슬라이딩 이동");
 
             float timer = 0f;
             float dashSpeed = DashDistance / DashDuration;
@@ -398,9 +414,7 @@ namespace JUTPS
             while (timer < DashDuration)
             {
                 timer += Time.deltaTime;
-
                 rb.MovePosition(rb.position + dashDir * (dashSpeed * Time.deltaTime));
-
                 yield return null;
             }
 
