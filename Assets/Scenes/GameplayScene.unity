@@ -9887,6 +9887,98 @@ PrefabInstance:
       propertyPath: GroundLayer.m_Bits
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: EnablePickup
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[3]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[5]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[7]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[8]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[9]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: AutoEquipPickedUpItems
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[10]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllItems.Array.data[11]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[2]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[4]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[6]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[7]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[8]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[9]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'AllHoldableItems.Array.data[10]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[2]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[4]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[5]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[6]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[7]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825781, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: 'HoldableItensRightHand.Array.data[8]'
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       propertyPath: AimMode
       value: 0
