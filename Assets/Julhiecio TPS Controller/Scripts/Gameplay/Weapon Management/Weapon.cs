@@ -449,7 +449,7 @@ namespace JUTPS.WeaponSystem
             CanUseItem = false;
 
             //Subtracts Ammunition
-            if (!InfiniteAmmo) BulletsAmounts -= 1;
+            BulletsAmounts -= 1;
 
             //Procedural Animation Trigger
             if (GenerateProceduralAnimation == true)
@@ -522,19 +522,30 @@ namespace JUTPS.WeaponSystem
             //Reload
             if (BulletsAmounts < BulletsPerMagazine)
             {
-                if (TotalBullets >= BulletsPerMagazine)
+               
+                if (InfiniteAmmo)
                 {
                     BulletsAmounts = BulletsPerMagazine;
-                    TotalBullets -= BulletsPerMagazine;
                 }
                 else
                 {
-                    BulletsAmounts = TotalBullets;
-                    TotalBullets = 0;
+                    if (TotalBullets >= BulletsPerMagazine)
+                    {
+                        BulletsAmounts = BulletsPerMagazine;
+                        TotalBullets -= BulletsPerMagazine;
+                    }
+                    else
+                    {
+                        BulletsAmounts = TotalBullets;
+                        TotalBullets = 0;
+                    }
                 }
             }
             //Play reloading audio
-            mAudioSource.PlayOneShot(ReloadAudio);
+            if (mAudioSource != null && ReloadAudio != null)
+            {
+                mAudioSource.PlayOneShot(ReloadAudio);
+            }
         }
 
 #if UNITY_EDITOR
