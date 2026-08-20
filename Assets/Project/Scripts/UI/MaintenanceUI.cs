@@ -82,16 +82,30 @@ public class MaintenanceUI : MonoBehaviour
 
     public void RefreshEquipAndVaultUI()
     {
-        if (PlayerInventory.Instance != null)
+        // 1. 장착 무기 슬롯 텍스트 갱신 (안전망 처리)
+        if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons != null)
         {
-            weapon1Text.text = PlayerInventory.Instance.equippedWeapons[0] != null ? PlayerInventory.Instance.equippedWeapons[0].weaponName : "빈 슬롯 1";
-            weapon2Text.text = PlayerInventory.Instance.equippedWeapons[1] != null ? PlayerInventory.Instance.equippedWeapons[1].weaponName : "빈 슬롯 2";
+            if (weapon1Text != null)
+            {
+                var w1 = PlayerInventory.Instance.equippedWeapons.Length > 0 ? PlayerInventory.Instance.equippedWeapons[0] : null;
+                weapon1Text.text = (w1 != null) ? w1.weaponName : "빈 슬롯 1";
+            }
+
+            if (weapon2Text != null)
+            {
+                var w2 = PlayerInventory.Instance.equippedWeapons.Length > 1 ? PlayerInventory.Instance.equippedWeapons[1] : null;
+                weapon2Text.text = (w2 != null) ? w2.weaponName : "빈 슬롯 2";
+            }
         }
 
-        if (MaintenanceManager.Instance != null)
+        // 2. 금고(Vault) 상태 텍스트 갱신 (안전망 처리)
+        if (MaintenanceManager.Instance != null && vaultStatusText != null)
         {
-            int currentVault = MaintenanceManager.Instance.vaultWeapons.Count + MaintenanceManager.Instance.vaultModules.Count;
-            vaultStatusText.text = $"보관함: {currentVault} / {MaintenanceManager.Instance.maxVaultCapacity}";
+            int vaultWeaponCount = MaintenanceManager.Instance.vaultWeapons != null ? MaintenanceManager.Instance.vaultWeapons.Count : 0;
+            int vaultModuleCount = MaintenanceManager.Instance.vaultModules != null ? MaintenanceManager.Instance.vaultModules.Count : 0;
+            int maxCap = MaintenanceManager.Instance.maxVaultCapacity;
+
+            vaultStatusText.text = $"보관함: {vaultWeaponCount + vaultModuleCount} / {maxCap}";
         }
     }
 

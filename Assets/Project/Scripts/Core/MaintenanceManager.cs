@@ -24,14 +24,29 @@ public class MaintenanceManager : MonoBehaviour
     {
         isInMaintenance = true;
 
-        //  안전망: 아직 도착 못한 공중 아이템 강제 처리
         if (ItemDropManager.Instance != null)
         {
             ItemDropManager.Instance.EnsureAllItemsCollected();
         }
 
         Time.timeScale = 0f; // 전투 일시정지
-        Debug.Log("[정비 단계 진입] 모든 전리품 보장 수거 완료.");
+
+        MaintenanceUI ui = MaintenanceUI.Instance;
+        if (ui == null)
+        {
+            ui = FindObjectOfType<MaintenanceUI>(true);
+        }
+
+        if (ui != null)
+        {
+            ui.OpenUI();
+        }
+        else
+        {
+            Debug.LogError("[Error] 씬에 MaintenanceUI 스크립트가 없습니다!");
+        }
+
+        Debug.Log("[정비 단계 진입] 모든 전리품 보장 수거 및 UI 활성화 완료.");
     }
 
     // 정비 완료 버튼 클릭 시 호출
