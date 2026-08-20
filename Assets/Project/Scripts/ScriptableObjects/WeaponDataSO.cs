@@ -20,6 +20,12 @@ public class WeaponDataSO : ScriptableObject
     [Header("Traits (Max 2)")]
     public List<WeaponTrait> traits = new List<WeaponTrait>();
 
+    [Header("Sub-Variant Unique Mechanics ⭐")]
+    public bool innateRicochet = false;        // 기본 도탄 보유 (리볼버 등)
+    public bool innatePiercing = false;        // 기본 적 관통 (저격총 등)
+    public float ammoRecycleChance = 0f;       // 탄환 환수 확률 % (쌍권총 등)
+    public float innateKnockbackForce = 0f;    // 기본 넉백 힘 (더블배럴 등)
+
     // 레어도에 따른 테두리 색상 반환 유틸리티
     public Color GetRarityColor()
     {
