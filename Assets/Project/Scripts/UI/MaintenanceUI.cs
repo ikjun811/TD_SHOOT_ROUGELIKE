@@ -46,7 +46,8 @@ public class MaintenanceUI : MonoBehaviour
     // 획득한 전리품 패널 UI 갱신
     public void RefreshLootPanel()
     {
-        // 기존 아이콘 청소
+        if (lootContainer == null) return;
+
         foreach (Transform child in lootContainer)
         {
             Destroy(child.gameObject);
@@ -54,21 +55,23 @@ public class MaintenanceUI : MonoBehaviour
 
         if (PlayerInventory.Instance == null) return;
 
-        // 1. 주운 무기들 아이콘 생성
+        // 1. 주운 무기들 생성
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
-            CreateLootButton(weapon.weaponName, weapon.GetRarityColor());
+            if (weapon != null)
+                CreateLootButton(weapon, null);
         }
 
-        // 2. 주운 모듈들 아이콘 생성
+        // 2. 주운 모듈들 생성
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
-            Color rarityColor = GetRarityColor(module.rarity);
-            CreateLootButton(module.moduleName, rarityColor);
+            if (module != null)
+                CreateLootButton(null, module);
         }
     }
 
-    private void CreateLootButton(string itemName, Color rarityColor)
+
+    private void CreateLootButton(WeaponDataSO weapon, ModuleDataSO module)
     {
         if (lootItemButtonPrefab == null || lootContainer == null) return;
 
@@ -76,8 +79,22 @@ public class MaintenanceUI : MonoBehaviour
         Image bgImage = btnObj.GetComponent<Image>();
         TextMeshProUGUI nameText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
 
-        if (bgImage != null) bgImage.color = rarityColor;
-        if (nameText != null) nameText.text = itemName;
+        LootItemButtonUI hoverUI = btnObj.GetComponent<LootItemButtonUI>();
+        if (hoverUI == null) hoverUI = btnObj.AddComponent<LootItemButtonUI>();
+
+        if (weapon != null)
+        {
+            if (bgImage != null) bgImage.color = weapon.GetRarityColor();
+            if (nameText != null) nameText.text = weapon.weaponName;
+            hoverUI.Setup(weapon); // 툴팁에 무기 데이터 연결
+        }
+        else if (module != null)
+        {
+            Color rarityColor = GetRarityColor(module.rarity);
+            if (bgImage != null) bgImage.color = rarityColor;
+            if (nameText != null) nameText.text = module.moduleName;
+            hoverUI.Setup(module); // 툴팁에 모듈 데이터 연결
+        }
     }
 
     public void RefreshEquipAndVaultUI()
