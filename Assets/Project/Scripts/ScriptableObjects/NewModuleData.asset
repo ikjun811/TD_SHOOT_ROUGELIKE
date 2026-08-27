@@ -20,4 +20,4 @@ MonoBehaviour:
   height: 2
   shapeGrid: 01010101
   statType: 1
-  statValue: 0
+  statValue: 0.2
