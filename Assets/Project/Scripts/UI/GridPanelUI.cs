@@ -10,7 +10,7 @@ public class GridPanelUI : MonoBehaviour
     [SerializeField] private GameObject gridSlotPrefab;
     [SerializeField] private Transform gridSlotParent;
 
-    private Image[,] slotImages; // 8x8 타일 이미지 배열
+    private Image[,] slotImages;
 
     private void Awake()
     {
@@ -32,8 +32,8 @@ public class GridPanelUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        int width = GridInventorySystem.Instance.gridWidth;   // 8
-        int height = GridInventorySystem.Instance.gridHeight; // 8
+        int width = GridInventorySystem.Instance.gridWidth;
+        int height = GridInventorySystem.Instance.gridHeight;
         slotImages = new Image[width, height];
 
         for (int y = 0; y < height; y++)
@@ -54,7 +54,42 @@ public class GridPanelUI : MonoBehaviour
         RefreshGridVisuals();
     }
 
-    //  안착된 모듈 모양대로 타일 색상을 채워주는 핵심 시각화 함수
+    // ⭐ 그리드 안착 미리보기 하이라이트 (초록색 / 빨간색)
+    public void HighlightPlacementPreview(int hoverX, int hoverY, int shapeW, int shapeH, bool[] shape)
+    {
+        RefreshGridVisuals(); // 기본 배경 복구 후 하이라이트 덮어씌움
+
+        if (GridInventorySystem.Instance == null) return;
+
+        int startX = hoverX - (shapeW / 2);
+        int startY = hoverY - (shapeH / 2);
+
+        bool canPlace = GridInventorySystem.Instance.CanPlaceModule(startX, startY, shapeW, shapeH, shape);
+        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.85f) : new Color(1f, 0.2f, 0.2f, 0.85f); // 초록 / 빨강
+
+        int width = GridInventorySystem.Instance.gridWidth;
+        int height = GridInventorySystem.Instance.gridHeight;
+
+        for (int r = 0; r < shapeH; r++)
+        {
+            for (int c = 0; c < shapeW; c++)
+            {
+                int shapeIndex = r * shapeW + c;
+                if (shape[shapeIndex])
+                {
+                    int gridX = startX + c;
+                    int gridY = startY + r;
+
+                    if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
+                    {
+                        if (slotImages[gridX, gridY] != null)
+                            slotImages[gridX, gridY].color = previewColor;
+                    }
+                }
+            }
+        }
+    }
+
     public void RefreshGridVisuals()
     {
         if (slotImages == null || GridInventorySystem.Instance == null) return;
@@ -62,7 +97,6 @@ public class GridPanelUI : MonoBehaviour
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
 
-        // 1. 모든 타일을 기본 빈 타일 색상(어두운 회색)으로 초기화
         Color defaultTileColor = new Color(0.12f, 0.12f, 0.12f, 0.9f);
         for (int x = 0; x < width; x++)
         {
@@ -73,7 +107,6 @@ public class GridPanelUI : MonoBehaviour
             }
         }
 
-        // 2. 그리드에 안착된 모든 모듈 모양 영역의 타일 색상을 레어도 색상으로 채움!
         foreach (var placed in GridInventorySystem.Instance.placedModules)
         {
             Color moduleColor = GetRarityColor(placed.moduleData.rarity);
@@ -104,9 +137,9 @@ public class GridPanelUI : MonoBehaviour
         return rarity switch
         {
             RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),       // 파란색
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),     // 보라색
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),   // 노란색
+            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
+            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
+            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
             _ => Color.cyan
         };
     }

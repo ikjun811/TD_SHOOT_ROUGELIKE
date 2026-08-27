@@ -15,6 +15,7 @@ public class ModuleDragHandler : MonoBehaviour
     [SerializeField] private GameObject dragGhostObject;
 
     private bool isDragging = false;
+    public bool IsDragging => isDragging;
     private GridLayoutGroup ghostGridLayout;
     private RectTransform ghostRectTransform;
 
@@ -195,7 +196,25 @@ public class ModuleDragHandler : MonoBehaviour
 
     public void CancelDrag()
     {
-        Debug.Log("❌ [모듈 선택 취소]");
+        if (selectedModule != null)
+        {
+            // ⭐ 드래그 취소 시 전리품 가방으로 무사히 복귀!
+            if (PlayerInventory.Instance != null)
+            {
+                if (!PlayerInventory.Instance.collectedModules.Contains(selectedModule))
+                {
+                    PlayerInventory.Instance.AddModule(selectedModule);
+                }
+            }
+
+            if (MaintenanceUI.Instance != null)
+            {
+                MaintenanceUI.Instance.RefreshLootPanel();
+            }
+
+            Debug.Log($"❌ [모듈 취소] {selectedModule.moduleName} 모듈이 가방으로 복귀했습니다.");
+        }
+
         EndDrag();
     }
 

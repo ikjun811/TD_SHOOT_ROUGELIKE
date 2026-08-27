@@ -2435,7 +2435,6 @@ MonoBehaviour:
   currentHeight: 0
   currentShape: 
   dragGhostObject: {fileID: 1130929381}
-  ghostRectTransform: {fileID: 0}
 --- !u!1 &1119716073
 GameObject:
   m_ObjectHideFlags: 0
@@ -3208,6 +3207,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0e87924da603efe4b88cea1a37928b95, type: 2}
   allModules:
   - {fileID: 11400000, guid: 7a6b7c79a25761949a646a2ceab5c4ce, type: 2}
+  - {fileID: 11400000, guid: 951712645ad00594ba7ccc8d8bdfd082, type: 2}
   overallDropChance: 0.4
 --- !u!1 &1374361119
 GameObject:

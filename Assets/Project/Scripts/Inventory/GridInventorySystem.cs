@@ -164,4 +164,27 @@ public class GridInventorySystem : MonoBehaviour
         Debug.Log($"📊 [최종 스탯 갱신] 공격력: +{totalAtkPercent * 100}%, 추가 체력: +{totalHealthBonus}, 추가 방어력: +{totalArmorBonus}");
         // TODO: 캐릭터 스탯 컴포넌트에 최종 스탯 전달
     }
+
+    // 특정 그리드 (x, y) 좌표에 배치되어 있는 모듈 찾아내기
+    public PlacedModule GetPlacedModuleAt(int x, int y)
+    {
+        foreach (var pm in placedModules)
+        {
+            for (int r = 0; r < pm.currentHeight; r++)
+            {
+                for (int c = 0; c < pm.currentWidth; c++)
+                {
+                    int index = r * pm.currentWidth + c;
+                    if (pm.currentShape[index])
+                    {
+                        if (pm.startX + c == x && pm.startY + r == y)
+                        {
+                            return pm; // 해당 위치의 모듈 반환
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
