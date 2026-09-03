@@ -8,9 +8,9 @@ public class MaintenanceUI : MonoBehaviour
     public static MaintenanceUI Instance { get; private set; }
 
     [Header("UI Panels")]
-    [SerializeField] private GameObject maintenancePanel; // 메인 정비 UI 패널
-    [SerializeField] private Transform lootContainer;     // 획득 전리품 아이콘 부모
-    [SerializeField] private GameObject lootItemButtonPrefab; // 전리품 아이콘 프리팹
+    [SerializeField] private GameObject maintenancePanel;
+    [SerializeField] private Transform lootContainer;
+    [SerializeField] private GameObject lootItemButtonPrefab;
 
     [Header("Equipped & Vault Slots")]
     [SerializeField] private TextMeshProUGUI weapon1Text;
@@ -27,23 +27,22 @@ public class MaintenanceUI : MonoBehaviour
     {
         if (maintenancePanel != null)
         {
-            maintenancePanel.SetActive(false); // 시작 시 숨김
+            maintenancePanel.SetActive(false);
         }
     }
 
-    // MaintenanceManager에서 정비 단계 진입 시 호출
     public void OpenUI()
     {
         if (maintenancePanel != null)
         {
             maintenancePanel.SetActive(true);
+            Debug.Log("🛠️ [MaintenanceUI] 정비 UI 패널이 활성화되었습니다!");
         }
 
         RefreshLootPanel();
         RefreshEquipAndVaultUI();
     }
 
-    // 획득한 전리품 패널 UI 갱신
     public void RefreshLootPanel()
     {
         if (lootContainer == null) return;
@@ -55,21 +54,20 @@ public class MaintenanceUI : MonoBehaviour
 
         if (PlayerInventory.Instance == null) return;
 
-        // 1. 주운 무기들 생성
+        // 1. 주운 무기들 아이콘 생성
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
             if (weapon != null)
                 CreateLootButton(weapon, null);
         }
 
-        // 2. 주운 모듈들 생성
+        // 2. 주운 모듈들 아이콘 생성
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
             if (module != null)
                 CreateLootButton(null, module);
         }
     }
-
 
     private void CreateLootButton(WeaponDataSO weapon, ModuleDataSO module)
     {
@@ -86,47 +84,101 @@ public class MaintenanceUI : MonoBehaviour
         {
             if (bgImage != null) bgImage.color = weapon.GetRarityColor();
             if (nameText != null) nameText.text = weapon.weaponName;
-            hoverUI.Setup(weapon); // 툴팁에 무기 데이터 연결
+            hoverUI.Setup(weapon);
         }
         else if (module != null)
         {
             Color rarityColor = GetRarityColor(module.rarity);
             if (bgImage != null) bgImage.color = rarityColor;
             if (nameText != null) nameText.text = module.moduleName;
-            hoverUI.Setup(module); // 툴팁에 모듈 데이터 연결
+            hoverUI.Setup(module);
+        }
+    }
+
+    // ⭐ 가방에서 무기를 클릭했을 때 장착 처리
+    public void OnClickWeaponFromLoot(WeaponDataSO weapon)
+    {
+        if (PlayerInventory.Instance == null) return;
+
+        // 빈 슬롯 1번 ➔ 슬롯 2번 순서로 장착 시도
+        if (PlayerInventory.Instance.equippedWeapons[0] == null)
+        {
+            PlayerInventory.Instance.equippedWeapons[0] = weapon;
+            PlayerInventory.Instance.collectedWeapons.Remove(weapon);
+            Debug.Log($"⚔️ [무기 장착] 슬롯 1번에 {weapon.weaponName} 장착 완료!");
+        }
+        else if (PlayerInventory.Instance.equippedWeapons[1] == null)
+        {
+            PlayerInventory.Instance.equippedWeapons[1] = weapon;
+            PlayerInventory.Instance.collectedWeapons.Remove(weapon);
+            Debug.Log($"⚔️ [무기 장착] 슬롯 2번에 {weapon.weaponName} 장착 완료!");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ [무기 장착 실패] 이미 무기 슬롯 2개가 가득 찼습니다! 기존 무기를 해제하세요.");
+        }
+
+        RefreshLootPanel();
+        RefreshEquipAndVaultUI();
+    }
+
+    // ⭐ 장착 무기 슬롯 1번 클릭 시 해제
+    public void OnClickUnequipWeapon1()
+    {
+        if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons[0] != null)
+        {
+            var unequipped = PlayerInventory.Instance.equippedWeapons[0];
+            PlayerInventory.Instance.equippedWeapons[0] = null;
+            PlayerInventory.Instance.collectedWeapons.Add(unequipped);
+
+            Debug.Log($"⚔️ [무기 해제] 슬롯 1번 {unequipped.weaponName} 해제됨.");
+            RefreshLootPanel();
+            RefreshEquipAndVaultUI();
+        }
+    }
+
+    // ⭐ 장착 무기 슬롯 2번 클릭 시 해제
+    public void OnClickUnequipWeapon2()
+    {
+        if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons[1] != null)
+        {
+            var unequipped = PlayerInventory.Instance.equippedWeapons[1];
+            PlayerInventory.Instance.equippedWeapons[1] = null;
+            PlayerInventory.Instance.collectedWeapons.Add(unequipped);
+
+            Debug.Log($"⚔️ [무기 해제] 슬롯 2번 {unequipped.weaponName} 해제됨.");
+            RefreshLootPanel();
+            RefreshEquipAndVaultUI();
         }
     }
 
     public void RefreshEquipAndVaultUI()
     {
-        // 1. 장착 무기 슬롯 텍스트 갱신 (안전망 처리)
         if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons != null)
         {
             if (weapon1Text != null)
             {
                 var w1 = PlayerInventory.Instance.equippedWeapons.Length > 0 ? PlayerInventory.Instance.equippedWeapons[0] : null;
-                weapon1Text.text = (w1 != null) ? w1.weaponName : "빈 슬롯 1";
+                weapon1Text.text = (w1 != null) ? $"[1] {w1.weaponName}" : "[1] 빈 무기 슬롯";
             }
 
             if (weapon2Text != null)
             {
                 var w2 = PlayerInventory.Instance.equippedWeapons.Length > 1 ? PlayerInventory.Instance.equippedWeapons[1] : null;
-                weapon2Text.text = (w2 != null) ? w2.weaponName : "빈 슬롯 2";
+                weapon2Text.text = (w2 != null) ? $"[2] {w2.weaponName}" : "[2] 빈 무기 슬롯";
             }
         }
 
-        // 2. 금고(Vault) 상태 텍스트 갱신 (안전망 처리)
         if (MaintenanceManager.Instance != null && vaultStatusText != null)
         {
             int vaultWeaponCount = MaintenanceManager.Instance.vaultWeapons != null ? MaintenanceManager.Instance.vaultWeapons.Count : 0;
             int vaultModuleCount = MaintenanceManager.Instance.vaultModules != null ? MaintenanceManager.Instance.vaultModules.Count : 0;
             int maxCap = MaintenanceManager.Instance.maxVaultCapacity;
 
-            vaultStatusText.text = $"보관함: {vaultWeaponCount + vaultModuleCount} / {maxCap}";
+            vaultStatusText.text = $"보관함(Vault): {vaultWeaponCount + vaultModuleCount} / {maxCap}";
         }
     }
 
-    // '다음 라운드 시작' 버튼 클릭 이벤트
     public void OnClickStartNextRound()
     {
         if (maintenancePanel != null)
@@ -134,7 +186,6 @@ public class MaintenanceUI : MonoBehaviour
             maintenancePanel.SetActive(false);
         }
 
-        // 정비 완료 및 전투 재개
         if (MaintenanceManager.Instance != null)
         {
             MaintenanceManager.Instance.CompleteMaintenanceAndStartNextRound();

@@ -145,17 +145,20 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
+    // 버튼 클릭 시 처리
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Left)
         {
+            // 1. 모듈 클릭 시 드래그 시작
             if (moduleData != null && ModuleDragHandler.Instance != null)
             {
                 ModuleDragHandler.Instance.StartDragModule(moduleData);
             }
-            else if (weaponData != null)
+            // 2. 무기 클릭 시 주무기 슬롯 장착 처리 ⭐
+            else if (weaponData != null && MaintenanceUI.Instance != null)
             {
-                Debug.Log($"⚔️ [무기 클릭] {weaponData.weaponName}");
+                MaintenanceUI.Instance.OnClickWeaponFromLoot(weaponData);
             }
         }
     }
