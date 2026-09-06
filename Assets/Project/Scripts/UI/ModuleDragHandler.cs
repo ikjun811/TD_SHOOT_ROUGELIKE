@@ -151,20 +151,46 @@ public class ModuleDragHandler : MonoBehaviour
     }
 
     //  타일 클릭 시 도형 중앙 기준으로 안착 좌표 자동 보정 연산
+    [HideInInspector] public bool isFromLootList = false; // 가방 출처 여부 플래그
+
+    // 집어 올릴 때 가방 출처 여부를 받음
+    public void StartDragModule(ModuleDataSO module, bool fromLootList = false)
+    {
+        selectedModule = module;
+        isFromLootList = fromLootList; // 출처 저장
+        currentWidth = module.width;
+        currentHeight = module.height;
+        currentShape = (bool[])module.shapeGrid.Clone();
+
+        isDragging = true;
+
+        // ⭐ 가방에서 집어 올린 경우에만 그 순간 가방에서 1개 제거!
+        if (isFromLootList && PlayerInventory.Instance != null)
+        {
+            PlayerInventory.Instance.collectedModules.Remove(module);
+            if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.RefreshLootPanel();
+        }
+
+        if (dragGhostObject != null)
+        {
+            dragGhostObject.SetActive(true);
+            RebuildGhostShapeVisual();
+        }
+
+        Debug.Log($"🧩 [모듈 선택] {module.moduleName} 선택됨 (가방 출처: {isFromLootList})");
+    }
+
     public bool TryPlaceOnGrid(int clickedX, int clickedY)
     {
         if (!isDragging || selectedModule == null) return false;
 
         if (GridInventorySystem.Instance == null) return false;
 
-        // 클릭한 타일에 모듈의 중앙이 오도록 좌상단(startX, startY) 좌표 보정
         int startX = clickedX - (currentWidth / 2);
         int startY = clickedY - (currentHeight / 2);
 
-        // 1차 중앙 보정 시도
         bool success = GridInventorySystem.Instance.TryPlaceModule(selectedModule, startX, startY, currentWidth, currentHeight, currentShape);
 
-        // 그리드 경계면 근처라 중앙 보정이 실패한 경우, 클릭한 타일을 바로 좌상단으로 2차 시도
         if (!success)
         {
             success = GridInventorySystem.Instance.TryPlaceModule(selectedModule, clickedX, clickedY, currentWidth, currentHeight, currentShape);
@@ -172,11 +198,7 @@ public class ModuleDragHandler : MonoBehaviour
 
         if (success)
         {
-            if (PlayerInventory.Instance != null)
-            {
-                PlayerInventory.Instance.collectedModules.Remove(selectedModule);
-            }
-
+            // ⭐ 더 이상 가방에서 Remove() 하지 않음! (이미 집어 올릴 때 처리했으므로)
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
@@ -194,25 +216,20 @@ public class ModuleDragHandler : MonoBehaviour
         return false;
     }
 
+    // 드래그 취소 및 가방으로 모듈 복귀 (증발 차단)
     public void CancelDrag()
     {
-        if (selectedModule != null)
+        if (selectedModule != null && PlayerInventory.Instance != null)
         {
-            // ⭐ 드래그 취소 시 전리품 가방으로 무사히 복귀!
-            if (PlayerInventory.Instance != null)
-            {
-                if (!PlayerInventory.Instance.collectedModules.Contains(selectedModule))
-                {
-                    PlayerInventory.Instance.AddModule(selectedModule);
-                }
-            }
+ 
+            PlayerInventory.Instance.collectedModules.Add(selectedModule);
 
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
             }
 
-            Debug.Log($"❌ [모듈 취소] {selectedModule.moduleName} 모듈이 가방으로 복귀했습니다.");
+            Debug.Log($"❌ [모듈 가방 복귀] {selectedModule.moduleName} 모듈이 가방으로 안전하게 복귀했습니다.");
         }
 
         EndDrag();

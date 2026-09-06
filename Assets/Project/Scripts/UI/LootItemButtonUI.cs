@@ -150,17 +150,13 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (eventData.button == PointerEventData.InputButton.Left)
         {
-            // 1. 모듈 클릭 시 모듈 드래그
+            // 가방에서 집었다고 fromLootList: true 전달!
             if (moduleData != null && ModuleDragHandler.Instance != null)
             {
-                ModuleDragHandler.Instance.StartDragModule(moduleData);
+                ModuleDragHandler.Instance.StartDragModule(moduleData, fromLootList: true);
             }
-            // 2. 무기 클릭 시 즉시 가방에서 제거 후 드래그 시작! ⭐
-            else if (weaponData != null && WeaponDragHandler.Instance != null && PlayerInventory.Instance != null)
+            else if (weaponData != null && WeaponDragHandler.Instance != null)
             {
-                PlayerInventory.Instance.collectedWeapons.Remove(weaponData); // 가방에서 즉시 제거!
-                if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.RefreshLootPanel();
-
                 WeaponDragHandler.Instance.StartDragWeapon(weaponData);
             }
         }
