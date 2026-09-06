@@ -9,15 +9,12 @@ using TMPro;
 public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("Vault Slot Index")]
-    public int vaultIndex = 0; // 금고 슬롯 번호 (0, 1, 2)
+    public int vaultIndex = 0;
 
     [Header("UI Components")]
     [SerializeField] private Image slotBgImage;
     [SerializeField] private TextMeshProUGUI slotText;
 
-    /// <summary>
-    /// 금고 슬롯의 시각적 텍스트 및 마테리얼 색상을 갱신합니다.
-    /// </summary>
     public void RefreshSlotVisual()
     {
         if (MaintenanceManager.Instance == null || vaultIndex >= MaintenanceManager.Instance.vaultSlots.Length) return;
@@ -42,7 +39,7 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
     }
 
     /// <summary>
-    /// 금고 슬롯 클릭 처리 (보관, 꺼내기, 스왑)
+    /// 금고 슬롯 클릭 처리 (보관, 꺼내기, 스왑 시 DragSource.VaultSlot 인자 전달)
     /// </summary>
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -61,19 +58,17 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
             slotData.weapon = newWeapon;
             slotData.module = null;
 
-            // 기존 슬롯의 아이템이 존재할 경우 스왑 처리
+            WeaponDragHandler.Instance.EndDrag();
+
+            // ⭐ 기존 스왑 아이템 발생 시 DragSource.VaultSlot 전달
             if (oldWeapon != null)
             {
-                WeaponDragHandler.Instance.StartDragWeapon(oldWeapon, false);
+                WeaponDragHandler.Instance.StartDragWeapon(oldWeapon, DragSource.VaultSlot);
             }
             else if (oldModule != null)
             {
-                WeaponDragHandler.Instance.CancelDrag();
-                ModuleDragHandler.Instance.StartDragModule(oldModule, false);
-            }
-            else
-            {
-                WeaponDragHandler.Instance.CancelDrag();
+                if (ModuleDragHandler.Instance != null)
+                    ModuleDragHandler.Instance.StartDragModule(oldModule, DragSource.VaultSlot);
             }
 
             RefreshAllUI();
@@ -88,38 +83,37 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
             slotData.module = newModule;
             slotData.weapon = null;
 
-            // 기존 슬롯의 아이템이 존재할 경우 스왑 처리
+            ModuleDragHandler.Instance.EndDrag();
+
+            // ⭐ 기존 스왑 아이템 발생 시 DragSource.VaultSlot 전달
             if (oldWeapon != null)
             {
-                ModuleDragHandler.Instance.CancelDrag();
-                WeaponDragHandler.Instance.StartDragWeapon(oldWeapon, false);
+                if (WeaponDragHandler.Instance != null)
+                    WeaponDragHandler.Instance.StartDragWeapon(oldWeapon, DragSource.VaultSlot);
             }
             else if (oldModule != null)
             {
-                ModuleDragHandler.Instance.StartDragModule(oldModule, false);
-            }
-            else
-            {
-                ModuleDragHandler.Instance.CancelDrag();
+                ModuleDragHandler.Instance.StartDragModule(oldModule, DragSource.VaultSlot);
             }
 
             RefreshAllUI();
         }
-        // 3. 맨손 상태에서 금고 슬롯을 클릭한 경우 아이템 꺼내기
+        // 3. 맨손 상태에서 금고 슬롯을 클릭하여 아이템을 꺼내는 경우
         else
         {
+            // ⭐ 금고에서 꺼낼 때 DragSource.VaultSlot 전달
             if (slotData.weapon != null)
             {
                 WeaponDataSO w = slotData.weapon;
                 slotData.Clear();
-                WeaponDragHandler.Instance.StartDragWeapon(w, false);
+                WeaponDragHandler.Instance.StartDragWeapon(w, DragSource.VaultSlot);
                 RefreshAllUI();
             }
             else if (slotData.module != null)
             {
                 ModuleDataSO m = slotData.module;
                 slotData.Clear();
-                ModuleDragHandler.Instance.StartDragModule(m, false);
+                ModuleDragHandler.Instance.StartDragModule(m, DragSource.VaultSlot);
                 RefreshAllUI();
             }
         }

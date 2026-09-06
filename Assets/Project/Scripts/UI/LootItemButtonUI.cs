@@ -3,6 +3,9 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
+/// <summary>
+/// 전리품 가방 내부 개별 무기/모듈 버튼의 UI 표현, 마우스 호버 툴팁, 클릭 이벤트를 제어하는 클래스입니다.
+/// </summary>
 public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     private WeaponDataSO weaponData;
@@ -136,31 +139,31 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    // ⭐ [선제적 방어 적용] 새 아이템 집기 전 기존 들고 있던 아이템 가방 자동 복귀!
+    /// <summary>
+    /// 버튼 클릭 시 전리품 가방 출처(DragSource.LootList) 지정을 포함하여 드래그 시작
+    /// </summary>
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Left)
         {
-            // ⭐ 1. 이미 손에 모듈을 들고 있다면 기존 모듈 가방에 먼저 안전 복귀!
             if (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
             {
                 ModuleDragHandler.Instance.CancelDrag();
             }
 
-            // ⭐ 2. 이미 손에 무기를 들고 있다면 기존 무기 가방에 먼저 안전 복귀!
             if (WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging)
             {
                 WeaponDragHandler.Instance.CancelDrag();
             }
 
-            // 3. 그 후 클릭한 새 아이템 집어 올리기!
+            // ⭐ 전리품 가방 출처(DragSource.LootList) 인자 전달
             if (moduleData != null && ModuleDragHandler.Instance != null)
             {
-                ModuleDragHandler.Instance.StartDragModule(moduleData, fromLootList: true);
+                ModuleDragHandler.Instance.StartDragModule(moduleData, DragSource.LootList);
             }
             else if (weaponData != null && WeaponDragHandler.Instance != null)
             {
-                WeaponDragHandler.Instance.StartDragWeapon(weaponData, fromLootList: true);
+                WeaponDragHandler.Instance.StartDragWeapon(weaponData, DragSource.LootList);
             }
         }
     }

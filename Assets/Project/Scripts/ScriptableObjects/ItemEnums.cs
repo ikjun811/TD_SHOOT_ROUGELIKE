@@ -52,3 +52,11 @@ public enum ModuleStatType
     MoveSpeedPercent,    // 이동 속도 % 증가
     SkillCooldownReduce  // 수류탄/스킬 쿨타임 감소 %
 }
+
+// 아이템 드래그 출처 구분
+public enum DragSource
+{
+    LootList,   // 전리품 가방
+    EquipSlot,  // 장착 무기 슬롯
+    VaultSlot   // 금고 보관함 슬롯
+}

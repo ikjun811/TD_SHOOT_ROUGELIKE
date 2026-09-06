@@ -1,12 +1,16 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 정비 UI 상에서 강화모듈의 마우스 드래그, 90도 회전, 그리드 안착을 제어하는 매니저 클래스입니다.
+/// </summary>
 public class ModuleDragHandler : MonoBehaviour
 {
     public static ModuleDragHandler Instance { get; private set; }
 
     [Header("Current Selected Module")]
     public ModuleDataSO selectedModule;
+    public DragSource currentSource = DragSource.LootList; // ⭐ 출처 추적
     public int currentWidth;
     public int currentHeight;
     public bool[] currentShape;
@@ -15,9 +19,10 @@ public class ModuleDragHandler : MonoBehaviour
     [SerializeField] private GameObject dragGhostObject;
 
     private bool isDragging = false;
-    public bool IsDragging => isDragging;
     private GridLayoutGroup ghostGridLayout;
     private RectTransform ghostRectTransform;
+
+    public bool IsDragging => isDragging;
 
     private void Awake()
     {
@@ -26,7 +31,7 @@ public class ModuleDragHandler : MonoBehaviour
 
         if (dragGhostObject != null)
         {
-            ghostRectTransform = dragGhostObject.GetComponent<Rigidbody2D>() != null ? null : dragGhostObject.GetComponent<RectTransform>();
+            ghostRectTransform = dragGhostObject.GetComponent<RectTransform>();
 
             ghostGridLayout = dragGhostObject.GetComponent<GridLayoutGroup>();
             if (ghostGridLayout == null)
@@ -49,33 +54,40 @@ public class ModuleDragHandler : MonoBehaviour
     {
         if (!isDragging || selectedModule == null) return;
 
-        //  마우스 커서 정중앙 밀착 추종
         if (dragGhostObject != null)
         {
             dragGhostObject.transform.position = Input.mousePosition;
         }
 
-        // [R]키 누를 시 제자리 90도 회전
         if (Input.GetKeyDown(KeyCode.R))
         {
             RotateSelectedModule();
         }
 
-        // 우클릭 시 선택 취소
         if (Input.GetMouseButtonDown(1))
         {
             CancelDrag();
         }
     }
 
-    public void StartDragModule(ModuleDataSO module)
+    /// <summary>
+    /// 모듈 드래그 시작 (출처 지정)
+    /// </summary>
+    public void StartDragModule(ModuleDataSO module, DragSource source = DragSource.LootList)
     {
         selectedModule = module;
+        currentSource = source;
         currentWidth = module.width;
         currentHeight = module.height;
         currentShape = (bool[])module.shapeGrid.Clone();
 
         isDragging = true;
+
+        if (currentSource == DragSource.LootList && PlayerInventory.Instance != null)
+        {
+            PlayerInventory.Instance.collectedModules.Remove(module);
+            if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.RefreshLootPanel();
+        }
 
         if (dragGhostObject != null)
         {
@@ -83,7 +95,7 @@ public class ModuleDragHandler : MonoBehaviour
             RebuildGhostShapeVisual();
         }
 
-        Debug.Log($"🧩 [모듈 선택] {module.moduleName} 선택됨 (R키로 제자리 회전)");
+        Debug.Log($"ModuleDragHandler: Selected module {module.moduleName} from {source}.");
     }
 
     private void RotateSelectedModule()
@@ -95,16 +107,12 @@ public class ModuleDragHandler : MonoBehaviour
         currentHeight = newH;
 
         RebuildGhostShapeVisual();
-
-        Debug.Log($"🔄 [모듈 회전] 새로운 크기: {currentWidth}x{currentHeight}");
     }
 
-    //  도형 정중앙(Center) 피벗 고정 연산
     private void RebuildGhostShapeVisual()
     {
         if (dragGhostObject == null) return;
 
-        // 고스트 피벗을 도형 정중앙(0.5, 0.5)으로 설정하여 마우스가 모듈 정중앙을 잡도록 변경
         if (ghostRectTransform == null) ghostRectTransform = dragGhostObject.GetComponent<RectTransform>();
         if (ghostRectTransform != null)
         {
@@ -118,7 +126,7 @@ public class ModuleDragHandler : MonoBehaviour
 
         if (ghostGridLayout != null)
         {
-            ghostGridLayout.childAlignment = TextAnchor.MiddleCenter; // 정중앙 정렬
+            ghostGridLayout.childAlignment = TextAnchor.MiddleCenter;
             ghostGridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             ghostGridLayout.constraintCount = currentWidth;
         }
@@ -144,40 +152,10 @@ public class ModuleDragHandler : MonoBehaviour
                 }
                 else
                 {
-                    img.color = new Color(0, 0, 0, 0); // 빈 공간 투명
+                    img.color = new Color(0, 0, 0, 0);
                 }
             }
         }
-    }
-
-    //  타일 클릭 시 도형 중앙 기준으로 안착 좌표 자동 보정 연산
-    [HideInInspector] public bool isFromLootList = false; // 가방 출처 여부 플래그
-
-    // 집어 올릴 때 가방 출처 여부를 받음
-    public void StartDragModule(ModuleDataSO module, bool fromLootList = false)
-    {
-        selectedModule = module;
-        isFromLootList = fromLootList; // 출처 저장
-        currentWidth = module.width;
-        currentHeight = module.height;
-        currentShape = (bool[])module.shapeGrid.Clone();
-
-        isDragging = true;
-
-        // ⭐ 가방에서 집어 올린 경우에만 그 순간 가방에서 1개 제거!
-        if (isFromLootList && PlayerInventory.Instance != null)
-        {
-            PlayerInventory.Instance.collectedModules.Remove(module);
-            if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.RefreshLootPanel();
-        }
-
-        if (dragGhostObject != null)
-        {
-            dragGhostObject.SetActive(true);
-            RebuildGhostShapeVisual();
-        }
-
-        Debug.Log($"🧩 [모듈 선택] {module.moduleName} 선택됨 (가방 출처: {isFromLootList})");
     }
 
     public bool TryPlaceOnGrid(int clickedX, int clickedY)
@@ -198,7 +176,6 @@ public class ModuleDragHandler : MonoBehaviour
 
         if (success)
         {
-            // ⭐ 더 이상 가방에서 Remove() 하지 않음! (이미 집어 올릴 때 처리했으므로)
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
@@ -216,26 +193,49 @@ public class ModuleDragHandler : MonoBehaviour
         return false;
     }
 
-    // 드래그 취소 및 가방으로 모듈 복귀 (증발 차단)
+    /// <summary>
+    /// 드래그 취소 시 출처에 따른 복귀 처리 (금고 출처는 금고 보존 ⭐)
+    /// </summary>
     public void CancelDrag()
     {
-        if (selectedModule != null && PlayerInventory.Instance != null)
+        if (selectedModule != null)
         {
- 
-            PlayerInventory.Instance.collectedModules.Add(selectedModule);
+            if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
+            {
+                bool restoredToVault = false;
+                foreach (var slot in MaintenanceManager.Instance.vaultSlots)
+                {
+                    if (slot.IsEmpty)
+                    {
+                        slot.module = selectedModule;
+                        restoredToVault = true;
+                        break;
+                    }
+                }
+
+                if (!restoredToVault && PlayerInventory.Instance != null)
+                {
+                    PlayerInventory.Instance.collectedModules.Add(selectedModule);
+                }
+            }
+            else if (PlayerInventory.Instance != null)
+            {
+                PlayerInventory.Instance.collectedModules.Add(selectedModule);
+            }
 
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
+                MaintenanceUI.Instance.RefreshEquipAndVaultUI();
             }
 
-            Debug.Log($"❌ [모듈 가방 복귀] {selectedModule.moduleName} 모듈이 가방으로 안전하게 복귀했습니다.");
+            Debug.Log($"ModuleDragHandler: Returned module {selectedModule.moduleName} to source.");
         }
 
         EndDrag();
     }
 
-    private void EndDrag()
+    public void EndDrag()
     {
         isDragging = false;
         selectedModule = null;

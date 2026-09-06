@@ -11,7 +11,7 @@ public class WeaponDragHandler : MonoBehaviour
 
     [Header("Current Selected Weapon")]
     public WeaponDataSO selectedWeapon;
-    public bool isFromLootList = false;
+    public DragSource currentSource = DragSource.LootList; // ⭐ 출처 추적
     public bool IsDragging => isDragging;
 
     [Header("Drag Ghost UI")]
@@ -50,15 +50,15 @@ public class WeaponDragHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 전리품 가방 또는 장착 슬롯에서 무기 드래그 시작
+    /// 무기 드래그 시작 (출처 지정)
     /// </summary>
-    public void StartDragWeapon(WeaponDataSO weapon, bool fromLootList = false)
+    public void StartDragWeapon(WeaponDataSO weapon, DragSource source = DragSource.LootList)
     {
         selectedWeapon = weapon;
-        isFromLootList = fromLootList;
+        currentSource = source;
         isDragging = true;
 
-        if (isFromLootList && PlayerInventory.Instance != null)
+        if (currentSource == DragSource.LootList && PlayerInventory.Instance != null)
         {
             PlayerInventory.Instance.collectedWeapons.Remove(weapon);
             if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.RefreshLootPanel();
@@ -72,11 +72,11 @@ public class WeaponDragHandler : MonoBehaviour
             if (ghostNameText != null) ghostNameText.text = weapon.weaponName;
         }
 
-        Debug.Log($"WeaponDragHandler: Selected weapon {weapon.weaponName}.");
+        Debug.Log($"WeaponDragHandler: Selected weapon {weapon.weaponName} from {source}.");
     }
 
     /// <summary>
-    /// 장착 무기 슬롯에 무기 드롭 처리 (스왑 지원)
+    /// 장착 무기 슬롯에 무기 드롭 처리
     /// </summary>
     public void DropOnWeaponSlot(int slotIndex)
     {
@@ -89,7 +89,7 @@ public class WeaponDragHandler : MonoBehaviour
 
         if (oldWeapon != null)
         {
-            StartDragWeapon(oldWeapon, false);
+            StartDragWeapon(oldWeapon, DragSource.EquipSlot);
         }
         else
         {
@@ -104,7 +104,7 @@ public class WeaponDragHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 금고 슬롯에 무기 드롭 처리 (개편된 금고 3슬롯 구조 반영)
+    /// 금고 슬롯에 무기 드롭 처리
     /// </summary>
     public void DropOnVaultSlot(int vaultIndex = 0)
     {
@@ -119,19 +119,16 @@ public class WeaponDragHandler : MonoBehaviour
             slotData.weapon = selectedWeapon;
             slotData.module = null;
 
+            EndDrag();
+
             if (oldWeapon != null)
             {
-                StartDragWeapon(oldWeapon, false);
+                StartDragWeapon(oldWeapon, DragSource.VaultSlot);
             }
             else if (oldModule != null)
             {
-                EndDrag();
                 if (ModuleDragHandler.Instance != null)
-                    ModuleDragHandler.Instance.StartDragModule(oldModule, false);
-            }
-            else
-            {
-                EndDrag();
+                    ModuleDragHandler.Instance.StartDragModule(oldModule, DragSource.VaultSlot);
             }
 
             if (MaintenanceUI.Instance != null)
@@ -143,26 +140,47 @@ public class WeaponDragHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 드래그 취소 시 전리품 가방으로 무기 안전 복귀
+    /// 드래그 취소 시 출처에 따른 복귀 처리 (금고 출처는 금고 보존 ⭐)
     /// </summary>
     public void CancelDrag()
     {
-        if (selectedWeapon != null && PlayerInventory.Instance != null)
+        if (selectedWeapon != null)
         {
-            PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon);
+            // 금고 출처인 경우 금고 빈 슬롯에 우선 복귀 시도
+            if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
+            {
+                bool restoredToVault = false;
+                foreach (var slot in MaintenanceManager.Instance.vaultSlots)
+                {
+                    if (slot.IsEmpty)
+                    {
+                        slot.weapon = selectedWeapon;
+                        restoredToVault = true;
+                        break;
+                    }
+                }
+
+                if (!restoredToVault && PlayerInventory.Instance != null)
+                {
+                    PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon);
+                }
+            }
+            else if (PlayerInventory.Instance != null)
+            {
+                PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon);
+            }
 
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
+                MaintenanceUI.Instance.RefreshEquipAndVaultUI();
             }
-
-            Debug.Log($"WeaponDragHandler: Returned weapon {selectedWeapon.weaponName} to loot list.");
         }
 
         EndDrag();
     }
 
-    private void EndDrag()
+    public void EndDrag()
     {
         isDragging = false;
         selectedWeapon = null;
