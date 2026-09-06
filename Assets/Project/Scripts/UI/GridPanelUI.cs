@@ -11,7 +11,7 @@ public class GridPanelUI : MonoBehaviour
     [SerializeField] private Transform gridSlotParent;
 
     private Image[,] slotImages;
-    private Color defaultSlotColor = Color.white; // 원본 슬롯 색상 보존용
+    private Color defaultSlotColor = new Color(0.18f, 0.18f, 0.22f, 0.95f); // 깔끔한 회색톤 바닥
 
     private void Awake()
     {
@@ -57,7 +57,6 @@ public class GridPanelUI : MonoBehaviour
                 Image slotImg = slot.GetComponent<Image>();
                 slotImages[x, y] = slotImg;
 
-                // 원본 슬롯 인스펙터 색상 보존
                 if (x == 0 && y == 0 && slotImg != null)
                 {
                     defaultSlotColor = slotImg.color;
@@ -68,7 +67,7 @@ public class GridPanelUI : MonoBehaviour
         RefreshGridVisuals();
     }
 
-    // 마우스 드래그 미리보기 하이라이트 (초록/빨강)
+    // 마우스 미리보기 하이라이트 (초록/빨강)
     public void HighlightPlacementPreview(int hoverX, int hoverY, int shapeW, int shapeH, bool[] shape)
     {
         RefreshGridVisuals();
@@ -79,7 +78,7 @@ public class GridPanelUI : MonoBehaviour
         int startY = hoverY - (shapeH / 2);
 
         bool canPlace = GridInventorySystem.Instance.CanPlaceModule(startX, startY, shapeW, shapeH, shape);
-        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.8f) : new Color(1f, 0.2f, 0.2f, 0.8f);
+        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.85f) : new Color(1f, 0.2f, 0.2f, 0.85f);
 
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
@@ -104,7 +103,7 @@ public class GridPanelUI : MonoBehaviour
         }
     }
 
-    // ⭐ [깔끔 처리] 바닥 슬롯 디자인은 그대로 유지하고, 장착된 모듈 구역만 레어도 색상으로 채움!
+    // ⭐ [고대비 흰색 테두리 적용]
     public void RefreshGridVisuals()
     {
         if (slotImages == null || GridInventorySystem.Instance == null) return;
@@ -112,7 +111,7 @@ public class GridPanelUI : MonoBehaviour
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
 
-        // 1. 바닥 타일은 인스펙터에 지정하신 원래 슬롯 색상/디자인으로 100% 복원!
+        // 1. 바닥 타일 원본 회색톤으로 복원
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -127,7 +126,7 @@ public class GridPanelUI : MonoBehaviour
             }
         }
 
-        // 2. 안착된 모듈 영역 타일만 레어도 색상으로 채움
+        // 2. 안착된 각 모듈별 고대비 외곽선 및 색상 적용
         foreach (var placed in GridInventorySystem.Instance.placedModules)
         {
             Color rarityColor = GetRarityColor(placed.moduleData.rarity);
@@ -147,13 +146,41 @@ public class GridPanelUI : MonoBehaviour
                             Image tileImg = slotImages[gridX, gridY];
                             if (tileImg != null)
                             {
-                                tileImg.color = rarityColor; // 레어도 색상 할당
+                                tileImg.color = rarityColor;
+
+                                // ⭐ 이 타일이 모듈의 '외곽 둘레 타일'인지 검사
+                                bool isOuterBorder = IsTileOnModuleOuterBorder(placed, c, r);
+
+                                if (isOuterBorder)
+                                {
+                                    Outline outline = tileImg.GetComponent<Outline>();
+                                    if (outline == null) outline = tileImg.gameObject.AddComponent<Outline>();
+
+                                    // ⭐ [고대비 핵심] 쨍하고 선명한 밝은 흰색/골드 테두리선 부여!
+                                    outline.enabled = true;
+                                    outline.effectColor = new Color(1f, 1f, 1f, 0.95f); // 100% 쨍한 흰색 선
+                                    outline.effectDistance = new Vector2(3f, -3f);     // 3px 선명한 두께
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    // 타일이 모듈의 외곽 둘레인지 검사하는 연산
+    private bool IsTileOnModuleOuterBorder(GridInventorySystem.PlacedModule pm, int col, int row)
+    {
+        int w = pm.currentWidth;
+        int h = pm.currentHeight;
+
+        bool hasTop = (row > 0) && pm.currentShape[(row - 1) * w + col];
+        bool hasBottom = (row < h - 1) && pm.currentShape[(row + 1) * w + col];
+        bool hasLeft = (col > 0) && pm.currentShape[row * w + (col - 1)];
+        bool hasRight = (col < w - 1) && pm.currentShape[row * w + (col + 1)];
+
+        return !(hasTop && hasBottom && hasLeft && hasRight);
     }
 
     private Color GetRarityColor(RarityType rarity)

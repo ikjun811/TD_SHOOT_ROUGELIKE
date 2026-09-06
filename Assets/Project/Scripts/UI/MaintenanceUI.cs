@@ -9,8 +9,8 @@ public class MaintenanceUI : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject maintenancePanel;
-    [SerializeField] private Transform lootContainer;
-    [SerializeField] private GameObject lootItemButtonPrefab;
+    [SerializeField] private Transform lootContainer;          // 전리품 메인 가방 패널
+    [SerializeField] private GameObject lootItemButtonPrefab;  // 기본 버튼 프리팹
 
     [Header("Equipped & Vault Slots")]
     [SerializeField] private TextMeshProUGUI weapon1Text;
@@ -43,9 +43,9 @@ public class MaintenanceUI : MonoBehaviour
         RefreshEquipAndVaultUI();
     }
 
+    // ⭐ [완벽 분리] 무기 영역(가로 와이드) + 모듈 영역(정사각형 그리드)
     public void RefreshLootPanel()
     {
-        // ⭐ [안전망 2] 패널이 새로 그려질 때 멈춰있던 툴팁 강제 숨김
         if (ItemTooltipUI.Instance != null)
         {
             ItemTooltipUI.Instance.HideTooltip();
@@ -53,106 +53,125 @@ public class MaintenanceUI : MonoBehaviour
 
         if (lootContainer == null) return;
 
-        foreach (Transform child in lootContainer)
+        // 1. 무기 전용 서브 컨테이너 & 모듈 전용 서브 컨테이너 자동 생성/찾기 ⭐
+        Transform weaponSection = lootContainer.Find("WeaponSection");
+        Transform moduleSection = lootContainer.Find("ModuleSection");
+
+        if (weaponSection == null)
         {
-            Destroy(child.gameObject);
+            GameObject wObj = new GameObject("WeaponSection", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            wObj.transform.SetParent(lootContainer, false);
+            weaponSection = wObj.transform;
+
+            VerticalLayoutGroup vlg = wObj.GetComponent<VerticalLayoutGroup>();
+            vlg.spacing = 8;
+            vlg.childControlWidth = true;
+            vlg.childForceExpandWidth = true;
         }
+
+        if (moduleSection == null)
+        {
+            GameObject mObj = new GameObject("ModuleSection", typeof(RectTransform), typeof(GridLayoutGroup));
+            mObj.transform.SetParent(lootContainer, false);
+            moduleSection = mObj.transform;
+
+            GridLayoutGroup glg = mObj.GetComponent<GridLayoutGroup>();
+            glg.cellSize = new Vector2(80f, 80f); // 모듈용 80x80 정사각형! ⭐
+            glg.spacing = new Vector2(8f, 8f);
+            glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            glg.constraintCount = 3; // 가로 3개씩 차곡차곡 정렬
+        }
+
+        // 기존 자식 아이콘 청소
+        foreach (Transform child in weaponSection) Destroy(child.gameObject);
+        foreach (Transform child in moduleSection) Destroy(child.gameObject);
 
         if (PlayerInventory.Instance == null) return;
 
+        // 2. 무기류 ➔ WeaponSection 생성 (가로 길쭉한 일러스트 배너)
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
             if (weapon != null)
-                CreateLootButton(weapon, null);
+                CreateWeaponBannerButton(weapon, weaponSection);
         }
 
+        // 3. 강화모듈류 ➔ ModuleSection 생성 (정사각형 80x80 미니 그리드 타일)
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
             if (module != null)
-                CreateLootButton(null, module);
+                CreateModuleSquareButton(module, moduleSection);
         }
     }
 
-    private void CreateLootButton(WeaponDataSO weapon, ModuleDataSO module)
+    // 무기용 와이드 배너 버튼 생성 (260 x 55)
+    private void CreateWeaponBannerButton(WeaponDataSO weapon, Transform parent)
     {
-        if (lootItemButtonPrefab == null || lootContainer == null) return;
+        if (lootItemButtonPrefab == null || parent == null) return;
 
-        GameObject btnObj = Instantiate(lootItemButtonPrefab, lootContainer);
+        GameObject btnObj = Instantiate(lootItemButtonPrefab, parent);
+        RectTransform rect = btnObj.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.sizeDelta = new Vector2(260f, 55f); // 가로 길쭉한 무기 배너 크기
+        }
+
         Image bgImage = btnObj.GetComponent<Image>();
         TextMeshProUGUI nameText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
 
         LootItemButtonUI hoverUI = btnObj.GetComponent<LootItemButtonUI>();
         if (hoverUI == null) hoverUI = btnObj.AddComponent<LootItemButtonUI>();
 
-        if (weapon != null)
+        if (bgImage != null) bgImage.color = weapon.GetRarityColor();
+        if (nameText != null)
         {
-            if (bgImage != null) bgImage.color = weapon.GetRarityColor();
-            if (nameText != null) nameText.text = weapon.weaponName;
-            hoverUI.Setup(weapon);
+            nameText.text = $"[{weapon.weaponType}] {weapon.weaponName}";
+            nameText.fontSize = 13;
+            nameText.alignment = TextAlignmentOptions.Left; // 좌측 정렬
         }
-        else if (module != null)
-        {
-            Color rarityColor = GetRarityColor(module.rarity);
-            if (bgImage != null) bgImage.color = rarityColor;
-            if (nameText != null) nameText.text = module.moduleName;
-            hoverUI.Setup(module);
-        }
+
+        hoverUI.Setup(weapon);
     }
 
-    // ⭐ 가방에서 무기를 클릭했을 때 장착 처리
-    public void OnClickWeaponFromLoot(WeaponDataSO weapon)
+    // 모듈용 정사각형 버튼 생성 (80 x 80)
+    private void CreateModuleSquareButton(ModuleDataSO module, Transform parent)
     {
-        if (PlayerInventory.Instance == null) return;
+        if (lootItemButtonPrefab == null || parent == null) return;
 
-        // 빈 슬롯 1번 ➔ 슬롯 2번 순서로 장착 시도
-        if (PlayerInventory.Instance.equippedWeapons[0] == null)
+        GameObject btnObj = Instantiate(lootItemButtonPrefab, parent);
+        RectTransform rect = btnObj.GetComponent<RectTransform>();
+        if (rect != null)
         {
-            PlayerInventory.Instance.equippedWeapons[0] = weapon;
-            PlayerInventory.Instance.collectedWeapons.Remove(weapon);
-            Debug.Log($"⚔️ [무기 장착] 슬롯 1번에 {weapon.weaponName} 장착 완료!");
-        }
-        else if (PlayerInventory.Instance.equippedWeapons[1] == null)
-        {
-            PlayerInventory.Instance.equippedWeapons[1] = weapon;
-            PlayerInventory.Instance.collectedWeapons.Remove(weapon);
-            Debug.Log($"⚔️ [무기 장착] 슬롯 2번에 {weapon.weaponName} 장착 완료!");
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ [무기 장착 실패] 이미 무기 슬롯 2개가 가득 찼습니다! 기존 무기를 해제하세요.");
+            rect.sizeDelta = new Vector2(80f, 80f); // 80x80 정사각형 크기 고정! ⭐
         }
 
-        RefreshLootPanel();
-        RefreshEquipAndVaultUI();
+        Image bgImage = btnObj.GetComponent<Image>();
+        TextMeshProUGUI nameText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+
+        LootItemButtonUI hoverUI = btnObj.GetComponent<LootItemButtonUI>();
+        if (hoverUI == null) hoverUI = btnObj.AddComponent<LootItemButtonUI>();
+
+        Color rarityColor = GetRarityColor(module.rarity);
+        if (bgImage != null) bgImage.color = rarityColor;
+        if (nameText != null) nameText.text = module.moduleName;
+
+        hoverUI.Setup(module);
     }
 
-    // ⭐ 장착 무기 슬롯 1번 클릭 시 해제
-    public void OnClickUnequipWeapon1()
+    public void OnClickStartNextRound()
     {
-        if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons[0] != null)
+        if (ItemTooltipUI.Instance != null)
         {
-            var unequipped = PlayerInventory.Instance.equippedWeapons[0];
-            PlayerInventory.Instance.equippedWeapons[0] = null;
-            PlayerInventory.Instance.collectedWeapons.Add(unequipped);
-
-            Debug.Log($"⚔️ [무기 해제] 슬롯 1번 {unequipped.weaponName} 해제됨.");
-            RefreshLootPanel();
-            RefreshEquipAndVaultUI();
+            ItemTooltipUI.Instance.HideTooltip();
         }
-    }
 
-    // ⭐ 장착 무기 슬롯 2번 클릭 시 해제
-    public void OnClickUnequipWeapon2()
-    {
-        if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons[1] != null)
+        if (maintenancePanel != null)
         {
-            var unequipped = PlayerInventory.Instance.equippedWeapons[1];
-            PlayerInventory.Instance.equippedWeapons[1] = null;
-            PlayerInventory.Instance.collectedWeapons.Add(unequipped);
+            maintenancePanel.SetActive(false);
+        }
 
-            Debug.Log($"⚔️ [무기 해제] 슬롯 2번 {unequipped.weaponName} 해제됨.");
-            RefreshLootPanel();
-            RefreshEquipAndVaultUI();
+        if (MaintenanceManager.Instance != null)
+        {
+            MaintenanceManager.Instance.CompleteMaintenanceAndStartNextRound();
         }
     }
 
@@ -180,25 +199,6 @@ public class MaintenanceUI : MonoBehaviour
             int maxCap = MaintenanceManager.Instance.maxVaultCapacity;
 
             vaultStatusText.text = $"보관함(Vault): {vaultWeaponCount + vaultModuleCount} / {maxCap}";
-        }
-    }
-
-    public void OnClickStartNextRound()
-    {
-        // ⭐ [안전망 3] 다음 라운드 시작 시 툴팁 무조건 숨김
-        if (ItemTooltipUI.Instance != null)
-        {
-            ItemTooltipUI.Instance.HideTooltip();
-        }
-
-        if (maintenancePanel != null)
-        {
-            maintenancePanel.SetActive(false);
-        }
-
-        if (MaintenanceManager.Instance != null)
-        {
-            MaintenanceManager.Instance.CompleteMaintenanceAndStartNextRound();
         }
     }
 
