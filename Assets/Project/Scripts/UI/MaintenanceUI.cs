@@ -9,8 +9,8 @@ public class MaintenanceUI : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject maintenancePanel;
-    [SerializeField] private Transform lootContainer;          // 전리품 메인 가방 패널
-    [SerializeField] private GameObject lootItemButtonPrefab;  // 기본 버튼 프리팹
+    [SerializeField] private Transform lootContainer;          // Content 오브젝트 연결 ⭐
+    [SerializeField] private GameObject lootItemButtonPrefab;
 
     [Header("Equipped & Vault Slots")]
     [SerializeField] private TextMeshProUGUI weapon1Text;
@@ -43,7 +43,7 @@ public class MaintenanceUI : MonoBehaviour
         RefreshEquipAndVaultUI();
     }
 
-    // ⭐ [완벽 분리] 무기 영역(가로 와이드) + 모듈 영역(정사각형 그리드)
+    // ⭐ [완벽 해결] 즉시 강제 레이아웃 재계산(LayoutRebuilder)으로 쏠림/겹침 100% 원천 차단!
     public void RefreshLootPanel()
     {
         if (ItemTooltipUI.Instance != null)
@@ -53,57 +53,88 @@ public class MaintenanceUI : MonoBehaviour
 
         if (lootContainer == null) return;
 
-        // 1. 무기 전용 서브 컨테이너 & 모듈 전용 서브 컨테이너 자동 생성/찾기 ⭐
+        // 1. Content 내부 서브 컨테이너 (무기 / 모듈) 찾기 또는 생성
         Transform weaponSection = lootContainer.Find("WeaponSection");
         Transform moduleSection = lootContainer.Find("ModuleSection");
 
         if (weaponSection == null)
         {
-            GameObject wObj = new GameObject("WeaponSection", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            GameObject wObj = new GameObject("WeaponSection", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
             wObj.transform.SetParent(lootContainer, false);
             weaponSection = wObj.transform;
 
+            RectTransform wRect = wObj.GetComponent<RectTransform>();
+            wRect.anchorMin = new Vector2(0f, 1f);
+            wRect.anchorMax = new Vector2(1f, 1f);
+            wRect.pivot = new Vector2(0.5f, 1f);
+            wRect.anchoredPosition = Vector2.zero;
+
             VerticalLayoutGroup vlg = wObj.GetComponent<VerticalLayoutGroup>();
-            vlg.spacing = 8;
+            vlg.spacing = 6f;
             vlg.childControlWidth = true;
             vlg.childForceExpandWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandHeight = false;
+
+            ContentSizeFitter csf = wObj.GetComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
         if (moduleSection == null)
         {
-            GameObject mObj = new GameObject("ModuleSection", typeof(RectTransform), typeof(GridLayoutGroup));
+            GameObject mObj = new GameObject("ModuleSection", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
             mObj.transform.SetParent(lootContainer, false);
             moduleSection = mObj.transform;
 
+            RectTransform mRect = mObj.GetComponent<RectTransform>();
+            mRect.anchorMin = new Vector2(0f, 1f);
+            mRect.anchorMax = new Vector2(1f, 1f);
+            mRect.pivot = new Vector2(0.5f, 1f);
+            mRect.anchoredPosition = Vector2.zero;
+
             GridLayoutGroup glg = mObj.GetComponent<GridLayoutGroup>();
-            glg.cellSize = new Vector2(80f, 80f); // 모듈용 80x80 정사각형! ⭐
-            glg.spacing = new Vector2(8f, 8f);
+            glg.cellSize = new Vector2(80f, 80f);
+            glg.spacing = new Vector2(6f, 6f);
             glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            glg.constraintCount = 3; // 가로 3개씩 차곡차곡 정렬
+            glg.constraintCount = 3;
+
+            ContentSizeFitter csf = mObj.GetComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        // 기존 자식 아이콘 청소
-        foreach (Transform child in weaponSection) Destroy(child.gameObject);
-        foreach (Transform child in moduleSection) Destroy(child.gameObject);
+        // 기존 자식 청소 (DestroyImmediate 사용으로 즉시 삭제 ⭐)
+        for (int i = weaponSection.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(weaponSection.GetChild(i).gameObject);
+        }
+        for (int i = moduleSection.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(moduleSection.GetChild(i).gameObject);
+        }
 
         if (PlayerInventory.Instance == null) return;
 
-        // 2. 무기류 ➔ WeaponSection 생성 (가로 길쭉한 일러스트 배너)
+        // 2. 무기류 생성
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
             if (weapon != null)
                 CreateWeaponBannerButton(weapon, weaponSection);
         }
 
-        // 3. 강화모듈류 ➔ ModuleSection 생성 (정사각형 80x80 미니 그리드 타일)
+        // 3. 모듈류 생성
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
             if (module != null)
                 CreateModuleSquareButton(module, moduleSection);
         }
+
+        // ⭐ [핵심 무적 코드] 유니티 UGUI 레이아웃 엔진 강제 즉시 갱신! (1프레임 지연 겹침/쏠림 버그 100% 차단)
+        Canvas.ForceUpdateCanvases();
+        if (weaponSection != null) LayoutRebuilder.ForceRebuildLayoutImmediate(weaponSection.GetComponent<RectTransform>());
+        if (moduleSection != null) LayoutRebuilder.ForceRebuildLayoutImmediate(moduleSection.GetComponent<RectTransform>());
+        if (lootContainer != null) LayoutRebuilder.ForceRebuildLayoutImmediate(lootContainer.GetComponent<RectTransform>());
     }
 
-    // 무기용 와이드 배너 버튼 생성 (260 x 55)
     private void CreateWeaponBannerButton(WeaponDataSO weapon, Transform parent)
     {
         if (lootItemButtonPrefab == null || parent == null) return;
@@ -112,7 +143,7 @@ public class MaintenanceUI : MonoBehaviour
         RectTransform rect = btnObj.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.sizeDelta = new Vector2(260f, 55f); // 가로 길쭉한 무기 배너 크기
+            rect.sizeDelta = new Vector2(260f, 85f);
         }
 
         Image bgImage = btnObj.GetComponent<Image>();
@@ -124,15 +155,14 @@ public class MaintenanceUI : MonoBehaviour
         if (bgImage != null) bgImage.color = weapon.GetRarityColor();
         if (nameText != null)
         {
-            nameText.text = $"[{weapon.weaponType}] {weapon.weaponName}";
-            nameText.fontSize = 13;
-            nameText.alignment = TextAlignmentOptions.Left; // 좌측 정렬
+            nameText.text = $"[{weapon.weaponType}]\n{weapon.weaponName}";
+            nameText.fontSize = 14;
+            nameText.alignment = TextAlignmentOptions.Left;
         }
 
         hoverUI.Setup(weapon);
     }
 
-    // 모듈용 정사각형 버튼 생성 (80 x 80)
     private void CreateModuleSquareButton(ModuleDataSO module, Transform parent)
     {
         if (lootItemButtonPrefab == null || parent == null) return;
@@ -141,7 +171,7 @@ public class MaintenanceUI : MonoBehaviour
         RectTransform rect = btnObj.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.sizeDelta = new Vector2(80f, 80f); // 80x80 정사각형 크기 고정! ⭐
+            rect.sizeDelta = new Vector2(80f, 80f);
         }
 
         Image bgImage = btnObj.GetComponent<Image>();
