@@ -45,6 +45,12 @@ public class MaintenanceUI : MonoBehaviour
 
     public void RefreshLootPanel()
     {
+        // ⭐ [안전망 2] 패널이 새로 그려질 때 멈춰있던 툴팁 강제 숨김
+        if (ItemTooltipUI.Instance != null)
+        {
+            ItemTooltipUI.Instance.HideTooltip();
+        }
+
         if (lootContainer == null) return;
 
         foreach (Transform child in lootContainer)
@@ -54,14 +60,12 @@ public class MaintenanceUI : MonoBehaviour
 
         if (PlayerInventory.Instance == null) return;
 
-        // 1. 주운 무기들 아이콘 생성
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
             if (weapon != null)
                 CreateLootButton(weapon, null);
         }
 
-        // 2. 주운 모듈들 아이콘 생성
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
             if (module != null)
@@ -181,6 +185,12 @@ public class MaintenanceUI : MonoBehaviour
 
     public void OnClickStartNextRound()
     {
+        // ⭐ [안전망 3] 다음 라운드 시작 시 툴팁 무조건 숨김
+        if (ItemTooltipUI.Instance != null)
+        {
+            ItemTooltipUI.Instance.HideTooltip();
+        }
+
         if (maintenancePanel != null)
         {
             maintenancePanel.SetActive(false);
