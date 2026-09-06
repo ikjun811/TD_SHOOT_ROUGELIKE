@@ -3,19 +3,24 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// 정비 단계 UI 메인 제어 클래스입니다.
+/// </summary>
 public class MaintenanceUI : MonoBehaviour
 {
     public static MaintenanceUI Instance { get; private set; }
 
     [Header("UI Panels")]
     [SerializeField] private GameObject maintenancePanel;
-    [SerializeField] private Transform lootContainer;          // Content 오브젝트 연결 ⭐
+    [SerializeField] private Transform lootContainer;          // Content 오브젝트
     [SerializeField] private GameObject lootItemButtonPrefab;
 
-    [Header("Equipped & Vault Slots")]
+    [Header("Equipped Weapon Slots")]
     [SerializeField] private TextMeshProUGUI weapon1Text;
     [SerializeField] private TextMeshProUGUI weapon2Text;
-    [SerializeField] private TextMeshProUGUI vaultStatusText;
+
+    [Header("Vault Slots (시각적 금고 슬롯 3개 연결)")]
+    [SerializeField] private VaultSlotUI[] vaultSlotUIArray = new VaultSlotUI[3];
 
     private void Awake()
     {
@@ -36,14 +41,13 @@ public class MaintenanceUI : MonoBehaviour
         if (maintenancePanel != null)
         {
             maintenancePanel.SetActive(true);
-            Debug.Log("🛠️ [MaintenanceUI] 정비 UI 패널이 활성화되었습니다!");
+            Debug.Log("MaintenanceUI: Opened.");
         }
 
         RefreshLootPanel();
         RefreshEquipAndVaultUI();
     }
 
-    // ⭐ [완벽 해결] 즉시 강제 레이아웃 재계산(LayoutRebuilder)으로 쏠림/겹침 100% 원천 차단!
     public void RefreshLootPanel()
     {
         if (ItemTooltipUI.Instance != null)
@@ -53,7 +57,6 @@ public class MaintenanceUI : MonoBehaviour
 
         if (lootContainer == null) return;
 
-        // 1. Content 내부 서브 컨테이너 (무기 / 모듈) 찾기 또는 생성
         Transform weaponSection = lootContainer.Find("WeaponSection");
         Transform moduleSection = lootContainer.Find("ModuleSection");
 
@@ -102,7 +105,6 @@ public class MaintenanceUI : MonoBehaviour
             csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        // 기존 자식 청소 (DestroyImmediate 사용으로 즉시 삭제 ⭐)
         for (int i = weaponSection.childCount - 1; i >= 0; i--)
         {
             DestroyImmediate(weaponSection.GetChild(i).gameObject);
@@ -114,21 +116,18 @@ public class MaintenanceUI : MonoBehaviour
 
         if (PlayerInventory.Instance == null) return;
 
-        // 2. 무기류 생성
         foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
         {
             if (weapon != null)
                 CreateWeaponBannerButton(weapon, weaponSection);
         }
 
-        // 3. 모듈류 생성
         foreach (var module in PlayerInventory.Instance.collectedModules)
         {
             if (module != null)
                 CreateModuleSquareButton(module, moduleSection);
         }
 
-        // ⭐ [핵심 무적 코드] 유니티 UGUI 레이아웃 엔진 강제 즉시 갱신! (1프레임 지연 겹침/쏠림 버그 100% 차단)
         Canvas.ForceUpdateCanvases();
         if (weaponSection != null) LayoutRebuilder.ForceRebuildLayoutImmediate(weaponSection.GetComponent<RectTransform>());
         if (moduleSection != null) LayoutRebuilder.ForceRebuildLayoutImmediate(moduleSection.GetComponent<RectTransform>());
@@ -205,6 +204,9 @@ public class MaintenanceUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 장착 무기 슬롯 및 시각적 금고 슬롯 UI 갱신
+    /// </summary>
     public void RefreshEquipAndVaultUI()
     {
         if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons != null)
@@ -222,13 +224,13 @@ public class MaintenanceUI : MonoBehaviour
             }
         }
 
-        if (MaintenanceManager.Instance != null && vaultStatusText != null)
+        // 금고 시각적 3개 슬롯 UI 시각화 갱신
+        for (int i = 0; i < vaultSlotUIArray.Length; i++)
         {
-            int vaultWeaponCount = MaintenanceManager.Instance.vaultWeapons != null ? MaintenanceManager.Instance.vaultWeapons.Count : 0;
-            int vaultModuleCount = MaintenanceManager.Instance.vaultModules != null ? MaintenanceManager.Instance.vaultModules.Count : 0;
-            int maxCap = MaintenanceManager.Instance.maxVaultCapacity;
-
-            vaultStatusText.text = $"보관함(Vault): {vaultWeaponCount + vaultModuleCount} / {maxCap}";
+            if (vaultSlotUIArray[i] != null)
+            {
+                vaultSlotUIArray[i].RefreshSlotVisual();
+            }
         }
     }
 

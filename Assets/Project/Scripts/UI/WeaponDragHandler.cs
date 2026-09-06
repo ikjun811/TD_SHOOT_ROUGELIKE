@@ -2,13 +2,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// 정비 UI 상에서 무기 아이템의 마우스 드래그, 장착 슬롯 스왑, 금고 슬롯 배치를 제어하는 매니저 클래스입니다.
+/// </summary>
 public class WeaponDragHandler : MonoBehaviour
 {
     public static WeaponDragHandler Instance { get; private set; }
 
     [Header("Current Selected Weapon")]
     public WeaponDataSO selectedWeapon;
-    public bool isFromLootList = false; // ⭐ 가방 출처 여부 플래그
+    public bool isFromLootList = false;
     public bool IsDragging => isDragging;
 
     [Header("Drag Ghost UI")]
@@ -46,14 +49,15 @@ public class WeaponDragHandler : MonoBehaviour
         }
     }
 
-    // ⭐ 가방 또는 슬롯에서 무기 들어 올리기 (fromLootList 플래그 처리)
+    /// <summary>
+    /// 전리품 가방 또는 장착 슬롯에서 무기 드래그 시작
+    /// </summary>
     public void StartDragWeapon(WeaponDataSO weapon, bool fromLootList = false)
     {
         selectedWeapon = weapon;
         isFromLootList = fromLootList;
         isDragging = true;
 
-        // ⭐ 가방에서 집어 올린 경우 그 순간 가방 리스트에서 즉시 제거!
         if (isFromLootList && PlayerInventory.Instance != null)
         {
             PlayerInventory.Instance.collectedWeapons.Remove(weapon);
@@ -68,10 +72,12 @@ public class WeaponDragHandler : MonoBehaviour
             if (ghostNameText != null) ghostNameText.text = weapon.weaponName;
         }
 
-        Debug.Log($"⚔️ [무기 선택] {weapon.weaponName} 손에 쥠 (가방 출처: {isFromLootList})");
+        Debug.Log($"WeaponDragHandler: Selected weapon {weapon.weaponName}.");
     }
 
-    // 슬롯에 무기 드롭 (스왑 지원)
+    /// <summary>
+    /// 장착 무기 슬롯에 무기 드롭 처리 (스왑 지원)
+    /// </summary>
     public void DropOnWeaponSlot(int slotIndex)
     {
         if (!isDragging || selectedWeapon == null || PlayerInventory.Instance == null) return;
@@ -79,15 +85,11 @@ public class WeaponDragHandler : MonoBehaviour
         WeaponDataSO newWeapon = selectedWeapon;
         WeaponDataSO oldWeapon = PlayerInventory.Instance.equippedWeapons[slotIndex];
 
-        // 1. 새 무기를 슬롯에 장착
         PlayerInventory.Instance.equippedWeapons[slotIndex] = newWeapon;
-        Debug.Log($"⚔️ [무기 장착] 슬롯 {slotIndex + 1}번에 {newWeapon.weaponName} 장착 완료!");
 
-        // 2. 만약 기존 슬롯에 무기가 있었다면 그 무기를 마우스 손으로 스왑! (슬롯 출처)
         if (oldWeapon != null)
         {
-            Debug.Log($"🔄 [손 스왑] 기존 무기 {oldWeapon.weaponName} 손으로 집어 올림!");
-            StartDragWeapon(oldWeapon, fromLootList: false);
+            StartDragWeapon(oldWeapon, false);
         }
         else
         {
@@ -101,15 +103,36 @@ public class WeaponDragHandler : MonoBehaviour
         }
     }
 
-    // 금고 슬롯에 무기 드롭
-    public void DropOnVaultSlot()
+    /// <summary>
+    /// 금고 슬롯에 무기 드롭 처리 (개편된 금고 3슬롯 구조 반영)
+    /// </summary>
+    public void DropOnVaultSlot(int vaultIndex = 0)
     {
         if (!isDragging || selectedWeapon == null || MaintenanceManager.Instance == null) return;
 
-        bool success = MaintenanceManager.Instance.TryVaultWeapon(selectedWeapon);
-        if (success)
+        if (vaultIndex >= 0 && vaultIndex < MaintenanceManager.Instance.vaultSlots.Length)
         {
-            EndDrag();
+            var slotData = MaintenanceManager.Instance.vaultSlots[vaultIndex];
+            WeaponDataSO oldWeapon = slotData.weapon;
+            ModuleDataSO oldModule = slotData.module;
+
+            slotData.weapon = selectedWeapon;
+            slotData.module = null;
+
+            if (oldWeapon != null)
+            {
+                StartDragWeapon(oldWeapon, false);
+            }
+            else if (oldModule != null)
+            {
+                EndDrag();
+                if (ModuleDragHandler.Instance != null)
+                    ModuleDragHandler.Instance.StartDragModule(oldModule, false);
+            }
+            else
+            {
+                EndDrag();
+            }
 
             if (MaintenanceUI.Instance != null)
             {
@@ -119,19 +142,21 @@ public class WeaponDragHandler : MonoBehaviour
         }
     }
 
-    // 드래그 취소 (가방으로 복귀)
+    /// <summary>
+    /// 드래그 취소 시 전리품 가방으로 무기 안전 복귀
+    /// </summary>
     public void CancelDrag()
     {
         if (selectedWeapon != null && PlayerInventory.Instance != null)
         {
-            PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon); // 가방에 안전 복귀
+            PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon);
 
             if (MaintenanceUI.Instance != null)
             {
                 MaintenanceUI.Instance.RefreshLootPanel();
             }
 
-            Debug.Log($"❌ [무기 취소] {selectedWeapon.weaponName} 가방으로 복귀.");
+            Debug.Log($"WeaponDragHandler: Returned weapon {selectedWeapon.weaponName} to loot list.");
         }
 
         EndDrag();
