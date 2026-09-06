@@ -11,6 +11,7 @@ public class GridPanelUI : MonoBehaviour
     [SerializeField] private Transform gridSlotParent;
 
     private Image[,] slotImages;
+    private Color defaultSlotColor = Color.white; // 원본 슬롯 색상 보존용
 
     private void Awake()
     {
@@ -32,8 +33,14 @@ public class GridPanelUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        int width = GridInventorySystem.Instance.gridWidth;
-        int height = GridInventorySystem.Instance.gridHeight;
+        GridLayoutGroup gridLayout = gridSlotParent.GetComponent<GridLayoutGroup>();
+        if (gridLayout != null)
+        {
+            gridLayout.spacing = new Vector2(2f, 2f);
+        }
+
+        int width = GridInventorySystem.Instance.gridWidth;   // 8
+        int height = GridInventorySystem.Instance.gridHeight; // 8
         slotImages = new Image[width, height];
 
         for (int y = 0; y < height; y++)
@@ -47,17 +54,24 @@ public class GridPanelUI : MonoBehaviour
                 if (slotUI == null) slotUI = slot.AddComponent<GridSlotUI>();
                 slotUI.SetupCoordinates(x, y);
 
-                slotImages[x, y] = slot.GetComponent<Image>();
+                Image slotImg = slot.GetComponent<Image>();
+                slotImages[x, y] = slotImg;
+
+                // 원본 슬롯 인스펙터 색상 보존
+                if (x == 0 && y == 0 && slotImg != null)
+                {
+                    defaultSlotColor = slotImg.color;
+                }
             }
         }
 
         RefreshGridVisuals();
     }
 
-    // ⭐ 그리드 안착 미리보기 하이라이트 (초록색 / 빨간색)
+    // 마우스 드래그 미리보기 하이라이트 (초록/빨강)
     public void HighlightPlacementPreview(int hoverX, int hoverY, int shapeW, int shapeH, bool[] shape)
     {
-        RefreshGridVisuals(); // 기본 배경 복구 후 하이라이트 덮어씌움
+        RefreshGridVisuals();
 
         if (GridInventorySystem.Instance == null) return;
 
@@ -65,7 +79,7 @@ public class GridPanelUI : MonoBehaviour
         int startY = hoverY - (shapeH / 2);
 
         bool canPlace = GridInventorySystem.Instance.CanPlaceModule(startX, startY, shapeW, shapeH, shape);
-        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.85f) : new Color(1f, 0.2f, 0.2f, 0.85f); // 초록 / 빨강
+        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.8f) : new Color(1f, 0.2f, 0.2f, 0.8f);
 
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
@@ -90,6 +104,7 @@ public class GridPanelUI : MonoBehaviour
         }
     }
 
+    // ⭐ [깔끔 처리] 바닥 슬롯 디자인은 그대로 유지하고, 장착된 모듈 구역만 레어도 색상으로 채움!
     public void RefreshGridVisuals()
     {
         if (slotImages == null || GridInventorySystem.Instance == null) return;
@@ -97,19 +112,25 @@ public class GridPanelUI : MonoBehaviour
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
 
-        Color defaultTileColor = new Color(0.12f, 0.12f, 0.12f, 0.9f);
+        // 1. 바닥 타일은 인스펙터에 지정하신 원래 슬롯 색상/디자인으로 100% 복원!
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
                 if (slotImages[x, y] != null)
-                    slotImages[x, y].color = defaultTileColor;
+                {
+                    slotImages[x, y].color = defaultSlotColor;
+
+                    Outline outline = slotImages[x, y].GetComponent<Outline>();
+                    if (outline != null) outline.enabled = false;
+                }
             }
         }
 
+        // 2. 안착된 모듈 영역 타일만 레어도 색상으로 채움
         foreach (var placed in GridInventorySystem.Instance.placedModules)
         {
-            Color moduleColor = GetRarityColor(placed.moduleData.rarity);
+            Color rarityColor = GetRarityColor(placed.moduleData.rarity);
 
             for (int r = 0; r < placed.currentHeight; r++)
             {
@@ -123,8 +144,11 @@ public class GridPanelUI : MonoBehaviour
 
                         if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
                         {
-                            if (slotImages[gridX, gridY] != null)
-                                slotImages[gridX, gridY].color = moduleColor;
+                            Image tileImg = slotImages[gridX, gridY];
+                            if (tileImg != null)
+                            {
+                                tileImg.color = rarityColor; // 레어도 색상 할당
+                            }
                         }
                     }
                 }
