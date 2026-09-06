@@ -150,14 +150,15 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (eventData.button == PointerEventData.InputButton.Left)
         {
-            // 가방에서 집었다고 fromLootList: true 전달!
+            // 1. 모듈 클릭 시 모듈 드래그 (fromLootList: true)
             if (moduleData != null && ModuleDragHandler.Instance != null)
             {
                 ModuleDragHandler.Instance.StartDragModule(moduleData, fromLootList: true);
             }
+            // 2. 무기 클릭 시 무기 드래그 (fromLootList: true ⭐)
             else if (weaponData != null && WeaponDragHandler.Instance != null)
             {
-                WeaponDragHandler.Instance.StartDragWeapon(weaponData);
+                WeaponDragHandler.Instance.StartDragWeapon(weaponData, fromLootList: true);
             }
         }
     }
