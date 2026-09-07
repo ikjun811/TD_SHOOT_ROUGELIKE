@@ -12,14 +12,16 @@ public class MaintenanceUI : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject maintenancePanel;
-    [SerializeField] private Transform lootContainer;          // Content 오브젝트
+    [SerializeField] private Transform lootContainer;
     [SerializeField] private GameObject lootItemButtonPrefab;
 
-    [Header("Equipped Weapon Slots")]
+    [Header("Equipped Weapon Slots (시각적 배경 및 텍스트)")]
+    [SerializeField] private Image weapon1SlotImage;
     [SerializeField] private TextMeshProUGUI weapon1Text;
+    [SerializeField] private Image weapon2SlotImage;
     [SerializeField] private TextMeshProUGUI weapon2Text;
 
-    [Header("Vault Slots (시각적 금고 슬롯 3개 연결)")]
+    [Header("Vault Slots")]
     [SerializeField] private VaultSlotUI[] vaultSlotUIArray = new VaultSlotUI[3];
 
     private void Awake()
@@ -205,26 +207,56 @@ public class MaintenanceUI : MonoBehaviour
     }
 
     /// <summary>
-    /// 장착 무기 슬롯 및 시각적 금고 슬롯 UI 갱신
+    /// 장착 무기 슬롯 배경색 및 텍스트 시각화 갱신
     /// </summary>
     public void RefreshEquipAndVaultUI()
     {
         if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons != null)
         {
-            if (weapon1Text != null)
+            // 1. 주무기 슬롯 1번 시각화
+            var w1 = PlayerInventory.Instance.equippedWeapons.Length > 0 ? PlayerInventory.Instance.equippedWeapons[0] : null;
+            if (w1 != null)
             {
-                var w1 = PlayerInventory.Instance.equippedWeapons.Length > 0 ? PlayerInventory.Instance.equippedWeapons[0] : null;
-                weapon1Text.text = (w1 != null) ? $"[1] {w1.weaponName}" : "[1] 빈 무기 슬롯";
+                if (weapon1SlotImage != null) weapon1SlotImage.color = w1.GetRarityColor();
+                if (weapon1Text != null)
+                {
+                    weapon1Text.text = $"[{w1.weaponType}]\n{w1.weaponName}";
+                    weapon1Text.color = Color.black;
+                }
+            }
+            else
+            {
+                if (weapon1SlotImage != null) weapon1SlotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
+                if (weapon1Text != null)
+                {
+                    weapon1Text.text = "[1] 빈 무기 슬롯";
+                    weapon1Text.color = Color.gray;
+                }
             }
 
-            if (weapon2Text != null)
+            // 2. 주무기 슬롯 2번 시각화
+            var w2 = PlayerInventory.Instance.equippedWeapons.Length > 1 ? PlayerInventory.Instance.equippedWeapons[1] : null;
+            if (w2 != null)
             {
-                var w2 = PlayerInventory.Instance.equippedWeapons.Length > 1 ? PlayerInventory.Instance.equippedWeapons[1] : null;
-                weapon2Text.text = (w2 != null) ? $"[2] {w2.weaponName}" : "[2] 빈 무기 슬롯";
+                if (weapon2SlotImage != null) weapon2SlotImage.color = w2.GetRarityColor();
+                if (weapon2Text != null)
+                {
+                    weapon2Text.text = $"[{w2.weaponType}]\n{w2.weaponName}";
+                    weapon2Text.color = Color.black;
+                }
+            }
+            else
+            {
+                if (weapon2SlotImage != null) weapon2SlotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
+                if (weapon2Text != null)
+                {
+                    weapon2Text.text = "[2] 빈 무기 슬롯";
+                    weapon2Text.color = Color.gray;
+                }
             }
         }
 
-        // 금고 시각적 3개 슬롯 UI 시각화 갱신
+        // 금고 슬롯 시각화
         for (int i = 0; i < vaultSlotUIArray.Length; i++)
         {
             if (vaultSlotUIArray[i] != null)

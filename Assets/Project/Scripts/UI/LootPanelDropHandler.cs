@@ -16,13 +16,10 @@ public class LootPanelDropHandler : MonoBehaviour, IPointerClickHandler
             ModuleDataSO module = ModuleDragHandler.Instance.selectedModule;
             if (module != null && PlayerInventory.Instance != null)
             {
-                if (!PlayerInventory.Instance.collectedModules.Contains(module))
-                {
-                    PlayerInventory.Instance.collectedModules.Add(module);
-                }
+                // 중복 검사 없이 무조건 가방 리스트에 안전 추가
+                PlayerInventory.Instance.collectedModules.Add(module);
             }
 
-            // 가방에 이관 저장 후 드래그 깔끔히 종료
             ModuleDragHandler.Instance.EndDrag();
 
             if (MaintenanceUI.Instance != null)
@@ -40,13 +37,10 @@ public class LootPanelDropHandler : MonoBehaviour, IPointerClickHandler
             WeaponDataSO weapon = WeaponDragHandler.Instance.selectedWeapon;
             if (weapon != null && PlayerInventory.Instance != null)
             {
-                if (!PlayerInventory.Instance.collectedWeapons.Contains(weapon))
-                {
-                    PlayerInventory.Instance.collectedWeapons.Add(weapon);
-                }
+                // 중복 검사 없이 무조건 가방 리스트에 안전 추가 (소멸 차단)
+                PlayerInventory.Instance.collectedWeapons.Add(weapon);
             }
 
-            // 가방에 이관 저장 후 드래그 깔끔히 종료
             WeaponDragHandler.Instance.EndDrag();
 
             if (MaintenanceUI.Instance != null)
