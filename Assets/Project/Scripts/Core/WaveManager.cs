@@ -212,4 +212,19 @@ public class WaveManager : MonoBehaviour
         }
     }
 
+
+    // 맵 상에 활성화되어 있는 모든 적 개체 즉시 디스폰 처리
+    public static void DespawnAllActiveEnemies()
+    {
+        EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null)
+            {
+                Destroy(enemy.gameObject);
+            }
+        }
+        Debug.Log($"WaveManager: Despawned {enemies.Length} active enemies.");
+    }
+
 }

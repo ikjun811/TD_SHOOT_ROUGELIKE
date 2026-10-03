@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using JU;
 
-// 플레이어 사망 감지, 목숨 차감, 정비 단계 또는 게임오버 제어 클래스
+// 플레이어 사망 감지, 통보 연출, 적 디스폰 및 목숨 차감 제어 클래스
 public class PlayerDeathHandler : MonoBehaviour
 {
     private JUHealth juHealth;
+    private bool isProcessingDeath = false;
 
     private void Awake()
     {
@@ -27,14 +29,36 @@ public class PlayerDeathHandler : MonoBehaviour
         }
     }
 
-    // 플레이어 체력 0 도달 사망 시
     private void OnPlayerDeath()
     {
-        Debug.Log("PlayerDeathHandler: Player died.");
+        if (isProcessingDeath) return;
+        StartCoroutine(PlayerDeathSequence());
+    }
 
+    // ⭐ 사망 통보 및 대기 연출 시퀀스 코루틴
+    private IEnumerator PlayerDeathSequence()
+    {
+        isProcessingDeath = true;
+
+        // 1. 화면 중앙 사망 통보 메시지 노출
+        if (StageHUDUI.Instance != null)
+        {
+            StageHUDUI.Instance.ShowNoticeBanner("MISSION FAILED - PLAYER DIED", Color.red);
+        }
+
+        // 2. 맵에 남아있는 주변 적들 즉시 디스폰 소멸
+        WaveManager.DespawnAllActiveEnemies();
+
+        // 3. 2.5초 대기 연출
+        yield return new WaitForSeconds(2.5f);
+
+        if (StageHUDUI.Instance != null)
+        {
+            StageHUDUI.Instance.HideNoticeBanner();
+        }
+
+        // 4. 목숨 차감 및 정비 단계 진입
         bool isGameOver = false;
-
-        // 목숨 1 차감
         if (StageDifficultyManager.Instance != null)
         {
             isGameOver = StageDifficultyManager.Instance.DeductLifeOnPlayerDeath();
@@ -42,14 +66,15 @@ public class PlayerDeathHandler : MonoBehaviour
 
         if (isGameOver)
         {
-            // 목숨 0 소진 시 최종 게임오버
-            Debug.Log("PlayerDeathHandler: Game Over. Returning to Main Menu / Show GameOver Panel.");
+            Debug.Log("PlayerDeathHandler: All lives lost. Game Over.");
+            if (StageHUDUI.Instance != null)
+            {
+                StageHUDUI.Instance.ShowNoticeBanner("GAME OVER - ALL LIVES LOST", Color.red);
+            }
             Time.timeScale = 0f;
-            // TODO: 게임오버 UI 패널 오픈
         }
         else
         {
-            // 목숨 남아있음 ➔ 체력 복구 후 정비 단계 진입
             if (juHealth != null)
             {
                 juHealth.ResetHealth();
@@ -60,5 +85,7 @@ public class PlayerDeathHandler : MonoBehaviour
                 MaintenanceManager.Instance.EnterMaintenanceStage();
             }
         }
+
+        isProcessingDeath = false;
     }
 }

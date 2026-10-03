@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
-// 지정 탈출 구역 체류 판정 및 일시정지 카운트다운 제어 클래스
+// 지정 탈출 구역 체류 판정, 적 디스폰 및 탈출 성공 연출 클래스
 public class ExtractionZone : MonoBehaviour
 {
     [Header("Extraction Settings")]
@@ -18,7 +19,6 @@ public class ExtractionZone : MonoBehaviour
     {
         if (isExtractionComplete) return;
 
-        // 플레이어가 구역 내부에 있을 때만 카운트다운 차감 연산 ⭐
         if (isPlayerInsideZone)
         {
             currentExtractionProgress += Time.deltaTime;
@@ -26,7 +26,7 @@ public class ExtractionZone : MonoBehaviour
             if (currentExtractionProgress >= requiredExtractionTime)
             {
                 isExtractionComplete = true;
-                OnExtractionSuccess();
+                StartCoroutine(ExtractionSuccessSequence());
             }
         }
     }
@@ -49,14 +49,36 @@ public class ExtractionZone : MonoBehaviour
         }
     }
 
-    // 60초 탈출 버티기 성공 시
-    private void OnExtractionSuccess()
+    // ⭐ 탈출 성공 연출 시퀀스 코루틴
+    private IEnumerator ExtractionSuccessSequence()
     {
-        Debug.Log("ExtractionZone: Extraction successful. Proceeding to Maintenance.");
-
-        if (WaveManager.Instance != null)
+        // 1. 화면 중앙 탈출 성공 통보 메시지 노출
+        if (StageHUDUI.Instance != null)
         {
-            WaveManager.Instance.GetType().GetMethod("CompleteRound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(WaveManager.Instance, null);
+            StageHUDUI.Instance.ShowNoticeBanner("EXTRACTION SUCCESSFUL", Color.green);
+        }
+
+        // 2. 맵의 모든 적들 즉시 디스폰 소멸
+        WaveManager.DespawnAllActiveEnemies();
+
+        // 3. 필드 아이템 자석 수거
+        if (ItemDropManager.Instance != null)
+        {
+            ItemDropManager.Instance.CollectAllRemainingDropsOnField();
+        }
+
+        // 4. 2.5초 대기 연출
+        yield return new WaitForSeconds(2.5f);
+
+        if (StageHUDUI.Instance != null)
+        {
+            StageHUDUI.Instance.HideNoticeBanner();
+        }
+
+        // 5. 정비 단계 진입
+        if (MaintenanceManager.Instance != null)
+        {
+            MaintenanceManager.Instance.EnterMaintenanceStage();
         }
     }
 }
