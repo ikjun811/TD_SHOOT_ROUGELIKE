@@ -1,15 +1,17 @@
 using UnityEngine;
 using UnityEngine.AI;
-using JU; 
+using JU;
 
+// 적 개체 기본 AI, 피격, 플레이어 공격 및 사망 처리 클래스
 [RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(JUHealth))] 
+[RequireComponent(typeof(JUHealth))]
 public class EnemyBase : MonoBehaviour
 {
     [Header("Enemy Settings")]
-    [SerializeField] private float moveSpeed = 3.5f;
-    [SerializeField] private float attackDamage = 10f;
-    [SerializeField] private float attackRange = 1.5f;
+    [SerializeField] private float baseMoveSpeed = 3.5f;
+    [SerializeField] private float baseAttackDamage = 10f;
+    [SerializeField] private float attackRange = 1.8f;
+    [SerializeField] private float attackCooldown = 1.2f; // 공격 쿨타임 (1.2초)
 
     [Header("Effects")]
     [SerializeField] private GameObject deathVFX;
@@ -17,6 +19,8 @@ public class EnemyBase : MonoBehaviour
     private NavMeshAgent agent;
     private Transform playerTransform;
     private JUHealth juHealth;
+    private JUHealth playerHealth;
+    private float lastAttackTime = -10f;
     private bool isDead = false;
 
     private void Awake()
@@ -27,16 +31,38 @@ public class EnemyBase : MonoBehaviour
 
     private void Start()
     {
-        agent.speed = moveSpeed;
+        float currentHp = 50f;
+        float currentDmg = baseAttackDamage;
+        float currentSpd = baseMoveSpeed;
 
-        // 플레이어 찾기
+        if (StageDifficultyManager.Instance != null)
+        {
+            currentHp *= StageDifficultyManager.Instance.GetEnemyHpMultiplier();
+            currentDmg *= StageDifficultyManager.Instance.GetEnemyDamageMultiplier();
+            currentSpd *= StageDifficultyManager.Instance.GetEnemySpeedMultiplier();
+        }
+
+        if (juHealth != null)
+        {
+            juHealth.SetMaxHealth(currentHp);
+            juHealth.SetHealth(currentHp);
+        }
+
+        baseAttackDamage = currentDmg;
+        baseMoveSpeed = currentSpd;
+
+        if (agent != null)
+        {
+            agent.speed = baseMoveSpeed;
+        }
+
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
         {
             playerTransform = playerObj.transform;
+            playerHealth = playerObj.GetComponent<JUHealth>();
         }
 
-        // JUHealth 이벤트 코드 직접 연결
         if (juHealth != null)
         {
             juHealth.OnDeath += OnEnemyDeath;
@@ -46,7 +72,6 @@ public class EnemyBase : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 이벤트 메모리 해제
         if (juHealth != null)
         {
             juHealth.OnDeath -= OnEnemyDeath;
@@ -58,10 +83,8 @@ public class EnemyBase : MonoBehaviour
     {
         if (isDead || playerTransform == null) return;
 
-        // 플레이어 추적
         agent.SetDestination(playerTransform.position);
 
-        // 공격 거리 확인
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer <= attackRange)
         {
@@ -69,33 +92,48 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    // JUHealth에서 피격될 때 자동 실행
+    // ⭐ 플레이어 근접 사거리 진입 시 데미지 전달 연산
+    private void AttackPlayer()
+    {
+        if (Time.time < lastAttackTime + attackCooldown) return;
+
+        if (playerHealth == null && playerTransform != null)
+        {
+            playerHealth = playerTransform.GetComponent<JUHealth>();
+        }
+
+        if (playerHealth != null && !playerHealth.IsDead)
+        {
+            lastAttackTime = Time.time;
+            playerHealth.DoDamage(baseAttackDamage);
+            Debug.Log($"EnemyBase: Attacked player for {baseAttackDamage} damage. Remaining Player HP: {playerHealth.Health}");
+        }
+    }
+
     private void OnEnemyDamaged(IHealth.DamageResultInfo resultInfo)
     {
         if (isDead) return;
-        Debug.Log($"[적 피격!] {gameObject.name} 남은 체력: {juHealth.Health} / {juHealth.MaxHealth}");
+        Debug.Log($"EnemyBase: Damaged {gameObject.name}. Remaining Health: {juHealth.Health} / {juHealth.MaxHealth}");
     }
 
-    private void AttackPlayer()
-    {
-        // TODO: 플레이어 공격 로직 
-    }
-
-    // JUHealth에서 체력이 0이 될 때 자동 실행
     private void OnEnemyDeath()
     {
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"[적 사망!] {gameObject.name} 처치됨!");
+        Debug.Log($"EnemyBase: Enemy {gameObject.name} killed.");
 
-        // 아이템 드랍 시도
-        if (ItemDropManager.Instance != null && WaveManager.Instance != null)
+        if (ItemDropManager.Instance != null)
         {
-            ItemDropManager.Instance.TryDropItem(transform.position, 1); // 현재 라운드 수 전달
+            int currentR = 1;
+            if (WaveManager.Instance != null)
+            {
+                currentR = (int)(WaveManager.Instance.GetType().GetField("currentRound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(WaveManager.Instance) ?? 1);
+            }
+
+            ItemDropManager.Instance.TryDropItem(transform.position, currentR);
         }
 
-        // 웨이브 매니저에 처치 알림 전달
         if (WaveManager.Instance != null)
         {
             WaveManager.Instance.OnEnemyKilled();

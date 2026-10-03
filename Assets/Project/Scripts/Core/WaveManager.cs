@@ -80,12 +80,13 @@ public class WaveManager : MonoBehaviour
         StartCoroutine(SpawnEnemyRoutine());
     }
 
+    // 적 무한 스폰 루틴 (10마리 누적 제한 삭제)
     private IEnumerator SpawnEnemyRoutine()
     {
         while (isWaveActive)
         {
-            int totalSpawned = currentKillsCount + currentEnemiesAlive;
-            if (currentEnemiesAlive < maxConcurrentEnemies && totalSpawned < targetKillsThisRound)
+            // 필드에 동시 존재하는 적 수가 최대 동시 스폰 제한 수보다 적으면 영구 지속 스폰
+            if (currentEnemiesAlive < maxConcurrentEnemies)
             {
                 SpawnRandomNormalEnemy();
             }
@@ -155,7 +156,7 @@ public class WaveManager : MonoBehaviour
         return targetSpawnPos; // 보정 실패 시 원본 좌표
     }
 
-    // 적 사망 시 호출
+    // 적 사망 시 호출 (10마리 제한 삭제 및 무한 스폰 유지)
     public void OnEnemyKilled()
     {
         if (!isWaveActive) return;
@@ -163,21 +164,16 @@ public class WaveManager : MonoBehaviour
         currentKillsCount++;
         currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
 
-        Debug.Log($"[Wave Progress] {currentKillsCount} / {targetKillsThisRound} 처치 완료");
+        Debug.Log($"WaveManager: Enemy killed. Total Kills in this run: {currentKillsCount}");
 
-        // 50% 진행도 트리거 (엘리트 스폰)
-        float progress = (float)currentKillsCount / targetKillsThisRound;
-        if (progress >= 0.5f && !hasTriggered50PercentEvent)
+        // 5마리 처치 시 엘리트 적 1마리 스폰 트리거 유지
+        if (currentKillsCount >= 5 && !hasTriggered50PercentEvent)
         {
             hasTriggered50PercentEvent = true;
             On50PercentProgressTriggered();
         }
 
-        // 라운드 클리어
-        if (currentKillsCount >= targetKillsThisRound)
-        {
-            CompleteRound();
-        }
+
     }
 
     private void On50PercentProgressTriggered()
