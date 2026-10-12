@@ -1,18 +1,20 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 
-// 전투 화면 내 드랍률, 남은 목숨, 탈출 타이머 및 중앙 통보 안내를 표기하는 HUD UI 클래스
+// 전투 화면 내 드랍률, 남은 목숨, 탈출 타이머를 실시간 표기하는 HUD UI 클래스
 public class StageHUDUI : MonoBehaviour
 {
     public static StageHUDUI Instance { get; private set; }
+
+    [Header("UI Canvas Root")]
+    [SerializeField] private GameObject hudCanvasObject;
 
     [Header("UI Text References")]
     [SerializeField] private TextMeshProUGUI dropChanceText;
     [SerializeField] private TextMeshProUGUI livesText;
     [SerializeField] private TextMeshProUGUI extractionTimerText;
     [SerializeField] private TextMeshProUGUI zoneStatusText;
-    [SerializeField] private TextMeshProUGUI noticeBannerText; // ⭐ 화면 중앙 통보 메시지 텍스트
+    [SerializeField] private TextMeshProUGUI noticeBannerText;
 
     [Header("Extraction Zone Reference")]
     [SerializeField] private ExtractionZone extractionZone;
@@ -21,6 +23,11 @@ public class StageHUDUI : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        if (hudCanvasObject == null)
+        {
+            hudCanvasObject = gameObject;
+        }
     }
 
     private void Start()
@@ -43,7 +50,15 @@ public class StageHUDUI : MonoBehaviour
         UpdateExtractionUI();
     }
 
-    // ⭐ 화면 중앙 통보 메시지 띄우기 함수
+    // 전투 HUD On/Off 제어 함수
+    public void SetHUDActive(bool isActive)
+    {
+        if (hudCanvasObject != null)
+        {
+            hudCanvasObject.SetActive(isActive);
+        }
+    }
+
     public void ShowNoticeBanner(string message, Color textColor)
     {
         if (noticeBannerText == null) return;
@@ -70,10 +85,6 @@ public class StageHUDUI : MonoBehaviour
             float chancePercent = StageDifficultyManager.Instance.currentDropChance * 100f;
             dropChanceText.text = $"드랍률: {chancePercent:F1}%";
         }
-        else
-        {
-            dropChanceText.text = "드랍률: 35.0%";
-        }
     }
 
     private void UpdateLivesUI()
@@ -85,10 +96,6 @@ public class StageHUDUI : MonoBehaviour
             int currentLives = StageDifficultyManager.Instance.currentLives;
             int maxLives = StageDifficultyManager.Instance.maxLives;
             livesText.text = $"목숨: {currentLives} / {maxLives}";
-        }
-        else
-        {
-            livesText.text = "목숨: 3 / 3";
         }
     }
 

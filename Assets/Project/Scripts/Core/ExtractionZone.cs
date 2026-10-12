@@ -1,7 +1,8 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
-// 지정 탈출 구역 체류 판정, 적 디스폰 및 탈출 성공 연출 클래스
+// 지정 탈출 구역 체류 판정, 위치 재배치 및 탈출 성공 연출 클래스
 public class ExtractionZone : MonoBehaviour
 {
     [Header("Extraction Settings")]
@@ -31,13 +32,27 @@ public class ExtractionZone : MonoBehaviour
         }
     }
 
-    // ⭐ 다음 라운드 시작 시 탈출 구역 타이머 리셋 함수
-    public void ResetExtractionZone()
+    // 다음 라운드 시작 시 탈출 구역 무작위 재배치 및 타이머 리셋
+    public void RelocateAndResetZone()
     {
         currentExtractionProgress = 0f;
         isExtractionComplete = false;
         isPlayerInsideZone = false;
-        Debug.Log("ExtractionZone: Reset timer and state for next round.");
+
+        // 맵 무작위 좌표 연산 및 NavMesh 보정
+        Vector2 randomPoint = Random.insideUnitCircle.normalized * Random.Range(10f, 35f);
+        Vector3 newPos = new Vector3(randomPoint.x, 0.02f, randomPoint.y);
+
+        if (NavMesh.SamplePosition(newPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+        {
+            transform.position = hit.position;
+        }
+        else
+        {
+            transform.position = newPos;
+        }
+
+        Debug.Log($"ExtractionZone: Relocated zone to new position {transform.position}.");
     }
 
     private void OnTriggerEnter(Collider other)

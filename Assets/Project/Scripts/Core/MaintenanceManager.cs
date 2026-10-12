@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 정비 단계 상태 및 금고(Vault) 보관함 데이터를 통합 관리하는 매니저 클래스
+// 정비 단계 상태, 전투 HUD 토글 및 다음 라운드 리셋 제어 클래스
 public class MaintenanceManager : MonoBehaviour
 {
     public static MaintenanceManager Instance { get; private set; }
@@ -61,7 +61,13 @@ public class MaintenanceManager : MonoBehaviour
             ItemDropManager.Instance.EnsureAllItemsCollected();
         }
 
-        Time.timeScale = 0f; // 전투 일시정지
+        Time.timeScale = 0f;
+
+        // 전투 HUD 비활성화
+        if (StageHUDUI.Instance != null)
+        {
+            StageHUDUI.Instance.SetHUDActive(false);
+        }
 
         MaintenanceUI ui = MaintenanceUI.Instance;
         if (ui == null) ui = FindObjectOfType<MaintenanceUI>(true);
@@ -70,10 +76,8 @@ public class MaintenanceManager : MonoBehaviour
         Debug.Log("MaintenanceManager: Enter Maintenance Stage.");
     }
 
-    // ⭐ [개편] 정비 완료 후 다음 라운드 시스템 전체 리셋 및 스폰 재개
     public void CompleteMaintenanceAndStartNextRound()
     {
-        // 1. 드래그 중인 아이템 안전 원복
         if (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
         {
             ModuleDragHandler.Instance.CancelDrag();
@@ -83,7 +87,6 @@ public class MaintenanceManager : MonoBehaviour
             WeaponDragHandler.Instance.CancelDrag();
         }
 
-        // 2. 무기 최소 장착 여부 검증
         if (PlayerInventory.Instance != null)
         {
             if (PlayerInventory.Instance.equippedWeapons[0] == null && PlayerInventory.Instance.equippedWeapons[1] == null)
@@ -92,46 +95,60 @@ public class MaintenanceManager : MonoBehaviour
                 {
                     PlayerInventory.Instance.equippedWeapons[0] = PlayerInventory.Instance.collectedWeapons[0];
                     PlayerInventory.Instance.collectedWeapons.RemoveAt(0);
-                    Debug.LogWarning("MaintenanceManager: Auto-equipped weapon to Slot 1.");
                 }
             }
         }
 
         isInMaintenance = false;
-        Time.timeScale = 1f; // 전투 재개
+        Time.timeScale = 1f;
 
-        // 3. 미사용 잔여 전리품 가방 소멸
         if (PlayerInventory.Instance != null)
         {
             PlayerInventory.Instance.ClearUnusedLoot();
         }
 
-        // 4. 3D 캐릭터에게 무기 및 테트리스 스탯 실전 적용
         ApplyMaintenanceResultsTo3DPlayer();
 
-        // 5. ⭐ 다음 라운드 시스템 전체 리셋 및 전투 시작!
+        // 전투 HUD 다시 활성화
+        if (StageHUDUI.Instance != null)
+        {
+            StageHUDUI.Instance.SetHUDActive(true);
+        }
+
+        // 다음 라운드 리셋 및 플레이어/탈출지점 재배치
         ResetAndStartNextRound();
 
         Debug.Log("MaintenanceManager: Next round started successfully.");
     }
 
-    // 다음 라운드 전체 시스템 리셋 함수
     private void ResetAndStartNextRound()
     {
-        // 탈출 구역 60초 타이머 0초로 초기화
+        // 1. 플레이어 위치 및 물리 속도 초기화
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null)
+        {
+            playerObj.transform.position = new Vector3(0f, 1f, 0f); // 시작 좌표 이동
+            Rigidbody rb = playerObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+            }
+        }
+
+        // 2. 탈출 구역 무작위 재배치 및 타이머 리셋
         ExtractionZone ez = FindObjectOfType<ExtractionZone>();
         if (ez != null)
         {
-            ez.ResetExtractionZone();
+            ez.RelocateAndResetZone();
         }
 
-        // 난이도 경과 시간 및 드랍률(35%) 리셋
+        // 3. 난이도 경과 시간 및 드랍률 리셋
         if (StageDifficultyManager.Instance != null)
         {
             StageDifficultyManager.Instance.ResetStageDifficulty();
         }
 
-        // 웨이브 적 무한 스폰 코루틴 재가동
+        // 4. 웨이브 적 무한 스폰 코루틴 재가동
         if (WaveManager.Instance != null)
         {
             WaveManager.Instance.RestartWaveSpawning();
