@@ -202,7 +202,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1060276221}
         m_TargetAssemblyTypeName: MaintenanceUI, Assembly-CSharp
         m_MethodName: OnClickStartNextRound
         m_Mode: 1
@@ -4284,9 +4284,9 @@ MonoBehaviour:
     m_Top: 20
     m_Bottom: 20
   m_ChildAlignment: 1
-  m_Spacing: 12
+  m_Spacing: 30
   m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 1
@@ -6170,6 +6170,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5906676784980693933, guid: 57eec4180c5142843a3c4d8bfba4a156, type: 3}
+      propertyPath: _autoRespawnMode
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 562876771224830597, guid: 57eec4180c5142843a3c4d8bfba4a156, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -7016,8 +7020,8 @@ RectTransform:
   m_Children:
   - {fileID: 795303938}
   - {fileID: 79768103}
-  - {fileID: 12540650}
   - {fileID: 1104694111}
+  - {fileID: 12540650}
   m_Father: {fileID: 1060276220}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -7080,6 +7084,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0cee8a1c3043e4a95c2e7176c037cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDeathHandler
+--- !u!114 &1873019195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873019170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3193ee69935b4a14aba676ced755c722, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStatAndWeaponSync
 --- !u!1 &1950587420
 GameObject:
   m_ObjectHideFlags: 0
@@ -8073,6 +8089,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      propertyPath: RagdollWhenDie
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6691749915687825790, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       propertyPath: ItemToEquipOnStart
       value: 0
       objectReference: {fileID: 0}
@@ -8235,6 +8255,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1873019194}
+    - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1873019195}
   m_SourcePrefab: {fileID: 100100000, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

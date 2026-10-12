@@ -5,7 +5,7 @@ using UnityEngine;
 public class ExtractionZone : MonoBehaviour
 {
     [Header("Extraction Settings")]
-    [SerializeField] private float requiredExtractionTime = 60f; // 필요 버티기 시간 (60초)
+    [SerializeField] private float requiredExtractionTime = 60f;
     [SerializeField] private float currentExtractionProgress = 0f;
 
     private bool isPlayerInsideZone = false;
@@ -31,6 +31,15 @@ public class ExtractionZone : MonoBehaviour
         }
     }
 
+    // ⭐ 다음 라운드 시작 시 탈출 구역 타이머 리셋 함수
+    public void ResetExtractionZone()
+    {
+        currentExtractionProgress = 0f;
+        isExtractionComplete = false;
+        isPlayerInsideZone = false;
+        Debug.Log("ExtractionZone: Reset timer and state for next round.");
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -49,25 +58,20 @@ public class ExtractionZone : MonoBehaviour
         }
     }
 
-    // ⭐ 탈출 성공 연출 시퀀스 코루틴
     private IEnumerator ExtractionSuccessSequence()
     {
-        // 1. 화면 중앙 탈출 성공 통보 메시지 노출
         if (StageHUDUI.Instance != null)
         {
             StageHUDUI.Instance.ShowNoticeBanner("EXTRACTION SUCCESSFUL", Color.green);
         }
 
-        // 2. 맵의 모든 적들 즉시 디스폰 소멸
         WaveManager.DespawnAllActiveEnemies();
 
-        // 3. 필드 아이템 자석 수거
         if (ItemDropManager.Instance != null)
         {
             ItemDropManager.Instance.CollectAllRemainingDropsOnField();
         }
 
-        // 4. 2.5초 대기 연출
         yield return new WaitForSeconds(2.5f);
 
         if (StageHUDUI.Instance != null)
@@ -75,7 +79,6 @@ public class ExtractionZone : MonoBehaviour
             StageHUDUI.Instance.HideNoticeBanner();
         }
 
-        // 5. 정비 단계 진입
         if (MaintenanceManager.Instance != null)
         {
             MaintenanceManager.Instance.EnterMaintenanceStage();

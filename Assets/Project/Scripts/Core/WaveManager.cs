@@ -227,4 +227,17 @@ public class WaveManager : MonoBehaviour
         Debug.Log($"WaveManager: Despawned {enemies.Length} active enemies.");
     }
 
+    // ⭐ 다음 라운드 진입 시 적 스폰 루틴 재가동 함수
+    public void RestartWaveSpawning()
+    {
+        DespawnAllActiveEnemies(); // 잔여 적 제거
+        currentKillsCount = 0;
+        currentEnemiesAlive = 0;
+        hasTriggered50PercentEvent = false;
+        isWaveActive = true;
+
+        StopAllCoroutines();
+        StartCoroutine(SpawnEnemyRoutine()); // 무한 적 스폰 코루틴 재가동
+        Debug.Log("WaveManager: Restarted wave spawning for next round.");
+    }
 }

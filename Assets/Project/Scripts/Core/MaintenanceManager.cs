@@ -1,16 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// 정비 단계 상태 및 금고(Vault) 보관함 데이터를 통합 관리하는 매니저 클래스입니다.
-/// </summary>
+// 정비 단계 상태 및 금고(Vault) 보관함 데이터를 통합 관리하는 매니저 클래스
 public class MaintenanceManager : MonoBehaviour
 {
     public static MaintenanceManager Instance { get; private set; }
 
-    /// <summary>
-    /// 금고 단일 슬롯에 보관되는 무기 또는 모듈 데이터 구조체입니다.
-    /// </summary>
     [System.Serializable]
     public class VaultSlotItem
     {
@@ -41,9 +36,6 @@ public class MaintenanceManager : MonoBehaviour
         InitializeVaultSlots();
     }
 
-    /// <summary>
-    /// 금고 슬롯 배열 데이터 초기화
-    /// </summary>
     private void InitializeVaultSlots()
     {
         if (vaultSlots == null || vaultSlots.Length != maxVaultCapacity)
@@ -60,9 +52,6 @@ public class MaintenanceManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 라운드 클리어 후 정비 단계 진입 시 호출
-    /// </summary>
     public void EnterMaintenanceStage()
     {
         isInMaintenance = true;
@@ -72,7 +61,7 @@ public class MaintenanceManager : MonoBehaviour
             ItemDropManager.Instance.EnsureAllItemsCollected();
         }
 
-        Time.timeScale = 0f;
+        Time.timeScale = 0f; // 전투 일시정지
 
         MaintenanceUI ui = MaintenanceUI.Instance;
         if (ui == null) ui = FindObjectOfType<MaintenanceUI>(true);
@@ -81,9 +70,7 @@ public class MaintenanceManager : MonoBehaviour
         Debug.Log("MaintenanceManager: Enter Maintenance Stage.");
     }
 
-    /// <summary>
-    /// 정비 완료 후 다음 라운드 진입 처리
-    /// </summary>
+    // ⭐ [개편] 정비 완료 후 다음 라운드 시스템 전체 리셋 및 스폰 재개
     public void CompleteMaintenanceAndStartNextRound()
     {
         // 1. 드래그 중인 아이템 안전 원복
@@ -105,41 +92,57 @@ public class MaintenanceManager : MonoBehaviour
                 {
                     PlayerInventory.Instance.equippedWeapons[0] = PlayerInventory.Instance.collectedWeapons[0];
                     PlayerInventory.Instance.collectedWeapons.RemoveAt(0);
-                    Debug.LogWarning("MaintenanceManager: Auto-equipped weapon to Slot 1 because all slots were empty.");
+                    Debug.LogWarning("MaintenanceManager: Auto-equipped weapon to Slot 1.");
                 }
             }
         }
 
         isInMaintenance = false;
-        Time.timeScale = 1f;
+        Time.timeScale = 1f; // 전투 재개
 
-        // 3. 미사용 잔여 아이템 소멸 (금고에 보관된 아이템은 유지가 보장됨)
+        // 3. 미사용 잔여 전리품 가방 소멸
         if (PlayerInventory.Instance != null)
         {
             PlayerInventory.Instance.ClearUnusedLoot();
         }
 
+        // 4. 3D 캐릭터에게 무기 및 테트리스 스탯 실전 적용
         ApplyMaintenanceResultsTo3DPlayer();
 
+        // 5. ⭐ 다음 라운드 시스템 전체 리셋 및 전투 시작!
+        ResetAndStartNextRound();
+
+        Debug.Log("MaintenanceManager: Next round started successfully.");
+    }
+
+    // 다음 라운드 전체 시스템 리셋 함수
+    private void ResetAndStartNextRound()
+    {
+        // 탈출 구역 60초 타이머 0초로 초기화
+        ExtractionZone ez = FindObjectOfType<ExtractionZone>();
+        if (ez != null)
+        {
+            ez.ResetExtractionZone();
+        }
+
+        // 난이도 경과 시간 및 드랍률(35%) 리셋
+        if (StageDifficultyManager.Instance != null)
+        {
+            StageDifficultyManager.Instance.ResetStageDifficulty();
+        }
+
+        // 웨이브 적 무한 스폰 코루틴 재가동
         if (WaveManager.Instance != null)
         {
-            int currentR = WaveManager.Instance.GetType().GetField("currentRound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) != null ?
-                (int)WaveManager.Instance.GetType().GetField("currentRound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(WaveManager.Instance) : 1;
-
-            WaveManager.Instance.StartRound(currentR + 1);
+            WaveManager.Instance.RestartWaveSpawning();
         }
     }
 
-    /// <summary>
-    /// 3D 플레이어 개체에 정비 스탯 및 무기 적용
-    /// </summary>
     private void ApplyMaintenanceResultsTo3DPlayer()
     {
-        if (GridInventorySystem.Instance != null)
+        if (PlayerStatAndWeaponSync.Instance != null)
         {
-            GridInventorySystem.Instance.RecalculateTotalStats();
+            PlayerStatAndWeaponSync.Instance.ApplyMaintenanceResultsToPlayer();
         }
-
-        Debug.Log("MaintenanceManager: Applied maintenance setup to 3D Player.");
     }
 }
