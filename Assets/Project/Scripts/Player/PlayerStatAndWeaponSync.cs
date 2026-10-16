@@ -22,6 +22,11 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     private float defaultWalkSpeed = 3f;
     private float defaultRunSpeed = 5f;
 
+    // 무기별 런타임 탄 템플릿 (JU 탄 프리팹 원본은 수정하지 않음)
+    private GameObject bulletTemplateHolder;
+    private readonly Dictionary<Weapon, GameObject> originalBulletPrefabs = new Dictionary<Weapon, GameObject>();
+    private readonly Dictionary<Weapon, GameObject> bulletTemplates = new Dictionary<Weapon, GameObject>();
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -127,8 +132,16 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 continue;
             }
 
+            if (itemsToUnlock.Contains(item)) continue; // 두 슬롯이 같은 JU 무기면 1번 슬롯 데이터 사용
+
             itemsToUnlock.Add(item);
-            if (item.DualItemToWielding != null) itemsToUnlock.Add(item.DualItemToWielding); // 쌍권총 왼손
+            ApplyWeaponData(item.GetComponent<Weapon>(), equipped[i]);
+
+            if (item.DualItemToWielding != null) // 쌍권총 왼손
+            {
+                itemsToUnlock.Add(item.DualItemToWielding);
+                ApplyWeaponData(item.DualItemToWielding.GetComponent<Weapon>(), equipped[i]);
+            }
 
             if (itemToHold == null) itemToHold = item; // 1번 슬롯 우선, 비어 있으면 2번
         }
@@ -142,6 +155,53 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             controller.SwitchToItem(itemToHold.ItemSwitchID, true);
             Debug.Log($"PlayerStatAndWeaponSync: Holding 3D weapon -> {itemToHold.ItemName}");
         }
+    }
+
+    // 3. WeaponDataSO 수치를 JU 무기에 적용 (모듈의 공격력·연사 보정은 추후 여기에 반영)
+    private void ApplyWeaponData(Weapon weapon, WeaponDataSO data)
+    {
+        if (weapon == null || data == null) return;
+
+        // 연사·탄창: 탄창은 가득 채우고, 예비탄은 무한 (재장전은 필요)
+        weapon.Fire_Rate = data.fireRate;
+        weapon.BulletsPerMagazine = Mathf.Max(1, data.maxAmmo);
+        weapon.BulletsAmounts = weapon.BulletsPerMagazine;
+        weapon.InfiniteAmmo = true;
+
+        // JU는 재장전 시작 조건으로 예비탄 > 0을 검사하므로 0이면 채워 둠 (무한탄이라 이후 줄지 않음)
+        if (weapon.TotalBullets <= 0) weapon.TotalBullets = weapon.BulletsPerMagazine;
+
+        // 피해: 원본 탄 프리팹을 복제한 무기 전용 템플릿에 피해값 설정
+        if (!originalBulletPrefabs.ContainsKey(weapon))
+        {
+            originalBulletPrefabs[weapon] = weapon.BulletPrefab;
+        }
+
+        GameObject originalBullet = originalBulletPrefabs[weapon];
+        if (originalBullet == null) return;
+
+        if (bulletTemplateHolder == null)
+        {
+            // 비활성 부모 밑에 두어 템플릿 자체는 동작하지 않음 (JU가 복제한 탄은 부모가 없어 정상 동작)
+            bulletTemplateHolder = new GameObject("RuntimeBulletTemplates");
+            bulletTemplateHolder.SetActive(false);
+        }
+
+        if (bulletTemplates.TryGetValue(weapon, out GameObject oldTemplate) && oldTemplate != null)
+        {
+            Destroy(oldTemplate);
+        }
+
+        GameObject template = Instantiate(originalBullet, bulletTemplateHolder.transform);
+        template.name = $"{originalBullet.name} ({data.weaponName})";
+
+        Bullet bullet = template.GetComponent<Bullet>();
+        if (bullet != null) bullet.BulletDamage = data.GetFinalDamage();
+
+        bulletTemplates[weapon] = template;
+        weapon.BulletPrefab = template;
+
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {data.GetFinalDamage():0.#}, FireRate {data.fireRate}, Magazine {weapon.BulletsPerMagazine}");
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)

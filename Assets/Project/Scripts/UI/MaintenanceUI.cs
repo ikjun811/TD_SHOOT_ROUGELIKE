@@ -24,6 +24,9 @@ public class MaintenanceUI : MonoBehaviour
     [Header("Vault Slots")]
     [SerializeField] private VaultSlotUI[] vaultSlotUIArray = new VaultSlotUI[3];
 
+    [Header("Warning (선택 연결)")]
+    [SerializeField] private TextMeshProUGUI warningText; // 장착 무기 없이 NEXT ROUND 시 경고 표시
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -36,10 +39,14 @@ public class MaintenanceUI : MonoBehaviour
         {
             maintenancePanel.SetActive(false);
         }
+
+        SetWarning(false);
     }
 
     public void OpenUI()
     {
+        SetWarning(false);
+
         if (maintenancePanel != null)
         {
             maintenancePanel.SetActive(true);
@@ -195,15 +202,33 @@ public class MaintenanceUI : MonoBehaviour
             ItemTooltipUI.Instance.HideTooltip();
         }
 
-        if (maintenancePanel != null)
-        {
-            maintenancePanel.SetActive(false);
-        }
+        if (MaintenanceManager.Instance == null) return;
 
-        if (MaintenanceManager.Instance != null)
+        bool started = MaintenanceManager.Instance.CompleteMaintenanceAndStartNextRound();
+
+        if (started)
         {
-            MaintenanceManager.Instance.CompleteMaintenanceAndStartNextRound();
+            SetWarning(false);
+            if (maintenancePanel != null)
+            {
+                maintenancePanel.SetActive(false);
+            }
         }
+        else
+        {
+            // 들고 있던 아이템이 출처로 복귀했을 수 있으므로 화면 갱신
+            RefreshLootPanel();
+            RefreshEquipAndVaultUI();
+            SetWarning(true);
+        }
+    }
+
+    private void SetWarning(bool show)
+    {
+        if (warningText == null) return;
+
+        warningText.text = "무기를 1개 이상 장착하세요";
+        warningText.gameObject.SetActive(show);
     }
 
     /// <summary>

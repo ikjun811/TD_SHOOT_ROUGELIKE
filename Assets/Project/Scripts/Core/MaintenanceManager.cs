@@ -76,7 +76,8 @@ public class MaintenanceManager : MonoBehaviour
         Debug.Log("MaintenanceManager: Enter Maintenance Stage.");
     }
 
-    public void CompleteMaintenanceAndStartNextRound()
+    // 정비 종료 및 다음 라운드 시작 (장착 무기가 하나도 없으면 시작하지 않고 false 반환)
+    public bool CompleteMaintenanceAndStartNextRound()
     {
         if (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
         {
@@ -96,6 +97,13 @@ public class MaintenanceManager : MonoBehaviour
                     PlayerInventory.Instance.equippedWeapons[0] = PlayerInventory.Instance.collectedWeapons[0];
                     PlayerInventory.Instance.collectedWeapons.RemoveAt(0);
                 }
+            }
+
+            // 맨손 시작 방지: 가방에도 무기가 없어 장착 슬롯이 모두 비면 정비 유지
+            if (PlayerInventory.Instance.equippedWeapons[0] == null && PlayerInventory.Instance.equippedWeapons[1] == null)
+            {
+                Debug.LogWarning("MaintenanceManager: No weapon equipped. Next round blocked.");
+                return false;
             }
         }
 
@@ -119,6 +127,7 @@ public class MaintenanceManager : MonoBehaviour
         ResetAndStartNextRound();
 
         Debug.Log("MaintenanceManager: Next round started successfully.");
+        return true;
     }
 
     private void ResetAndStartNextRound()
