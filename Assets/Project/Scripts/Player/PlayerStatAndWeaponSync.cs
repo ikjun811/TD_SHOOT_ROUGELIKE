@@ -1,7 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using JU;
 using JUTPS;
 using JUTPS.InventorySystem;
+using JUTPS.ItemSystem;
 using JUTPS.WeaponSystem;
 
 // 정비 UI 결과를 3D 플레이어 개체의 스탯 및 무기에 실시간 동기화하는 클래스
@@ -39,6 +42,18 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             defaultWalkSpeed = controller.WalkSpeed;
             defaultRunSpeed = controller.RunSpeed;
         }
+    }
+
+    private void Start()
+    {
+        StartCoroutine(InitialWeaponSync());
+    }
+
+    // JU의 시작 장착(첫 프레임 끝)과 시작 무기 지급이 끝난 뒤 최초 무기 동기화
+    private IEnumerator InitialWeaponSync()
+    {
+        yield return null;
+        SyncEquippedWeaponsToPlayer();
     }
 
     // 정비 단계 종료 후 다음 라운드 시작 시 호출되는 동기화 함수
@@ -91,18 +106,60 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     }
 
     // 2. 정비 창에서 선택한 무기 2종을 3D 캐릭터 손에 실제로 장착
+    // 장착 무기만 Unlocked로 두어 E키 교체가 장착 2종 사이에서만 순환하도록 함
     private void SyncEquippedWeaponsToPlayer()
     {
-        if (PlayerInventory.Instance == null || juInventory == null) return;
+        if (PlayerInventory.Instance == null || juInventory == null || controller == null) return;
+        if (juInventory.HoldableItensRightHand == null) return;
 
-        var w1Data = PlayerInventory.Instance.equippedWeapons[0];
-        var w2Data = PlayerInventory.Instance.equippedWeapons[1];
+        WeaponDataSO[] equipped = PlayerInventory.Instance.equippedWeapons;
+        List<JUHoldableItem> itemsToUnlock = new List<JUHoldableItem>();
+        JUHoldableItem itemToHold = null;
 
-        // 슬롯 1번 무기가 선택되어 있다면 3D 무기 전환
-        if (w1Data != null)
+        for (int i = 0; i < equipped.Length; i++)
         {
-            juInventory.SwitchToItem(0, true);
-            Debug.Log($"PlayerStatAndWeaponSync: Equipped 3D Weapon 1 -> {w1Data.weaponName}");
+            if (equipped[i] == null) continue;
+
+            JUHoldableItem item = FindRightHandItem(equipped[i].juItemName);
+            if (item == null)
+            {
+                Debug.LogWarning($"PlayerStatAndWeaponSync: JU item '{equipped[i].juItemName}' not found for weapon {equipped[i].weaponName}.");
+                continue;
+            }
+
+            itemsToUnlock.Add(item);
+            if (item.DualItemToWielding != null) itemsToUnlock.Add(item.DualItemToWielding); // 쌍권총 왼손
+
+            if (itemToHold == null) itemToHold = item; // 1번 슬롯 우선, 비어 있으면 2번
+        }
+
+        // 장착 무기만 해금, 나머지(근접 무기 포함)는 잠금
+        SetUnlockedItems(juInventory.HoldableItensRightHand, itemsToUnlock);
+        SetUnlockedItems(juInventory.HoldableItensLeftHand, itemsToUnlock);
+
+        if (itemToHold != null)
+        {
+            controller.SwitchToItem(itemToHold.ItemSwitchID, true);
+            Debug.Log($"PlayerStatAndWeaponSync: Holding 3D weapon -> {itemToHold.ItemName}");
+        }
+    }
+
+    private JUHoldableItem FindRightHandItem(string juItemName)
+    {
+        foreach (JUHoldableItem item in juInventory.HoldableItensRightHand)
+        {
+            if (item != null && !item.IsLeftHandItem && item.ItemName == juItemName) return item;
+        }
+        return null;
+    }
+
+    private void SetUnlockedItems(JUHoldableItem[] items, List<JUHoldableItem> unlockedItems)
+    {
+        if (items == null) return;
+
+        foreach (JUHoldableItem item in items)
+        {
+            if (item != null) item.Unlocked = unlockedItems.Contains(item);
         }
     }
 }

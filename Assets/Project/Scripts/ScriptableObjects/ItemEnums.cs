@@ -9,16 +9,18 @@ public enum RarityType
     Legendary   // 레전더리 (노란색)
 }
 
-// 4대 무기군 (확정)
+// 무기 5종 (에셋 외형 기준, GDD 8-6 #6)
 public enum WeaponType
 {
+    SMG,           // 기관단총 (UMP, 시작 무기)
+    Pistol,        // 권총 (P226)
     DualPistols,   // 쌍권총 (P226 Dual)
-    AssaultRifle,  // 자동소총 (UMP5)
     Shotgun,       // 산탄총 (Benelli M4)
-    SniperRifle    // 저격총 (SNIPER M82)
+    Sniper         // 저격총 (SNIPER M82)
 }
 
 // 무기군별 고유 특성 (Affix)
+// ※ 무기에서는 더 이상 사용하지 않음. 모듈 개편(작동/특수 모듈) 시 재정의 예정 (GDD 8-6 #7)
 public enum WeaponTrait
 {
     None,

@@ -56,13 +56,11 @@ public class ItemTooltipUI : MonoBehaviour
         }
         if (itemRarityText != null) itemRarityText.text = $"[{weapon.rarity}] {weapon.weaponType}";
 
-        string traitsStr = weapon.traits.Count > 0 ? string.Join(", ", weapon.traits) : "없음";
         if (itemStatsText != null)
         {
-            itemStatsText.text = $"• 공격력: {weapon.baseDamage}\n" +
+            itemStatsText.text = $"• 공격력: {weapon.GetFinalDamage():0.#}\n" +
                                  $"• 연사 간격: {weapon.fireRate}초\n" +
-                                 $"• 탄창: {weapon.maxAmmo}발\n" +
-                                 $"• [고유 특성]: {traitsStr}";
+                                 $"• 탄창: {weapon.maxAmmo}발";
         }
 
         if (itemDescriptionText != null) itemDescriptionText.text = "주요 전투에 사용되는 기본 장착 무기입니다.";

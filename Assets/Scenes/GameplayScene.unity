@@ -4640,6 +4640,7 @@ MonoBehaviour:
   equippedWeapons:
   - {fileID: 0}
   - {fileID: 0}
+  startingWeapon: {fileID: 11400000, guid: 1bae4f5bd17c86342846a9985ed51f06, type: 2}
 --- !u!1 &1175588744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5449,7 +5450,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemDropManager
   droppedItemPrefab: {fileID: 5058950208300852019, guid: a2b0b58425cb8614e965951010a749b4, type: 3}
   allWeapons:
-  - {fileID: 11400000, guid: 0e87924da603efe4b88cea1a37928b95, type: 2}
+  - {fileID: 11400000, guid: 1bae4f5bd17c86342846a9985ed51f06, type: 2}
+  - {fileID: 11400000, guid: 342622f8b942ee441a89ffc792a9c6cd, type: 2}
+  - {fileID: 11400000, guid: 70469e49cc6cf184f96d250d735bde3f, type: 2}
+  - {fileID: 11400000, guid: d3a2486d553a21046886ac417c8c4bbb, type: 2}
+  - {fileID: 11400000, guid: 61e5ffd0b54e01f4f98bad8b421f0d63, type: 2}
   allModules:
   - {fileID: 11400000, guid: 7a6b7c79a25761949a646a2ceab5c4ce, type: 2}
   - {fileID: 11400000, guid: 951712645ad00594ba7ccc8d8bdfd082, type: 2}
@@ -7275,6 +7280,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7e8de0ae9909ae48bbcf23fc7958531, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageHUDUI
+  hudCanvasObject: {fileID: 0}
   dropChanceText: {fileID: 1042996141}
   livesText: {fileID: 783931924}
   extractionTimerText: {fileID: 1061809717}

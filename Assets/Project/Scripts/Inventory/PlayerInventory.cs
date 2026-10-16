@@ -12,10 +12,23 @@ public class PlayerInventory : MonoBehaviour
     [Header("Equipped Items")]
     public WeaponDataSO[] equippedWeapons = new WeaponDataSO[2]; // 최대 2개 장착
 
+    [Header("Starting Weapon")]
+    [SerializeField] private WeaponDataSO startingWeapon; // 게임 시작 시 지급 (UMP)
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    private void Start()
+    {
+        // 장착 슬롯이 모두 비어 있으면 시작 무기를 1번 슬롯에 지급
+        if (startingWeapon != null && equippedWeapons[0] == null && equippedWeapons[1] == null)
+        {
+            equippedWeapons[0] = startingWeapon;
+            Debug.Log($" [인벤토리] 시작 무기 지급: {startingWeapon.weaponName}");
+        }
     }
 
     // 무기 획득
