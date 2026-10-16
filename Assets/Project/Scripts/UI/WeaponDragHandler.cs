@@ -19,6 +19,7 @@ public class WeaponDragHandler : MonoBehaviour
     [SerializeField] private TextMeshProUGUI ghostNameText;
 
     private bool isDragging = false;
+    private int originEquipSlot = -1; // 장착 슬롯에서 집은 경우 원래 슬롯 번호 (취소 시 복귀용)
 
     private void Awake()
     {
@@ -50,12 +51,13 @@ public class WeaponDragHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// 무기 드래그 시작 (출처 지정)
+    /// 무기 드래그 시작 (출처 지정, 장착 슬롯 출처는 슬롯 번호 함께 전달)
     /// </summary>
-    public void StartDragWeapon(WeaponDataSO weapon, DragSource source = DragSource.LootList)
+    public void StartDragWeapon(WeaponDataSO weapon, DragSource source = DragSource.LootList, int equipSlotIndex = -1)
     {
         selectedWeapon = weapon;
         currentSource = source;
+        originEquipSlot = equipSlotIndex;
         isDragging = true;
 
         if (currentSource == DragSource.LootList && PlayerInventory.Instance != null)
@@ -89,7 +91,7 @@ public class WeaponDragHandler : MonoBehaviour
 
         if (oldWeapon != null)
         {
-            StartDragWeapon(oldWeapon, DragSource.EquipSlot);
+            StartDragWeapon(oldWeapon, DragSource.EquipSlot, slotIndex);
         }
         else
         {
@@ -146,8 +148,16 @@ public class WeaponDragHandler : MonoBehaviour
     {
         if (selectedWeapon != null)
         {
+            // 장착 슬롯 출처는 장착 슬롯으로 복귀, 실패 시에만 가방으로
+            if (currentSource == DragSource.EquipSlot)
+            {
+                if (!TryRestoreToEquipSlot() && PlayerInventory.Instance != null)
+                {
+                    PlayerInventory.Instance.collectedWeapons.Add(selectedWeapon);
+                }
+            }
             // 금고 출처인 경우 금고 빈 슬롯에 우선 복귀 시도
-            if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
+            else if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
             {
                 bool restoredToVault = false;
                 foreach (var slot in MaintenanceManager.Instance.vaultSlots)
@@ -180,10 +190,36 @@ public class WeaponDragHandler : MonoBehaviour
         EndDrag();
     }
 
+    // 원래 장착 슬롯이 비어 있으면 그 슬롯, 아니면 비어 있는 다른 장착 슬롯으로 복귀
+    private bool TryRestoreToEquipSlot()
+    {
+        if (PlayerInventory.Instance == null) return false;
+
+        WeaponDataSO[] equipped = PlayerInventory.Instance.equippedWeapons;
+
+        if (originEquipSlot >= 0 && originEquipSlot < equipped.Length && equipped[originEquipSlot] == null)
+        {
+            equipped[originEquipSlot] = selectedWeapon;
+            return true;
+        }
+
+        for (int i = 0; i < equipped.Length; i++)
+        {
+            if (equipped[i] == null)
+            {
+                equipped[i] = selectedWeapon;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void EndDrag()
     {
         isDragging = false;
         selectedWeapon = null;
+        originEquipSlot = -1;
 
         if (weaponGhostObject != null)
         {

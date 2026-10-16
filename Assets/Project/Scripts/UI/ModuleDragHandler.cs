@@ -19,6 +19,7 @@ public class ModuleDragHandler : MonoBehaviour
     [SerializeField] private GameObject dragGhostObject;
 
     private bool isDragging = false;
+    private GridInventorySystem.PlacedModule gridOrigin; // 그리드에서 집은 경우 원래 배치 정보 (취소 시 복귀용)
     private GridLayoutGroup ghostGridLayout;
     private RectTransform ghostRectTransform;
 
@@ -96,6 +97,37 @@ public class ModuleDragHandler : MonoBehaviour
         }
 
         Debug.Log($"ModuleDragHandler: Selected module {module.moduleName} from {source}.");
+    }
+
+    /// <summary>
+    /// 그리드에 배치된 모듈 집기 (원래 위치·회전 상태 보존)
+    /// </summary>
+    public void StartDragModuleFromGrid(GridInventorySystem.PlacedModule placed)
+    {
+        StartDragModule(placed.moduleData, DragSource.Grid);
+
+        gridOrigin = placed;
+        currentWidth = placed.currentWidth;
+        currentHeight = placed.currentHeight;
+        currentShape = (bool[])placed.currentShape.Clone();
+
+        RebuildGhostShapeVisual();
+    }
+
+    // 그리드 출처 모듈을 원래 위치·회전 상태로 재배치
+    private bool TryRestoreToGrid()
+    {
+        if (gridOrigin == null || GridInventorySystem.Instance == null) return false;
+
+        bool restored = GridInventorySystem.Instance.TryPlaceModule(selectedModule, gridOrigin.startX, gridOrigin.startY,
+            gridOrigin.currentWidth, gridOrigin.currentHeight, gridOrigin.currentShape);
+
+        if (restored && GridPanelUI.Instance != null)
+        {
+            GridPanelUI.Instance.RefreshGridVisuals();
+        }
+
+        return restored;
     }
 
     private void RotateSelectedModule()
@@ -200,7 +232,15 @@ public class ModuleDragHandler : MonoBehaviour
     {
         if (selectedModule != null)
         {
-            if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
+            // 그리드 출처는 원래 자리로 복귀, 실패 시에만 가방으로
+            if (currentSource == DragSource.Grid)
+            {
+                if (!TryRestoreToGrid() && PlayerInventory.Instance != null)
+                {
+                    PlayerInventory.Instance.collectedModules.Add(selectedModule);
+                }
+            }
+            else if (currentSource == DragSource.VaultSlot && MaintenanceManager.Instance != null)
             {
                 bool restoredToVault = false;
                 foreach (var slot in MaintenanceManager.Instance.vaultSlots)
@@ -240,6 +280,7 @@ public class ModuleDragHandler : MonoBehaviour
         isDragging = false;
         selectedModule = null;
         currentShape = null;
+        gridOrigin = null;
 
         if (dragGhostObject != null)
         {

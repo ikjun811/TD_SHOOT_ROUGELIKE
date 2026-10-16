@@ -74,7 +74,7 @@ public class GridSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
 
                         if (ItemTooltipUI.Instance != null) ItemTooltipUI.Instance.HideTooltip();
 
-                        ModuleDragHandler.Instance.StartDragModule(placed.moduleData);
+                        ModuleDragHandler.Instance.StartDragModuleFromGrid(placed);
                         Debug.Log($"🧩 [모듈 재해제] {placed.moduleData.moduleName} 모듈을 다시 집어 올렸습니다.");
                     }
                 }

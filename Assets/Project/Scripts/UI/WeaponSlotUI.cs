@@ -37,7 +37,7 @@ public class WeaponSlotUI : MonoBehaviour, IPointerClickHandler
                 PlayerInventory.Instance.equippedWeapons[weaponSlotIndex] = null;
 
                 // 마우스 손에 무기 들기 상태 전환
-                WeaponDragHandler.Instance.StartDragWeapon(currentWeapon, DragSource.EquipSlot);
+                WeaponDragHandler.Instance.StartDragWeapon(currentWeapon, DragSource.EquipSlot, weaponSlotIndex);
 
                 if (MaintenanceUI.Instance != null)
                 {

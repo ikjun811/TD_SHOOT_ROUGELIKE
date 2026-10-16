@@ -58,5 +58,6 @@ public enum DragSource
 {
     LootList,   // 전리품 가방
     EquipSlot,  // 장착 무기 슬롯
-    VaultSlot   // 금고 보관함 슬롯
+    VaultSlot,  // 금고 보관함 슬롯
+    Grid        // 그리드 배치 모듈
 }

@@ -20,9 +20,20 @@ public class DroppedItem : MonoBehaviour
     private float currentFlySpeed = 10f;
     private float flyAcceleration = 40f;
 
+    // .material 접근 시 생성되는 머티리얼 복사본 (오브젝트 삭제 시 함께 해제)
+    private Material instancedMaterial;
+
     private void Start()
     {
         SetupVisuals();
+    }
+
+    private void OnDestroy()
+    {
+        if (instancedMaterial != null)
+        {
+            Destroy(instancedMaterial);
+        }
     }
 
     private void Update()
@@ -104,7 +115,11 @@ public class DroppedItem : MonoBehaviour
             };
         }
 
-        if (itemRenderer != null) itemRenderer.material.color = rarityColor;
+        if (itemRenderer != null)
+        {
+            if (instancedMaterial == null) instancedMaterial = itemRenderer.material;
+            instancedMaterial.color = rarityColor;
+        }
         if (itemLight != null) itemLight.color = rarityColor;
     }
 
