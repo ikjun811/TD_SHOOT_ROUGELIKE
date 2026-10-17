@@ -15,6 +15,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     private JUCharacterController controller;
     private JUHealth juHealth;
     private JUInventory juInventory;
+    private GrenadeSkill grenadeSkill;
 
     // 기본 스탯 보존용 변수
     private float defaultMaxHealth = 100f;
@@ -39,6 +40,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         controller = GetComponent<JUCharacterController>();
         juHealth = GetComponent<JUHealth>();
         juInventory = GetComponent<JUInventory>();
+        grenadeSkill = GetComponent<GrenadeSkill>();
 
         // 기본 스탯 값 저장
         if (juHealth != null)
@@ -103,6 +105,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float armorBonus = 0f;
         float speedPercent = 0f;
         float fireRatePercent = 0f;
+        float cooldownReduce = 0f;
 
         // 그리드 내 안착된 모든 모듈 스탯 가산
         foreach (var pm in GridInventorySystem.Instance.placedModules)
@@ -115,8 +118,12 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 case ModuleStatType.ArmorBonus: armorBonus += val; break;
                 case ModuleStatType.MoveSpeedPercent: speedPercent += val; break;
                 case ModuleStatType.FireRatePercent: fireRatePercent += val; break;
+                case ModuleStatType.SkillCooldownReduce: cooldownReduce += val; break;
             }
         }
+
+        // 수류탄 쿨감 (GrenadeSkill이 플레이어에 붙어 있을 때만)
+        if (grenadeSkill != null) grenadeSkill.SetCooldownReduction(cooldownReduce);
 
         // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 적용
         moduleAttackPercent = atkPercent;

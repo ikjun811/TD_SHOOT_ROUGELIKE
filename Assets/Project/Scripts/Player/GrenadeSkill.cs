@@ -10,13 +10,29 @@ public class GrenadeSkill : MonoBehaviour
     [SerializeField] private float throwForce = 15f;     // 던지는 힘
     [SerializeField] private float cooldown = 10f;       // 쿨타임 (초)
     [SerializeField] private int maxCharges = 2;         // 최대 충전 횟수
+    [SerializeField] private float maxCooldownReduction = 0.7f; // 쿨감 상한 (임시값, GDD 8-4)
 
     [Header("Current Status (Read Only)")]
     [SerializeField] private int currentCharges;
     [SerializeField] private float currentCooldownTimer;
 
+    private float baseCooldown; // 모듈 보정 전 원래 쿨타임
+
     public int CurrentCharges => currentCharges;
     public float CooldownProgress => currentCooldownTimer / cooldown;
+
+    private void Awake()
+    {
+        baseCooldown = cooldown;
+    }
+
+    // 테트리스 모듈 쿨감 적용 (0.1 = 10% 감소)
+    public void SetCooldownReduction(float reduction)
+    {
+        reduction = Mathf.Clamp(reduction, 0f, maxCooldownReduction);
+        cooldown = baseCooldown * (1f - reduction);
+        Debug.Log($"💣 [수류탄 쿨타임] {baseCooldown}s -> {cooldown:0.##}s (-{reduction * 100f:0.#}%)");
+    }
 
     private void Start()
     {

@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 86fdd4010375953458212be8e6647630, type: 3}
-  m_Name: NewModuleData
+  m_Name: Module_Armor_Elite
   m_EditorClassIdentifier: Assembly-CSharp::ModuleDataSO
-  moduleName: 
-  rarity: 1
+  moduleName: "\uBC29\uC5B4\uB825 \uBAA8\uB4C8 (\uC5D8\uB9AC\uD2B8)"
+  rarity: 2
   moduleIcon: {fileID: 0}
   isUniqueModule: 0
-  width: 2
+  width: 1
   height: 2
-  shapeGrid: 01010101
-  statType: 1
-  statValue: 20
+  shapeGrid: 0101
+  statType: 2
+  statValue: 1
