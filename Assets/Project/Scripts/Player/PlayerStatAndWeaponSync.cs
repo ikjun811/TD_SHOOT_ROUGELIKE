@@ -28,6 +28,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     private readonly Dictionary<Weapon, GameObject> originalBulletPrefabs = new Dictionary<Weapon, GameObject>();
     private readonly Dictionary<Weapon, GameObject> bulletTemplates = new Dictionary<Weapon, GameObject>();
 
+    // 무기별 장전 시간 (WeaponDataSO.reloadTime, 장전 애니메이션 속도 계산에 사용)
+    private readonly Dictionary<Weapon, float> weaponReloadTimes = new Dictionary<Weapon, float>();
+
     // 모듈 무기 보정값 (ApplyTetrisStatsToPlayer에서 갱신, ApplyWeaponData에서 사용)
     private float moduleAttackPercent = 0f;
     private float moduleFireRatePercent = 0f;
@@ -91,7 +94,8 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         ApplyReloadAnimationSpeed();
     }
 
-    // 장전 속도 모듈: JU 장전은 애니메이션 이벤트(reloadRightHandWeapon)로 끝나므로, 장전 중에만 애니메이터 속도를 올려 장전을 빠르게 함
+    // 장전 속도: JU 장전은 애니메이션 이벤트(reloadRightHandWeapon)로 끝나므로, 장전 중에만 애니메이터 속도를 조절
+    // 속도 = (장전 애니메이션 원래 길이 / 무기 reloadTime) x (1 + 장전 속도 모듈%) → 장전 모션 전체 길이 = reloadTime
     // JU는 RootMotion을 쓰지 않아 이동 속도에는 영향 없음 (장전 중 하체 애니메이션만 같이 빨라짐)
     private void ApplyReloadAnimationSpeed()
     {
@@ -101,12 +105,30 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         int armsLayer = controller.AnimatorParameters._BothArmsLayerIndex;
         AnimatorStateInfo armsState = anim.GetCurrentAnimatorStateInfo(armsLayer);
 
-        // JU의 장전 판정과 같은 조건 (IsReloading 또는 장전 애니메이션 재생 중)
-        bool isReloading = controller.IsReloading
-                           || armsState.IsName("Reload Right Hand Weapon")
-                           || armsState.IsName("Reload Left Hand Weapon");
+        bool reloadingRight = armsState.IsName("Reload Right Hand Weapon");
+        bool reloadingLeft = armsState.IsName("Reload Left Hand Weapon");
 
-        float targetSpeed = isReloading ? 1f + moduleReloadSpeedPercent : 1f;
+        // JU의 장전 판정과 같은 조건 (IsReloading 또는 장전 애니메이션 재생 중)
+        bool isReloading = controller.IsReloading || reloadingRight || reloadingLeft;
+
+        float targetSpeed = 1f;
+        if (isReloading)
+        {
+            targetSpeed = 1f + moduleReloadSpeedPercent;
+
+            // 장전 애니메이션 재생 중이면 무기별 장전 시간에 맞춤
+            Weapon reloadingWeapon = reloadingRight ? controller.RightHandWeapon : (reloadingLeft ? controller.LeftHandWeapon : null);
+            if (reloadingWeapon != null
+                && weaponReloadTimes.TryGetValue(reloadingWeapon, out float reloadTime) && reloadTime > 0f)
+            {
+                AnimatorClipInfo[] clips = anim.GetCurrentAnimatorClipInfo(armsLayer);
+                if (clips.Length > 0 && clips[0].clip != null)
+                {
+                    targetSpeed *= clips[0].clip.length / reloadTime;
+                }
+            }
+        }
+
         if (!Mathf.Approximately(anim.speed, targetSpeed)) anim.speed = targetSpeed;
     }
 
@@ -246,6 +268,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
 
         // 연사·탄창: 탄창은 가득 채우고, 예비탄은 무한 (재장전은 필요)
         weapon.Fire_Rate = finalFireRate;
+        weaponReloadTimes[weapon] = data.reloadTime;
         weapon.BulletsPerMagazine = Mathf.Max(1, data.maxAmmo);
         weapon.BulletsAmounts = weapon.BulletsPerMagazine;
         weapon.InfiniteAmmo = true;
@@ -294,7 +317,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {data.reloadTime}s,Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}");
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)

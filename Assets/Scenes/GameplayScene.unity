@@ -951,7 +951,7 @@ Transform:
   m_GameObject: {fileID: 277796832}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.16241534, z: -0, w: 0.98672247}
-  m_LocalPosition: {x: -0.50756073, y: -0.45, z: -0.5106201}
+  m_LocalPosition: {x: -27.2, y: 0.9, z: 20.1}
   m_LocalScale: {x: 3, y: 3, z: 0.3697484}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7260,6 +7260,11 @@ MonoBehaviour:
   reloadColor: {r: 0.3, g: 0.85, b: 1, a: 1}
   backgroundColor: {r: 0, g: 0, b: 0, a: 0.5}
   lowAmmoThreshold: 0.25
+  grenadeReadyColor: {r: 1, g: 0.6, b: 0.15, a: 1}
+  grenadeChargingColor: {r: 1, g: 0.6, b: 0.15, a: 0.35}
+  grenadeBarWidth: 14
+  grenadeBarGap: 8
+  grenadeSegmentGap: 6
 --- !u!114 &1873019222
 MonoBehaviour:
   m_ObjectHideFlags: 0

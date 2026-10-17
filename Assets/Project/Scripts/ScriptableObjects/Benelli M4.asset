@@ -21,4 +21,4 @@ MonoBehaviour:
   baseDamage: 10
   fireRate: 0.8
   maxAmmo: 8
-  reloadTime: 2
+  reloadTime: 2.5

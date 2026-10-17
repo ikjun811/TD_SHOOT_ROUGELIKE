@@ -20,7 +20,7 @@ public class WeaponDataSO : ScriptableObject
     public float baseDamage = 15f;
     public float fireRate = 0.15f;    // 발사 간격 (초)
     public int maxAmmo = 30;
-    public float reloadTime = 2.0f;   // JU에 장전 시간 항목이 없어 추후 래퍼로 적용
+    public float reloadTime = 2.0f;   // 장전 모션 전체 길이 (초). PlayerStatAndWeaponSync가 장전 중 애니메이터 속도로 적용
 
     // 레어도에 따른 최종 피해 (레어도는 기본 피해 배율에만 적용, 계수는 임시값 GDD 8-2)
     public float GetFinalDamage()
