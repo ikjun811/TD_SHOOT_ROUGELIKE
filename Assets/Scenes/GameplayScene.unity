@@ -2957,7 +2957,24 @@ MonoBehaviour:
   currentKillsCount: 0
   currentEnemiesAlive: 0
   isWaveActive: 0
-  hasTriggered50PercentEvent: 0
+  eliteGracePeriod: 20
+  eliteTimeBaseInterval: 60
+  eliteTimeReductionPerRound: 2.5
+  eliteTimeMinFirstInterval: 25
+  eliteTimeAcceleration: 0.85
+  eliteTimeMinInterval: 15
+  eliteKillBase: 25
+  eliteKillReductionPer30s: 2
+  eliteKillReductionPerRound: 1
+  eliteKillMinEarly: 5
+  eliteKillMinLate: 3
+  eliteKillLateFromRound: 8
+  eliteMaxCap: 4
+  eliteMaxRoundStep: 3
+  stageTime: 0
+  eliteAlive: 0
+  pendingElites: 0
+  killsSinceLastElite: 0
   roundClearDelay: 2.5
 --- !u!4 &766447419
 Transform:
@@ -5602,6 +5619,8 @@ MonoBehaviour:
     elite: 40
     legendary: 15
   ownedWeaponTypeWeight: 0.3
+  eliteUpgradeChance: 0.5
+  eliteDoubleUpgradeChance: 0.3
   overallDropChance: 0.4
 --- !u!1 &1374361119
 GameObject:
@@ -7883,6 +7902,70 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2119934850
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2119934852}
+  - component: {fileID: 2119934851}
+  m_Layer: 0
+  m_Name: ArenaGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2119934851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2119934850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d20b820694c268498e31547b6fb1923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BspArenaGenerator
+  seed: 0
+  generateOnStart: 0
+  lastGeneratedSeed: 661905549
+  arenaSize: 90
+  minLeafSize: 18
+  maxDepth: 4
+  minSplitRatio: 0.35
+  laneWidth: 6
+  centerClearSize: 8
+  obstaclesPerLeaf: {x: 0, y: 2}
+  obstacleSpacing: 3
+  wallLengthRange: {x: 4, y: 7}
+  pillarSize: 2
+  obstacleHeight: 3
+  placementAttemptsPerObstacle: 15
+  boundaryHeight: 4
+  boundaryThickness: 1
+  floorMaterial: {fileID: 0}
+  wallMaterial: {fileID: 0}
+  wallLayerName: Walls
+--- !u!4 &2119934852
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2119934850}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 300, y: -0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2120986317
 GameObject:
   m_ObjectHideFlags: 0
@@ -8560,3 +8643,4 @@ SceneRoots:
   - {fileID: 78285918}
   - {fileID: 2004680692}
   - {fileID: 1349081376}
+  - {fileID: 2119934852}
