@@ -31,6 +31,10 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     // 모듈 무기 보정값 (ApplyTetrisStatsToPlayer에서 갱신, ApplyWeaponData에서 사용)
     private float moduleAttackPercent = 0f;
     private float moduleFireRatePercent = 0f;
+    private float moduleCritChance = 0f;
+
+    [Header("Critical (임시값, GDD 8-4)")]
+    [SerializeField] private float critDamageMultiplier = 2f;
 
     private void Awake()
     {
@@ -106,6 +110,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float speedPercent = 0f;
         float fireRatePercent = 0f;
         float cooldownReduce = 0f;
+        float critChance = 0f;
 
         // 그리드 내 안착된 모든 모듈 스탯 가산
         foreach (var pm in GridInventorySystem.Instance.placedModules)
@@ -119,6 +124,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 case ModuleStatType.MoveSpeedPercent: speedPercent += val; break;
                 case ModuleStatType.FireRatePercent: fireRatePercent += val; break;
                 case ModuleStatType.SkillCooldownReduce: cooldownReduce += val; break;
+                case ModuleStatType.CriticalChance: critChance += val; break;
             }
         }
 
@@ -128,6 +134,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 적용
         moduleAttackPercent = atkPercent;
         moduleFireRatePercent = fireRatePercent;
+        moduleCritChance = Mathf.Clamp01(critChance);
 
         // 체력 및 방어력 적용
         if (juHealth != null)
@@ -237,12 +244,23 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         template.name = $"{originalBullet.name} ({data.weaponName})";
 
         Bullet bullet = template.GetComponent<Bullet>();
-        if (bullet != null) bullet.BulletDamage = finalDamage;
+        if (bullet != null)
+        {
+            bullet.BulletDamage = finalDamage;
+
+            // 치명타: 템플릿에 판정 컴포넌트를 붙여 두면 JU가 복제한 탄마다 판정 (템플릿은 비활성 부모 밑이라 판정 안 함)
+            if (moduleCritChance > 0f)
+            {
+                CriticalBullet crit = template.AddComponent<CriticalBullet>();
+                crit.critChance = moduleCritChance;
+                crit.critMultiplier = critDamageMultiplier;
+            }
+        }
 
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}");
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)
