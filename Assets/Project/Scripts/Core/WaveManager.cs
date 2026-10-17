@@ -145,24 +145,45 @@ public class WaveManager : MonoBehaviour
     }
 
     // 화면 밖 무작위 좌표 계산 함수 (NavMesh 보정 포함)
+    // 카메라 화면 안에 들어오는 위치는 다시 뽑음 (카메라 각도·크기·룩어헤드가 바뀌어도 자동 대응)
     private Vector3 GetRandomOffscreenSpawnPosition()
     {
         if (playerTransform == null) return transform.position;
 
-        // 플레이어 기준 360도 무작위 방향
-        Vector2 randomCircle = Random.insideUnitCircle.normalized;
-        float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
+        Camera cam = Camera.main;
+        Vector3 candidate = playerTransform.position;
 
-        Vector3 spawnOffset = new Vector3(randomCircle.x, 0f, randomCircle.y) * randomDistance;
-        Vector3 targetSpawnPos = playerTransform.position + spawnOffset;
-
-        // NavMesh 바닥 유효 좌표로 자동 보정
-        if (NavMesh.SamplePosition(targetSpawnPos, out NavMeshHit hit, 8.0f, NavMesh.AllAreas))
+        for (int attempt = 0; attempt < MaxSpawnAttempts; attempt++)
         {
-            return hit.position;
+            // 플레이어 기준 360도 무작위 방향
+            Vector2 randomCircle = Random.insideUnitCircle.normalized;
+            float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
+
+            Vector3 spawnOffset = new Vector3(randomCircle.x, 0f, randomCircle.y) * randomDistance;
+            candidate = playerTransform.position + spawnOffset;
+
+            // NavMesh 바닥 유효 좌표로 자동 보정
+            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 8.0f, NavMesh.AllAreas))
+            {
+                candidate = hit.position;
+            }
+
+            if (cam == null || !IsVisibleOnScreen(cam, candidate)) return candidate;
         }
 
-        return targetSpawnPos; // 보정 실패 시 원본 좌표
+        return candidate; // 모든 시도가 화면 안이면 마지막 좌표 사용
+    }
+
+    private const int MaxSpawnAttempts = 10;
+    private const float ScreenMargin = 0.1f; // 화면 가장자리 여유 (뷰포트 비율)
+
+    // 적 몸통 높이(1m) 기준으로 화면(가장자리 여유 포함) 안에 보이는지 검사
+    private bool IsVisibleOnScreen(Camera cam, Vector3 position)
+    {
+        Vector3 vp = cam.WorldToViewportPoint(position + Vector3.up);
+        return vp.z > 0f
+            && vp.x > -ScreenMargin && vp.x < 1f + ScreenMargin
+            && vp.y > -ScreenMargin && vp.y < 1f + ScreenMargin;
     }
 
     // 적 사망 시 호출 (10마리 제한 삭제 및 무한 스폰 유지)

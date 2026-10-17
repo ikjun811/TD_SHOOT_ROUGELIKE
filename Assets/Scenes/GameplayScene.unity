@@ -3280,8 +3280,40 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: NormalCameraState.Distance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: AimModeCameraState.Distance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: FireModeCameraState.Distance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: DeadPlayerCameraState.Distance
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
       propertyPath: CrosshairRaycastLayerMask.m_Bits
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: DrivingVehicleCameraState.Distance
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: NormalCameraState.CameraFieldOfView
+      value: 70
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: AimModeCameraState.CameraFieldOfView
+      value: 70
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001010056594958992, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
+      propertyPath: FireModeCameraState.CameraFieldOfView
+      value: 70
       objectReference: {fileID: 0}
     - target: {fileID: 2371141769173249420, guid: 5761389f811920e42951e3e7b4aee4c8, type: 3}
       propertyPath: m_RootOrder
@@ -7228,6 +7260,51 @@ MonoBehaviour:
   reloadColor: {r: 0.3, g: 0.85, b: 1, a: 1}
   backgroundColor: {r: 0, g: 0, b: 0, a: 0.5}
   lowAmmoThreshold: 0.25
+--- !u!114 &1873019222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873019170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2a695f8265aae42b3c34a5f178d6e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraLookAhead
+  maxOffset: 3
+  deadZone: 0.1
+  smoothTime: 0.4
+--- !u!114 &1873019223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873019170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04579bdd72814b64385f453c7b110f55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrenadeSkill
+  grenadeKey: 103
+  cooldown: 10
+  maxCharges: 2
+  maxCooldownReduction: 0.7
+  maxThrowRange: 8
+  flightTime: 0.7
+  throwHeight: 1.5
+  fuseTime: 1.2
+  explosionRadius: 4
+  centerDamage: 80
+  edgeDamage: 40
+  grenadeModel: {fileID: 919132149155446097, guid: 1022f258e3204454d994c9765686f594, type: 3}
+  explosionVFX: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a, type: 3}
+  vfxScale: 0.5
+  vfxSpeed: 1.5
+  vfxDuration: 2
+  currentCharges: 0
+  currentCooldownTimer: 0
 --- !u!1 &1950587420
 GameObject:
   m_ObjectHideFlags: 0
@@ -8404,6 +8481,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1873019221}
+    - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1873019222}
+    - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1873019223}
   m_SourcePrefab: {fileID: 100100000, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

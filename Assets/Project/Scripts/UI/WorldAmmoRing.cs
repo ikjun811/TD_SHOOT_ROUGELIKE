@@ -22,6 +22,13 @@ public class WorldAmmoRing : MonoBehaviour
     public Color backgroundColor = new Color(0f, 0f, 0f, 0.5f);
     [Range(0f, 1f)] public float lowAmmoThreshold = 0.25f;
 
+    [Header("Grenade Charges (링 오른쪽 세로 막대)")]
+    public Color grenadeReadyColor = new Color(1f, 0.6f, 0.15f);
+    public Color grenadeChargingColor = new Color(1f, 0.6f, 0.15f, 0.35f);
+    public float grenadeBarWidth = 14f;   // 링 캔버스(100x100) 기준 단위
+    public float grenadeBarGap = 8f;      // 링과 막대 사이 간격
+    public float grenadeSegmentGap = 6f;  // 칸 사이 간격
+
     private const int TextureSize = 128;
     private const float InnerRadiusRatio = 0.72f; // 링 두께 (안쪽 반지름 / 바깥 반지름)
 
@@ -32,9 +39,13 @@ public class WorldAmmoRing : MonoBehaviour
     private Image fillImage;
     private TextMeshProUGUI ammoText;
 
+    private GrenadeSkill grenadeSkill;
+    private RectTransform[] grenadeFills;
+
     private void Awake()
     {
         controller = GetComponent<JUCharacterController>();
+        grenadeSkill = GetComponent<GrenadeSkill>();
     }
 
     private void Start()
@@ -80,6 +91,63 @@ public class WorldAmmoRing : MonoBehaviour
         ammoText.fontStyle = FontStyles.Bold;
         ammoText.textWrappingMode = TextWrappingModes.NoWrap;
         ammoText.raycastTarget = false;
+
+        if (grenadeSkill != null) BuildGrenadeBars(rootRect);
+    }
+
+    // 링 오른쪽에 수류탄 충전 칸을 아래→위로 세로 배치 (캔버스 100x100 기준 좌표)
+    private void BuildGrenadeBars(RectTransform parent)
+    {
+        int count = Mathf.Max(1, grenadeSkill.MaxCharges);
+        float segmentHeight = (100f - grenadeSegmentGap * (count - 1)) / count;
+        grenadeFills = new RectTransform[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            GameObject bg = new GameObject($"GrenadeBar_{i}", typeof(RectTransform), typeof(Image));
+            RectTransform bgRect = bg.GetComponent<RectTransform>();
+            bgRect.SetParent(parent, false);
+            bgRect.anchorMin = bgRect.anchorMax = new Vector2(1f, 0f); // 링 영역의 오른쪽 아래 기준
+            bgRect.pivot = new Vector2(0f, 0f);
+            bgRect.sizeDelta = new Vector2(grenadeBarWidth, segmentHeight);
+            bgRect.anchoredPosition = new Vector2(grenadeBarGap, i * (segmentHeight + grenadeSegmentGap));
+
+            Image bgImage = bg.GetComponent<Image>();
+            bgImage.color = backgroundColor;
+            bgImage.raycastTarget = false;
+
+            GameObject fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            RectTransform fillRect = fill.GetComponent<RectTransform>();
+            fillRect.SetParent(bgRect, false);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            fill.GetComponent<Image>().raycastTarget = false;
+
+            grenadeFills[i] = fillRect;
+        }
+    }
+
+    // 충전된 칸은 가득(준비 색), 충전 중인 칸은 쿨타임 진행도만큼 아래에서 위로(충전 중 색)
+    private void UpdateGrenadeBars()
+    {
+        if (grenadeFills == null || grenadeSkill == null) return;
+
+        int charges = grenadeSkill.CurrentCharges;
+        float progress = Mathf.Clamp01(grenadeSkill.CooldownProgress);
+
+        for (int i = 0; i < grenadeFills.Length; i++)
+        {
+            float amount;
+            Color color;
+            if (i < charges) { amount = 1f; color = grenadeReadyColor; }
+            else if (i == charges) { amount = progress; color = grenadeChargingColor; }
+            else { amount = 0f; color = grenadeChargingColor; }
+
+            grenadeFills[i].anchorMax = new Vector2(1f, amount);
+            grenadeFills[i].GetComponent<Image>().color = color;
+        }
     }
 
     private Image CreateImage(string objName, RectTransform parent, Sprite sprite, Color color)
@@ -159,6 +227,8 @@ public class WorldAmmoRing : MonoBehaviour
             ammoText.color = c;
         }
         ammoText.text = ammo.ToString();
+
+        UpdateGrenadeBars();
 
         // 캐릭터 기준 화면 오른쪽 + 카메라를 향하도록 회전
         if (mainCamera == null) mainCamera = Camera.main;

@@ -159,7 +159,11 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         moduleReloadSpeedPercent = reloadSpeedPercent;
 
         // 수류탄 쿨감 (GrenadeSkill이 플레이어에 붙어 있을 때만)
-        if (grenadeSkill != null) grenadeSkill.SetCooldownReduction(cooldownReduce);
+        if (grenadeSkill != null)
+        {
+            grenadeSkill.SetCooldownReduction(cooldownReduce);
+            grenadeSkill.RefillCharges(); // 다음 라운드 시작 시 충전 가득
+        }
 
         // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 적용
         moduleAttackPercent = atkPercent;
