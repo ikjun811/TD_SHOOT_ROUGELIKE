@@ -84,14 +84,74 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         }
     }
 
+    // 사망 후 부활 시 JU가 애니메이터를 재시작해 무기 자세가 풀리므로, 다음 동기화 때 같은 무기도 다시 장착
+    private bool needsReequip = false;
+
     private void Start()
     {
         StartCoroutine(InitialWeaponSync());
+
+        if (juHealth != null) juHealth.OnDeath += MarkNeedsReequip;
+    }
+
+    private void OnDestroy()
+    {
+        if (juHealth != null) juHealth.OnDeath -= MarkNeedsReequip;
+    }
+
+    private void MarkNeedsReequip()
+    {
+        needsReequip = true;
     }
 
     private void Update()
     {
         ApplyReloadAnimationSpeed();
+        SyncDualWeaponReload();
+    }
+
+    // 쌍권총: JU는 좌우를 번갈아 쏘며(왼손이 쏴야 오른손 차례가 돌아옴), 장전도 손마다 따로 끝남
+    // 한 손 장전 직후 무기를 바꾸면 다른 손이 0발로 남아 번갈아 쏘기가 멈추고 사격 불가가 됨
+    // → 한 손 장전이 끝나는 순간(탄 증가) 다른 손도 함께 채움 (장전은 무기 단위 한 동작, 예비탄 무한이라 손익 없음)
+    private Weapon lastDualRight, lastDualLeft;
+    private int lastDualRightAmmo, lastDualLeftAmmo;
+
+    private void SyncDualWeaponReload()
+    {
+        if (controller == null) return;
+
+        Weapon right = controller.RightHandWeapon;
+        Weapon left = controller.LeftHandWeapon;
+        if (right == null || left == null)
+        {
+            lastDualRight = lastDualLeft = null;
+            return;
+        }
+
+        // 쌍권총을 새로 들었으면 기준값만 기록
+        if (right != lastDualRight || left != lastDualLeft)
+        {
+            lastDualRight = right;
+            lastDualLeft = left;
+            lastDualRightAmmo = right.BulletsAmounts;
+            lastDualLeftAmmo = left.BulletsAmounts;
+            return;
+        }
+
+        // 반대손 장전 애니메이션 트리거도 취소해 장전을 한 번의 모션으로 끝냄 (장전 UI 완료 시점 = 사격 가능 시점)
+        if (right.BulletsAmounts > lastDualRightAmmo)
+        {
+            left.BulletsAmounts = left.BulletsPerMagazine;
+            if (controller.anim != null) controller.anim.ResetTrigger(controller.AnimatorParameters.ReloadLeftWeapon);
+        }
+        else if (left.BulletsAmounts > lastDualLeftAmmo)
+        {
+            right.BulletsAmounts = right.BulletsPerMagazine;
+            if (controller.anim != null) controller.anim.ResetTrigger(controller.AnimatorParameters.ReloadRightWeapon);
+        }
+
+        lastDualRightAmmo = right.BulletsAmounts;
+        lastDualLeftAmmo = left.BulletsAmounts;
     }
 
     // 장전 속도: JU 장전은 애니메이션 이벤트(reloadRightHandWeapon)로 끝나므로, 장전 중에만 애니메이터 속도를 조절
@@ -144,6 +204,37 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     {
         ApplyTetrisStatsToPlayer();
         SyncEquippedWeaponsToPlayer();
+        SetPlayerControlEnabled(true);
+    }
+
+    // 정비 중 플레이어 입력 차단 (timeScale 0이어도 JU Update가 클릭을 사격으로 처리해 격발음이 나던 문제)
+    // 재개 시에는 NEXT ROUND 클릭이 사격으로 이어지지 않도록 마우스 버튼을 뗀 뒤에 켬
+    private Coroutine enableControlRoutine;
+
+    public void SetPlayerControlEnabled(bool enabled)
+    {
+        if (controller == null) return;
+
+        if (enableControlRoutine != null)
+        {
+            StopCoroutine(enableControlRoutine);
+            enableControlRoutine = null;
+        }
+
+        if (!enabled)
+        {
+            controller.enabled = false;
+            return;
+        }
+
+        enableControlRoutine = StartCoroutine(EnableControlAfterMouseRelease());
+    }
+
+    private IEnumerator EnableControlAfterMouseRelease()
+    {
+        while (Input.GetMouseButton(0) || Input.GetMouseButton(1)) yield return null;
+        controller.enabled = true;
+        enableControlRoutine = null;
     }
 
     // 1. 테트리스 모듈 최종 스탯을 3D 캐릭터 수치에 적용
@@ -253,6 +344,14 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
 
         if (itemToHold != null)
         {
+            // JU SwitchToItem은 같은 무기면 건너뛰므로, 부활 후에는 한 번 해제했다가 다시 장착 (무기 교체와 같은 효과)
+            if (needsReequip)
+            {
+                controller.IsReloading = false; // 장전 중 사망 시 남은 장전 상태 정리 (장전 중이면 교체가 막힘)
+                controller.SwitchToItem(-1, true);
+                needsReequip = false;
+            }
+
             controller.SwitchToItem(itemToHold.ItemSwitchID, true);
             Debug.Log($"PlayerStatAndWeaponSync: Holding 3D weapon -> {itemToHold.ItemName}");
         }

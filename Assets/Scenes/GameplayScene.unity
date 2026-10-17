@@ -4678,7 +4678,7 @@ MonoBehaviour:
   equippedWeapons:
   - {fileID: 0}
   - {fileID: 0}
-  startingWeapon: {fileID: 11400000, guid: 1bae4f5bd17c86342846a9985ed51f06, type: 2}
+  startingWeapon: {fileID: 11400000, guid: 70469e49cc6cf184f96d250d735bde3f, type: 2}
 --- !u!1 &1175588744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5527,6 +5527,21 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70469e49cc6cf184f96d250d735bde3f, type: 2}
   - {fileID: 11400000, guid: d3a2486d553a21046886ac417c8c4bbb, type: 2}
   - {fileID: 11400000, guid: 61e5ffd0b54e01f4f98bad8b421f0d63, type: 2}
+  - {fileID: 11400000, guid: a3fb53895d98cf7438a3b0ba97391dc1, type: 2}
+  - {fileID: 11400000, guid: dbd87a36e43432e4f9e2fba02e182da2, type: 2}
+  - {fileID: 11400000, guid: e0a3bba64206bb845b699b33d60f5799, type: 2}
+  - {fileID: 11400000, guid: bcd3cbaa76b1b924fb22037dc980a41e, type: 2}
+  - {fileID: 11400000, guid: f925eea34c755a44e90e050a754ad5e5, type: 2}
+  - {fileID: 11400000, guid: df80ce16486d46d468852a118da231e6, type: 2}
+  - {fileID: 11400000, guid: 1a60f94a496f34648ad9489382b97a91, type: 2}
+  - {fileID: 11400000, guid: 21ad1dd1837ad2f46ace7b5a564d7b60, type: 2}
+  - {fileID: 11400000, guid: d04a3e7c2a3e19c43abab786167078c3, type: 2}
+  - {fileID: 11400000, guid: 4446107e6cf344449864464874039260, type: 2}
+  - {fileID: 11400000, guid: ccb20c9e964719c478b97c57b6080b0c, type: 2}
+  - {fileID: 11400000, guid: 5fefe627dd0c56247b03412de64ed7ee, type: 2}
+  - {fileID: 11400000, guid: 67032e8ce0344734ab161383077ca51d, type: 2}
+  - {fileID: 11400000, guid: 7d51e98cb2cb2d74e8ab79cad12dda78, type: 2}
+  - {fileID: 11400000, guid: 3299bdcc6c2651d4bb4ca5f73c3f9c0c, type: 2}
   allModules:
   - {fileID: 11400000, guid: 4856135e9a04d8845953a644f0953922, type: 2}
   - {fileID: 11400000, guid: 6f63fd6d5547d3e4bbbf489d5ae32292, type: 2}
@@ -5586,6 +5601,7 @@ MonoBehaviour:
     rare: 35
     elite: 40
     legendary: 15
+  ownedWeaponTypeWeight: 0.3
   overallDropChance: 0.4
 --- !u!1 &1374361119
 GameObject:

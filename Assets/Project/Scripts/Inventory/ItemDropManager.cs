@@ -40,6 +40,10 @@ public class ItemDropManager : MonoBehaviour
         new RarityTier(13, 10f, 35f, 40f, 15f),
     };
 
+    [Header("Supply Crate Weapon (GDD 8-6 #13)")]
+    [Tooltip("장착 슬롯·금고에 이미 있는 무기군이 뽑힐 가중치 (1 = 억제 없음)")]
+    [Range(0f, 1f)][SerializeField] private float ownedWeaponTypeWeight = 0.3f;
+
     [Header("Fallback Drop Settings")]
     [Range(0f, 1f)][SerializeField] private float overallDropChance = 0.35f;
 
@@ -135,6 +139,59 @@ public class ItemDropManager : MonoBehaviour
         List<WeaponDataSO> filtered = allWeapons.FindAll(w => w.rarity == rarity);
         if (filtered.Count == 0) filtered = allWeapons;
         return filtered.Count > 0 ? filtered[Random.Range(0, filtered.Count)] : null;
+    }
+
+    // 보급 상자 무기 드랍: 레어도 표 기준, 장착·금고에 있는 무기군은 낮은 가중치 (중복 억제)
+    public void DropCrateWeapon(Vector3 position, int currentRound)
+    {
+        RarityType rarity = DetermineRarityByRound(currentRound);
+
+        List<WeaponDataSO> candidates = allWeapons.FindAll(w => w != null && w.rarity == rarity);
+        if (candidates.Count == 0) candidates = allWeapons.FindAll(w => w != null);
+        if (candidates.Count == 0) return;
+
+        HashSet<WeaponType> ownedTypes = GetOwnedWeaponTypes();
+
+        float totalWeight = 0f;
+        foreach (WeaponDataSO w in candidates) totalWeight += ownedTypes.Contains(w.weaponType) ? ownedWeaponTypeWeight : 1f;
+
+        WeaponDataSO picked = candidates[candidates.Count - 1];
+        if (totalWeight > 0f)
+        {
+            float rand = Random.value * totalWeight;
+            foreach (WeaponDataSO w in candidates)
+            {
+                rand -= ownedTypes.Contains(w.weaponType) ? ownedWeaponTypeWeight : 1f;
+                if (rand <= 0f) { picked = w; break; }
+            }
+        }
+
+        SpawnDrop(position, picked, null);
+        Debug.Log($"ItemDropManager: Supply crate -> {picked.weaponName} [{picked.rarity}]");
+    }
+
+    // 장착 슬롯과 금고에 있는 무기군
+    private HashSet<WeaponType> GetOwnedWeaponTypes()
+    {
+        HashSet<WeaponType> owned = new HashSet<WeaponType>();
+
+        if (PlayerInventory.Instance != null)
+        {
+            foreach (WeaponDataSO w in PlayerInventory.Instance.equippedWeapons)
+            {
+                if (w != null) owned.Add(w.weaponType);
+            }
+        }
+
+        if (MaintenanceManager.Instance != null && MaintenanceManager.Instance.vaultSlots != null)
+        {
+            foreach (MaintenanceManager.VaultSlotItem slot in MaintenanceManager.Instance.vaultSlots)
+            {
+                if (slot != null && slot.weapon != null) owned.Add(slot.weapon.weaponType);
+            }
+        }
+
+        return owned;
     }
 
     private ModuleDataSO GetRandomModuleOfRarity(RarityType rarity)

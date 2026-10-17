@@ -56,6 +56,12 @@ public class MaintenanceManager : MonoBehaviour
     {
         isInMaintenance = true;
 
+        // 정비 중 클릭이 사격으로 처리되지 않도록 플레이어 입력 차단 (다음 라운드 시작 시 복구)
+        if (PlayerStatAndWeaponSync.Instance != null)
+        {
+            PlayerStatAndWeaponSync.Instance.SetPlayerControlEnabled(false);
+        }
+
         if (ItemDropManager.Instance != null)
         {
             ItemDropManager.Instance.EnsureAllItemsCollected();
@@ -155,6 +161,12 @@ public class MaintenanceManager : MonoBehaviour
         if (StageDifficultyManager.Instance != null)
         {
             StageDifficultyManager.Instance.ResetStageDifficulty();
+        }
+
+        // 3-1. 보급 상자 재생성 (플레이어·탈출 구역 재배치 이후라 거리 조건이 맞게 적용됨)
+        if (SupplyCrateManager.Instance != null)
+        {
+            SupplyCrateManager.Instance.RespawnCrates();
         }
 
         // 4. 웨이브 적 무한 스폰 코루틴 재가동
