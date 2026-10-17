@@ -419,7 +419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c61084bc81998248ae3953c6fc026ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExtractionZone
-  requiredExtractionTime: 60
+  requiredExtractionTime: 40
   currentExtractionProgress: 0
 --- !u!135 &78285917
 SphereCollider:
@@ -7164,6 +7164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3193ee69935b4a14aba676ced755c722, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatAndWeaponSync
+  critDamageMultiplier: 2
   gunClippingLayerName: Walls
 --- !u!114 &1873019219
 MonoBehaviour:
