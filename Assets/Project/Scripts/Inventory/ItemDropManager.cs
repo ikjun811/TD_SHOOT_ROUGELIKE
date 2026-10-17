@@ -96,20 +96,11 @@ public class ItemDropManager : MonoBehaviour
             }
         }
 
+        // 적은 모듈만 드랍 (무기는 보급 상자에서 획득, GDD 8-6 #5·#13)
         RarityType selectedRarity = DetermineRarityByRound(currentRound);
 
-        bool dropWeapon = Random.value > 0.5f;
-
-        if (dropWeapon)
-        {
-            WeaponDataSO weapon = GetRandomWeaponOfRarity(selectedRarity);
-            if (weapon != null) SpawnDrop(spawnPosition, weapon, null);
-        }
-        else
-        {
-            ModuleDataSO module = GetRandomModuleOfRarity(selectedRarity);
-            if (module != null) SpawnDrop(spawnPosition, null, module);
-        }
+        ModuleDataSO module = GetRandomModuleOfRarity(selectedRarity);
+        if (module != null) SpawnDrop(spawnPosition, null, module);
     }
 
     // 레어도 표에서 현재 라운드 구간을 찾아 확률대로 레어도 결정
@@ -132,13 +123,6 @@ public class ItemDropManager : MonoBehaviour
         rand -= tier.elite;
         if (rand < tier.rare) return RarityType.Rare;
         return RarityType.Common;
-    }
-
-    private WeaponDataSO GetRandomWeaponOfRarity(RarityType rarity)
-    {
-        List<WeaponDataSO> filtered = allWeapons.FindAll(w => w.rarity == rarity);
-        if (filtered.Count == 0) filtered = allWeapons;
-        return filtered.Count > 0 ? filtered[Random.Range(0, filtered.Count)] : null;
     }
 
     // 보급 상자 무기 드랍: 레어도 표 기준, 장착·금고에 있는 무기군은 낮은 가중치 (중복 억제)

@@ -8,6 +8,7 @@ using JU;
 public class EnemyBase : MonoBehaviour
 {
     [Header("Enemy Settings")]
+    [SerializeField] private float baseHealth = 50f;
     [SerializeField] private float baseMoveSpeed = 3.5f;
     [SerializeField] private float baseAttackDamage = 10f;
     [SerializeField] private float attackRange = 1.8f;
@@ -17,8 +18,23 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] private float repathInterval = 0.2f;      // 경로 재계산 간격 (초)
     [SerializeField] private float repathMoveThreshold = 1.5f; // 플레이어가 이만큼 움직이면 간격과 무관하게 즉시 재계산 (m)
 
+    [Header("Elite (WaveManager가 MarkAsElite로 지정, GDD 8-4 #15 임시값)")]
+    [SerializeField] private float eliteHealthMultiplier = 5f;
+    [SerializeField] private float eliteDamageMultiplier = 1.5f;
+    [SerializeField] private float eliteSpeedMultiplier = 0.9f;
+    [SerializeField] private float eliteScaleMultiplier = 1.3f;
+    [SerializeField] private Color eliteColor = new Color(0.6f, 0.25f, 0.9f);
+
     [Header("Effects")]
     [SerializeField] private GameObject deathVFX;
+
+    public bool IsElite { get; private set; }
+
+    // 생성 직후(Start 전) 호출하면 Start에서 엘리트 배율·외형 적용
+    public void MarkAsElite()
+    {
+        IsElite = true;
+    }
 
     private NavMeshAgent agent;
     private Transform playerTransform;
@@ -38,9 +54,17 @@ public class EnemyBase : MonoBehaviour
 
     private void Start()
     {
-        float currentHp = 50f;
+        float currentHp = baseHealth;
         float currentDmg = baseAttackDamage;
         float currentSpd = baseMoveSpeed;
+
+        if (IsElite)
+        {
+            currentHp *= eliteHealthMultiplier;
+            currentDmg *= eliteDamageMultiplier;
+            currentSpd *= eliteSpeedMultiplier;
+            ApplyEliteVisuals();
+        }
 
         if (StageDifficultyManager.Instance != null)
         {
@@ -79,12 +103,27 @@ public class EnemyBase : MonoBehaviour
             juHealth.OnDamaged += OnEnemyDamaged;
         }
 
-        // 머리 위 체력바 자동 부착 (피격 후에만 표시, 프리팹에 이미 있으면 그 설정 사용)
+        // 머리 위 체력바 자동 부착 (일반: 피격 후에만 빨강 / 엘리트: 항상 보라, 프리팹에 이미 있으면 그 설정 사용)
         if (GetComponent<WorldHealthBar>() == null)
         {
             WorldHealthBar bar = gameObject.AddComponent<WorldHealthBar>();
-            bar.showOnlyWhenDamaged = true;
-            bar.fillColor = new Color(0.9f, 0.2f, 0.2f);
+            bar.showOnlyWhenDamaged = !IsElite;
+            bar.fillColor = IsElite ? eliteColor : new Color(0.9f, 0.2f, 0.2f);
+        }
+    }
+
+    // 엘리트 외형: 크기 확대 + 보라색 (MaterialPropertyBlock이라 머티리얼 복사본이 생기지 않음)
+    private void ApplyEliteVisuals()
+    {
+        transform.localScale *= eliteScaleMultiplier;
+
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        foreach (Renderer rend in GetComponentsInChildren<Renderer>())
+        {
+            rend.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", eliteColor); // URP Lit
+            block.SetColor("_Color", eliteColor);     // 기본 셰이더 호환
+            rend.SetPropertyBlock(block);
         }
     }
 
@@ -111,7 +150,10 @@ public class EnemyBase : MonoBehaviour
             nextRepathTime = Time.time + repathInterval * Random.Range(0.8f, 1.2f);
         }
 
-        float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+        // 수평 거리로 판정 (기준점 높이가 다른 플레이어·크기가 커진 엘리트에서도 정확하게)
+        Vector3 toPlayer = playerPos - transform.position;
+        toPlayer.y = 0f;
+        float distanceToPlayer = toPlayer.magnitude;
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer();
@@ -153,7 +195,7 @@ public class EnemyBase : MonoBehaviour
 
         if (WaveManager.Instance != null)
         {
-            WaveManager.Instance.OnEnemyKilled();
+            WaveManager.Instance.OnEnemyKilled(IsElite);
         }
 
         if (agent.enabled)

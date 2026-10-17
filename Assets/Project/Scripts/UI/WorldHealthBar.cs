@@ -21,7 +21,8 @@ public class WorldHealthBar : MonoBehaviour
 
     private JUHealth health;
     private Camera mainCamera;
-    private float heightOffset = 2.2f;
+    private Collider bodyCollider;
+    private const float DefaultHeight = 2.2f; // 콜라이더가 없을 때 발밑 기준 높이
 
     private GameObject barRoot;
     private RectTransform fillRect;
@@ -40,9 +41,8 @@ public class WorldHealthBar : MonoBehaviour
     {
         mainCamera = Camera.main;
 
-        // 콜라이더 높이로 체력바 위치 자동 계산 (없으면 기본 2.2m)
-        Collider col = GetComponent<Collider>();
-        if (col != null) heightOffset = col.bounds.max.y - transform.position.y + extraHeight;
+        // 체력바 높이는 매 프레임 콜라이더 꼭대기 기준으로 계산 (엘리트처럼 시작 직후 크기가 바뀌어도 머리 위 유지)
+        bodyCollider = GetComponent<Collider>();
 
         BuildBar();
 
@@ -111,7 +111,8 @@ public class WorldHealthBar : MonoBehaviour
         trailRect.anchorMax = new Vector2(trailRatio, 1f);
 
         // 머리 위 위치 + 카메라를 향하도록 회전
-        barRoot.transform.position = transform.position + Vector3.up * heightOffset;
+        float barY = bodyCollider != null ? bodyCollider.bounds.max.y + extraHeight : transform.position.y + DefaultHeight;
+        barRoot.transform.position = new Vector3(transform.position.x, barY, transform.position.z);
         if (mainCamera == null) mainCamera = Camera.main;
         if (mainCamera != null) barRoot.transform.rotation = mainCamera.transform.rotation;
     }

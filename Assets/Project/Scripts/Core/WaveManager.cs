@@ -39,7 +39,41 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private int currentKillsCount;
     [SerializeField] private int currentEnemiesAlive;
     [SerializeField] private bool isWaveActive = false;
-    [SerializeField] private bool hasTriggered50PercentEvent = false;
+
+    [Header("Elite Spawn (GDD 8-4 #15, 임시값)")]
+    [SerializeField] private float eliteGracePeriod = 20f;              // 스테이지 시작 후 엘리트 없음 (초)
+    [SerializeField] private float eliteTimeBaseInterval = 60f;         // 시간 기반 첫 간격 = max(최소 첫 간격, 기본 - 라운드당 감소 x (r-1))
+    [SerializeField] private float eliteTimeReductionPerRound = 2.5f;
+    [SerializeField] private float eliteTimeMinFirstInterval = 25f;
+    [SerializeField] private float eliteTimeAcceleration = 0.85f;       // 등장할 때마다 다음 간격에 곱함
+    [SerializeField] private float eliteTimeMinInterval = 15f;
+    [SerializeField] private int eliteKillBase = 25;                     // 필요 처치 = max(최소, 기본 - 30초당 감소 x 경과 - 라운드당 감소 x (r-1))
+    [SerializeField] private int eliteKillReductionPer30s = 2;
+    [SerializeField] private int eliteKillReductionPerRound = 1;
+    [SerializeField] private int eliteKillMinEarly = 5;
+    [SerializeField] private int eliteKillMinLate = 3;
+    [SerializeField] private int eliteKillLateFromRound = 8;
+    [SerializeField] private int eliteMaxCap = 4;                        // 엘리트 동시 최대 = min(상한, 1 + ⌊r / 라운드 간격⌋)
+    [SerializeField] private int eliteMaxRoundStep = 3;
+
+    [Header("Elite Status (Read Only)")]
+    [SerializeField] private float stageTime;
+    [SerializeField] private int eliteAlive;
+    [SerializeField] private int pendingElites;      // 조건은 찼지만 동시 최대·유예 등으로 보류된 엘리트 수
+    [SerializeField] private int killsSinceLastElite;
+    private float nextTimeEliteAt;
+    private float currentEliteTimeInterval;
+
+    private int EliteMaxConcurrent => Mathf.Min(eliteMaxCap, 1 + currentRound / Mathf.Max(1, eliteMaxRoundStep));
+    private int EliteKillsRequired
+    {
+        get
+        {
+            int min = currentRound >= eliteKillLateFromRound ? eliteKillMinLate : eliteKillMinEarly;
+            int required = eliteKillBase - eliteKillReductionPer30s * Mathf.FloorToInt(stageTime / 30f) - eliteKillReductionPerRound * (currentRound - 1);
+            return Mathf.Max(min, required);
+        }
+    }
 
     [Header("Round Clear Delay Settings")]
     [SerializeField] private float roundClearDelay = 2.5f; // 라운드 클리어 후 대기시간 (초)
@@ -87,7 +121,7 @@ public class WaveManager : MonoBehaviour
         currentRound = roundNumber;
         currentKillsCount = 0;
         currentEnemiesAlive = 0;
-        hasTriggered50PercentEvent = false;
+        ResetEliteState();
 
         // 라운드별 목표 처치 수 계산
         targetKillsThisRound = baseKillsPerRound + (currentRound - 1) * extraKillsPerRound;
@@ -104,6 +138,61 @@ public class WaveManager : MonoBehaviour
 
         // 스폰 루틴 시작
         StartCoroutine(SpawnEnemyRoutine());
+    }
+
+    // 스테이지 시작 시 엘리트 카운터 초기화
+    private void ResetEliteState()
+    {
+        stageTime = 0f;
+        eliteAlive = 0;
+        pendingElites = 0;
+        killsSinceLastElite = 0;
+        currentEliteTimeInterval = Mathf.Max(eliteTimeMinFirstInterval, eliteTimeBaseInterval - eliteTimeReductionPerRound * (currentRound - 1));
+        nextTimeEliteAt = currentEliteTimeInterval;
+    }
+
+    // 엘리트 스폰 규칙: 시간 기반 + 처치 기반을 따로 세고, 유예·동시 최대·연출 중이면 보류 (GDD 8-6 #4, 8-4 #15)
+    private void Update()
+    {
+        if (!isWaveActive || Time.timeScale <= 0f) return;
+
+        stageTime += Time.deltaTime;
+
+        // 시간 기반
+        if (stageTime >= nextTimeEliteAt)
+        {
+            pendingElites++;
+            currentEliteTimeInterval = Mathf.Max(eliteTimeMinInterval, currentEliteTimeInterval * eliteTimeAcceleration);
+            nextTimeEliteAt += currentEliteTimeInterval;
+        }
+
+        // 처치 기반 (유예 중에 찬 조건은 유예가 끝난 뒤 등장)
+        if (killsSinceLastElite >= EliteKillsRequired)
+        {
+            pendingElites++;
+            killsSinceLastElite = 0;
+        }
+
+        if (pendingElites > 0 && stageTime >= eliteGracePeriod && eliteAlive < EliteMaxConcurrent && CanSpawnEliteNow())
+        {
+            pendingElites--;
+            SpawnRandomEliteEnemy();
+        }
+    }
+
+    // 탈출 성공 연출 중이거나 플레이어 사망 중이면 보류
+    private JU.JUHealth cachedPlayerHealth;
+    private ExtractionZone cachedExtractionZone;
+
+    private bool CanSpawnEliteNow()
+    {
+        if (cachedPlayerHealth == null && playerTransform != null) cachedPlayerHealth = playerTransform.GetComponent<JU.JUHealth>();
+        if (cachedPlayerHealth != null && cachedPlayerHealth.IsDead) return false;
+
+        if (cachedExtractionZone == null) cachedExtractionZone = FindFirstObjectByType<ExtractionZone>();
+        if (cachedExtractionZone != null && cachedExtractionZone.ProgressPercent >= 1f) return false;
+
+        return true;
     }
 
     // 적 무한 스폰 루틴 (10마리 누적 제한 삭제)
@@ -156,9 +245,14 @@ public class WaveManager : MonoBehaviour
         // 2. 화면 밖 무작위 위치 계산
         Vector3 spawnPosition = GetRandomOffscreenSpawnPosition();
 
-        // 3. 엘리트 적 생성
-        Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
-        currentEnemiesAlive++;
+        // 3. 엘리트 적 생성 (Start 전에 엘리트로 지정 → 배율·외형 적용). 일반 적 수와 따로 셈
+        GameObject elite = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
+        EnemyBase eliteBase = elite.GetComponent<EnemyBase>();
+        if (eliteBase != null) eliteBase.MarkAsElite();
+        eliteAlive++;
+
+        Debug.Log($"WaveManager: ELITE spawned (alive {eliteAlive}/{EliteMaxConcurrent}, pending {pendingElites}, stage {stageTime:0}s)");
+        if (StageHUDUI.Instance != null) StageHUDUI.Instance.ShowTimedNotice(EliteBannerText, new Color(0.75f, 0.4f, 1f), 2f);
     }
 
     // 화면 밖 무작위 좌표 계산 함수 (NavMesh 보정 포함)
@@ -203,28 +297,18 @@ public class WaveManager : MonoBehaviour
             && vp.y > -ScreenMargin && vp.y < 1f + ScreenMargin;
     }
 
-    // 적 사망 시 호출 (10마리 제한 삭제 및 무한 스폰 유지)
-    public void OnEnemyKilled()
+    private const string EliteBannerText = "ELITE INCOMING";
+
+    // 적 사망 시 호출 (엘리트는 일반 적 수와 따로 셈, 처치 기반 엘리트 카운터는 모든 처치를 셈)
+    public void OnEnemyKilled(bool isElite = false)
     {
         if (!isWaveActive) return;
 
         currentKillsCount++;
-        currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
+        killsSinceLastElite++;
 
-        // 5마리 처치 시 엘리트 적 1마리 스폰 트리거 유지
-        if (currentKillsCount >= 5 && !hasTriggered50PercentEvent)
-        {
-            hasTriggered50PercentEvent = true;
-            On50PercentProgressTriggered();
-        }
-
-
-    }
-
-    private void On50PercentProgressTriggered()
-    {
-        Debug.Log("⚠️ [경고!] 웨이브 50% 달성! 엘리트 적이 화면 밖에서 스폰됩니다!");
-        SpawnRandomEliteEnemy();
+        if (isElite) eliteAlive = Mathf.Max(0, eliteAlive - 1);
+        else currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
     }
 
     private void CompleteRound()
@@ -278,7 +362,7 @@ public class WaveManager : MonoBehaviour
         DespawnAllActiveEnemies(); // 잔여 적 제거
         currentKillsCount = 0;
         currentEnemiesAlive = 0;
-        hasTriggered50PercentEvent = false;
+        ResetEliteState();
         isWaveActive = true;
 
         StopAllCoroutines();

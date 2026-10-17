@@ -76,6 +76,24 @@ public class StageHUDUI : MonoBehaviour
         }
     }
 
+    // 일정 시간 뒤 자동으로 사라지는 알림 (그 사이 다른 배너로 바뀌었으면 숨기지 않음)
+    public void ShowTimedNotice(string message, Color textColor, float duration)
+    {
+        if (noticeBannerText == null) return;
+
+        // 탈출 성공·사망 배너가 떠 있으면 덮어쓰지 않음
+        if (noticeBannerText.gameObject.activeSelf && noticeBannerText.text != message) return;
+
+        ShowNoticeBanner(message, textColor);
+        StartCoroutine(HideNoticeAfter(message, duration));
+    }
+
+    private System.Collections.IEnumerator HideNoticeAfter(string message, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (noticeBannerText != null && noticeBannerText.text == message) HideNoticeBanner();
+    }
+
     private void UpdateDropChanceUI()
     {
         if (dropChanceText == null) return;
