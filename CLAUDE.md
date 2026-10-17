@@ -37,13 +37,16 @@
      - 탈출 가이드 화살표(완료, 확인됨 — 꼬리 없는 삼각형, notchDepth로 밑변 파임 조절)
   5. 수류탄 스킬 (완료, 확인됨 — GrenadeSkill 재작성 + GrenadeProjectile, 상세 GDD 8-1). 충전 수는 장탄 링 오른쪽 세로 막대로 표시
   6. 보급 상자 (진행 순서 A 무기 레어도 변형본(완료, 확인됨 — Tools > TD Shoot > Generate Weapon Rarity Variants) → B 상자 본체(완료, 확인됨 — SupplyCrateManager 자동 생성·스테이지당 2개·라운드 시작 시 재생성, SupplyCrate 3초 머무르기·진행도 유지·상자 위 진행 막대, ItemDropManager.DropCrateWeapon 중복 억제 0.3) → C 노란 가이드 화살표(완료, 확인됨 — ExtractionIndicator에 GuideTarget 추가, 상자용 화살표 자동 생성: 노랑·반경 1.9m·크기 0.7, 가장 가까운 미개봉 상자, 열기 범위 안이면 숨김) → D 일반 적 모듈만 드랍(완료, 확인됨 — TryDropItem 무기 50% 분기 제거)) — 완료 (GDD 8-6 #13~15, 총 15라운드·드랍량·레어도 표·엘리트 스폰·적 라운드 배율·필드 적 수는 8-4 #15 채택안)
-  6-1. 엘리트: E1 구분·능력치(완료, 확인됨 — EnemyBase.baseHealth로 50 하드코딩 제거, MarkAsElite: 체력×5·공격×1.5·속도×0.9·크기×1.3·보라색·체력바 항상 표시, WaveManager가 엘리트 목록 생성 시 지정. 수정: 공격 판정 수평 거리, 체력바 높이 매 프레임 콜라이더 꼭대기 기준) → E2 스폰 규칙(구현, 확인 대기 — WaveManager.Update: 시간 기반+처치 기반 따로 셈, 유예 20초, 엘리트 동시 최대 별도(eliteAlive), 보류(pendingElites), 탈출 연출·사망 중 보류, StageHUDUI.ShowTimedNotice "ELITE INCOMING" 2초. 기존 5킬 1마리 제거) → E3 상위 레어도 모듈 드랍
+  6-1. 엘리트 (완료): E1 구분·능력치(완료, 확인됨 — EnemyBase.baseHealth로 50 하드코딩 제거, MarkAsElite: 체력×5·공격×1.5·속도×0.9·크기×1.3·보라색·체력바 항상 표시, WaveManager가 엘리트 목록 생성 시 지정. 수정: 공격 판정 수평 거리, 체력바 높이 매 프레임 콜라이더 꼭대기 기준) → E2 스폰 규칙(완료, 확인됨 — WaveManager.Update: 시간 기반+처치 기반 따로 셈, 유예 20초, 엘리트 동시 최대 별도(eliteAlive), 보류(pendingElites), 탈출 연출·사망 중 보류, StageHUDUI.ShowTimedNotice "ELITE INCOMING" 2초. 기존 5킬 1마리 제거) → E3 상위 레어도 모듈 드랍(완료, 확인됨 — TryDropItem(isElite): 드랍 시 50% +1단계, 그중 30% +1단계 더)
      - 적 처리 비용 정리(완료, 적 추적 확인됨): EnemyBase 피격·공격·처치 로그 제거, 경로 재계산 0.2초 간격(플레이어 1.5m 이동 시 즉시), 라운드 리플렉션 → CurrentRound. 오브젝트 풀링은 현 규모(최대 31마리, 초당 약 1마리)에서 불필요로 판단 — 프로파일러에서 Instantiate/GC 스파이크가 보이면 재검토
      - 정비 중 첫 클릭 격발음 수정(완료): 정비 진입 시 JUCharacterController 비활성, 다음 라운드 시작 시 마우스 버튼을 뗀 뒤 활성 (PlayerStatAndWeaponSync.SetPlayerControlEnabled)
      - 사망·부활 후 사격 불가 수정(완료, 확인됨): JU 부활 시 애니메이터 재시작으로 무기 자세가 풀림 → 사망했으면 다음 동기화 때 같은 무기도 해제 후 재장착(needsReequip), 장전 상태도 정리
      - 쌍권총 장전 중 교체 시 사격 불가 수정(구현, 확인 대기): JU 쌍권총은 좌우 번갈아 쏘기라 한 손이 0발이면 멈춤 → 한 손 장전 완료 순간 다른 손도 채우고 반대손 장전 트리거 취소(장전 1모션 = reloadTime, UI와 사격 가능 시점 일치) (PlayerStatAndWeaponSync.SyncDualWeaponReload)
   7. 15라운드 수치 코드 반영 (완료, 확인됨 — maxRound 15·최종 라운드 탈출 시 라운드 증가 중지, 레어도 표(ItemDropManager.rarityTable), 드랍률 30%, 적 라운드 배율(StageDifficultyManager), 라운드별 동시 최대·스폰 간격(WaveManager). 15라운드 탈출 시 GAME CLEAR 로그 후 15라운드 반복(클리어 화면 구현 전까지 정상). 엘리트 별도 카운트는 엘리트 구현 때)
-  8. 후보: 모듈 개편
+  8. 한 판 완결 (추천 순서: B 클리어·게임 오버 → C BSP 맵 → A 모듈 개편)
+     - B1 결과 화면(구현, 확인 대기 — RunResultManager: 전투 시간·처치 수(일반/엘리트) 기록, 클리어/게임 오버 화면 코드 생성, 다시 시작·메인 화면 버튼. GameplayBootstrap: 씬 로드마다 자동 매니저 생성(다시 시작 대응), 전투 씬에서만, timeScale 1 복구. 빌드 설정에 GameplayScene 추가 필요)
+     - B2 메인 화면 씬 (다음)
+- 나중에 수정: "ELITE INCOMING" 배너 위치·색 (현재 공용 알림 배너 사용)
 - 레이어: 6번 "Walls" (벽 전용). 총 끼임 방지가 벽에만 반응하고 적에게는 반응하지 않음 확인 완료. 주의: 플레이어·적 레이어는 바꾸지 말 것 (JU가 9·14·15번으로 몸통·뼈 구분, Default로 바뀌면 이동 불가)
 - 기획 점검 (GDD 8-4): #12 총 라운드 수(→ 15라운드 결정) / #13 무기 드랍 방식(→ 보급 상자로 결정, 8-6 #13) / #14 메타 프로그레션(영구 강화) — 결정: 기획만, 개발은 일정 여유 있을 때만 (없으면 포기)
 - 확인 보류: 금고 버그 수정분 재확인 (그리드 모듈 NEXT ROUND 유지, 장착 무기 복귀)

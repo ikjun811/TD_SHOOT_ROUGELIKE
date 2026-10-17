@@ -89,7 +89,7 @@ public class WaveManager : MonoBehaviour
         // 최종 라운드 탈출 = 게임 클리어 (클리어 화면은 미구현, GDD 8-4 #10)
         if (currentRound >= maxRound)
         {
-            Debug.Log($"WaveManager: Final round {maxRound} extracted -> GAME CLEAR (클리어 화면 미구현)");
+            Debug.Log($"WaveManager: Final round {maxRound} reached (클리어 처리는 ExtractionZone → RunResultManager)");
             return;
         }
 
@@ -309,6 +309,8 @@ public class WaveManager : MonoBehaviour
 
         if (isElite) eliteAlive = Mathf.Max(0, eliteAlive - 1);
         else currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
+
+        if (RunResultManager.Instance != null) RunResultManager.Instance.RecordKill(isElite);
     }
 
     private void CompleteRound()

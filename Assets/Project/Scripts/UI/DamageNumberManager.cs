@@ -3,7 +3,7 @@ using UnityEngine;
 using TMPro;
 using JU;
 
-// 피해량 숫자 이펙트 매니저 (게임 시작 시 자동 생성, 씬 배치 불필요)
+// 피해량 숫자 이펙트 매니저 (전투 씬 로드 시 GameplayBootstrap이 자동 생성, 씬 배치 불필요)
 // JU 전역 피해 이벤트(IHealth.OnAnyDamaged)를 받아 맞은 위치에 숫자를 띄움
 // 치명타 여부는 CriticalBullet이 RegisterCriticalHit으로 알려 주며, 순서가 보장되지 않아 LateUpdate에서 한꺼번에 처리
 public class DamageNumberManager : MonoBehaviour
@@ -42,8 +42,8 @@ public class DamageNumberManager : MonoBehaviour
     private readonly Stack<Popup> popupPool = new Stack<Popup>();
     private Camera mainCamera;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void AutoCreate()
+    // GameplayBootstrap이 전투 씬 로드마다 호출
+    public static void EnsureCreated()
     {
         if (Instance == null) new GameObject("DamageNumberManager").AddComponent<DamageNumberManager>();
     }

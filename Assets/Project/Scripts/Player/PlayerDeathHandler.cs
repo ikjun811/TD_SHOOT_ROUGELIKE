@@ -67,11 +67,18 @@ public class PlayerDeathHandler : MonoBehaviour
         if (isGameOver)
         {
             Debug.Log("PlayerDeathHandler: All lives lost. Game Over.");
-            if (StageHUDUI.Instance != null)
+            if (RunResultManager.Instance != null)
             {
-                StageHUDUI.Instance.ShowNoticeBanner("GAME OVER - ALL LIVES LOST", Color.red);
+                RunResultManager.Instance.ShowResult(false);
             }
-            Time.timeScale = 0f;
+            else
+            {
+                if (StageHUDUI.Instance != null)
+                {
+                    StageHUDUI.Instance.ShowNoticeBanner("GAME OVER - ALL LIVES LOST", Color.red);
+                }
+                Time.timeScale = 0f;
+            }
         }
         else
         {

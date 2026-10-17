@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using JU;
 
-// 플레이어 발밑 바닥 화살표 가이드 (게임 시작 시 탈출 구역용·보급 상자용 2개 자동 생성, 씬 배치 불필요)
+// 플레이어 발밑 바닥 화살표 가이드 (전투 씬 로드 시 GameplayBootstrap이 탈출 구역용·보급 상자용 2개 자동 생성, 씬 배치 불필요)
 // 화살표는 플레이어 주위를 돌며 대상 쪽에 놓임
 // - 탈출 구역: 구역 안에 있거나 사망 시 숨김
 // - 보급 상자: 열리지 않은 상자 중 가장 가까운 1개를 가리킴, 열기 범위 안이거나 남은 상자가 없으면 숨김
@@ -31,8 +31,8 @@ public class ExtractionIndicator : MonoBehaviour
     private GameObject arrowRoot;
     private Image arrowImage;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void AutoCreate()
+    // GameplayBootstrap이 전투 씬 로드마다 호출
+    public static void EnsureCreated()
     {
         bool hasExtraction = false;
         bool hasCrate = false;

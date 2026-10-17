@@ -190,7 +190,7 @@ public class EnemyBase : MonoBehaviour
         if (ItemDropManager.Instance != null)
         {
             int currentR = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
-            ItemDropManager.Instance.TryDropItem(transform.position, currentR);
+            ItemDropManager.Instance.TryDropItem(transform.position, currentR, IsElite);
         }
 
         if (WaveManager.Instance != null)

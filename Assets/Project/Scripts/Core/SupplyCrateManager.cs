@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-// 보급 상자 생성·관리 매니저 (게임 시작 시 자동 생성, 씬 배치 불필요, GDD 8-6 #13)
+// 보급 상자 생성·관리 매니저 (전투 씬 로드 시 GameplayBootstrap이 자동 생성, 씬 배치 불필요, GDD 8-6 #13)
 // 스테이지 시작 시 상자를 맵 무작위 위치에 생성하고, 다음 라운드 시작 시 남은 상자를 지우고 다시 생성
 public class SupplyCrateManager : MonoBehaviour
 {
@@ -28,8 +28,8 @@ public class SupplyCrateManager : MonoBehaviour
 
     private readonly List<SupplyCrate> activeCrates = new List<SupplyCrate>();
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void AutoCreate()
+    // GameplayBootstrap이 전투 씬 로드마다 호출
+    public static void EnsureCreated()
     {
         if (FindFirstObjectByType<SupplyCrateManager>() == null)
         {

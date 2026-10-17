@@ -44,6 +44,10 @@ public class ItemDropManager : MonoBehaviour
     [Tooltip("장착 슬롯·금고에 이미 있는 무기군이 뽑힐 가중치 (1 = 억제 없음)")]
     [Range(0f, 1f)][SerializeField] private float ownedWeaponTypeWeight = 0.3f;
 
+    [Header("Elite Drop Bonus (GDD 8-6 #14, 임시값)")]
+    [Range(0f, 1f)][SerializeField] private float eliteUpgradeChance = 0.5f;       // 레어도 +1단계 확률
+    [Range(0f, 1f)][SerializeField] private float eliteDoubleUpgradeChance = 0.3f; // +1단계 성공 시 추가 +1단계 확률
+
     [Header("Fallback Drop Settings")]
     [Range(0f, 1f)][SerializeField] private float overallDropChance = 0.35f;
 
@@ -54,7 +58,7 @@ public class ItemDropManager : MonoBehaviour
     }
 
     // 적 사망 시 드랍 시도 (실시간 감쇄 드랍률 및 천장 연동)
-    public void TryDropItem(Vector3 spawnPosition, int currentRound)
+    public void TryDropItem(Vector3 spawnPosition, int currentRound, bool isElite = false)
     {
         StageDifficultyManager sdm = StageDifficultyManager.Instance;
 
@@ -98,6 +102,15 @@ public class ItemDropManager : MonoBehaviour
 
         // 적은 모듈만 드랍 (무기는 보급 상자에서 획득, GDD 8-6 #5·#13)
         RarityType selectedRarity = DetermineRarityByRound(currentRound);
+
+        // 엘리트: 드랍 판정은 일반 적과 같고, 드랍 시 확률적으로 레어도 상향
+        if (isElite && Random.value < eliteUpgradeChance)
+        {
+            RarityType baseRarity = selectedRarity;
+            int steps = Random.value < eliteDoubleUpgradeChance ? 2 : 1;
+            selectedRarity = (RarityType)Mathf.Min((int)selectedRarity + steps, (int)RarityType.Legendary);
+            Debug.Log($"ItemDropManager: Elite drop upgrade {baseRarity} -> {selectedRarity}");
+        }
 
         ModuleDataSO module = GetRandomModuleOfRarity(selectedRarity);
         if (module != null) SpawnDrop(spawnPosition, null, module);

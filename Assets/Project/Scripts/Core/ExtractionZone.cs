@@ -82,8 +82,11 @@ public class ExtractionZone : MonoBehaviour
 
         WaveManager.DespawnAllActiveEnemies();
 
+        // 최종 라운드 탈출 = 게임 클리어 (정비 대신 결과 화면)
+        bool isGameClear = WaveManager.Instance != null && WaveManager.Instance.CurrentRound >= WaveManager.Instance.MaxRound;
+
         // 탈출 성공 시에만 라운드 +1
-        if (WaveManager.Instance != null)
+        if (WaveManager.Instance != null && !isGameClear)
         {
             WaveManager.Instance.AdvanceRound();
         }
@@ -98,6 +101,12 @@ public class ExtractionZone : MonoBehaviour
         if (StageHUDUI.Instance != null)
         {
             StageHUDUI.Instance.HideNoticeBanner();
+        }
+
+        if (isGameClear && RunResultManager.Instance != null)
+        {
+            RunResultManager.Instance.ShowResult(true);
+            yield break;
         }
 
         if (MaintenanceManager.Instance != null)
