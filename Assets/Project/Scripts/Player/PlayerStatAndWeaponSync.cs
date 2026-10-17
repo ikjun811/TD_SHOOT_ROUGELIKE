@@ -32,6 +32,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     private float moduleAttackPercent = 0f;
     private float moduleFireRatePercent = 0f;
     private float moduleCritChance = 0f;
+    private float moduleReloadSpeedPercent = 0f;
 
     [Header("Critical (임시값, GDD 8-4)")]
     [SerializeField] private float critDamageMultiplier = 2f;
@@ -85,6 +86,30 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         StartCoroutine(InitialWeaponSync());
     }
 
+    private void Update()
+    {
+        ApplyReloadAnimationSpeed();
+    }
+
+    // 장전 속도 모듈: JU 장전은 애니메이션 이벤트(reloadRightHandWeapon)로 끝나므로, 장전 중에만 애니메이터 속도를 올려 장전을 빠르게 함
+    // JU는 RootMotion을 쓰지 않아 이동 속도에는 영향 없음 (장전 중 하체 애니메이션만 같이 빨라짐)
+    private void ApplyReloadAnimationSpeed()
+    {
+        if (controller == null || controller.anim == null) return;
+
+        Animator anim = controller.anim;
+        int armsLayer = controller.AnimatorParameters._BothArmsLayerIndex;
+        AnimatorStateInfo armsState = anim.GetCurrentAnimatorStateInfo(armsLayer);
+
+        // JU의 장전 판정과 같은 조건 (IsReloading 또는 장전 애니메이션 재생 중)
+        bool isReloading = controller.IsReloading
+                           || armsState.IsName("Reload Right Hand Weapon")
+                           || armsState.IsName("Reload Left Hand Weapon");
+
+        float targetSpeed = isReloading ? 1f + moduleReloadSpeedPercent : 1f;
+        if (!Mathf.Approximately(anim.speed, targetSpeed)) anim.speed = targetSpeed;
+    }
+
     // JU의 시작 장착(첫 프레임 끝)과 시작 무기 지급이 끝난 뒤 최초 무기 동기화
     private IEnumerator InitialWeaponSync()
     {
@@ -111,6 +136,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float fireRatePercent = 0f;
         float cooldownReduce = 0f;
         float critChance = 0f;
+        float reloadSpeedPercent = 0f;
 
         // 그리드 내 안착된 모든 모듈 스탯 가산
         foreach (var pm in GridInventorySystem.Instance.placedModules)
@@ -125,8 +151,12 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 case ModuleStatType.FireRatePercent: fireRatePercent += val; break;
                 case ModuleStatType.SkillCooldownReduce: cooldownReduce += val; break;
                 case ModuleStatType.CriticalChance: critChance += val; break;
+                case ModuleStatType.ReloadSpeedPercent: reloadSpeedPercent += val; break;
             }
         }
+
+        // 장전 속도는 장전 중에만 Update에서 애니메이터 속도로 적용
+        moduleReloadSpeedPercent = reloadSpeedPercent;
 
         // 수류탄 쿨감 (GrenadeSkill이 플레이어에 붙어 있을 때만)
         if (grenadeSkill != null) grenadeSkill.SetCooldownReduction(cooldownReduce);
@@ -152,7 +182,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             controller.RunSpeed = defaultRunSpeed * (1f + speedPercent);
         }
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied Stats -> Health: {defaultMaxHealth + healthBonus}, Armor: {defaultProtection + armorBonus}, Speed: {defaultRunSpeed * (1f + speedPercent)}, Attack: +{atkPercent * 100f:0.#}%, FireRate: +{fireRatePercent * 100f:0.#}%");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied Stats -> Health: {defaultMaxHealth + healthBonus}, Armor: {defaultProtection + armorBonus}, Speed: {defaultRunSpeed * (1f + speedPercent)}, Attack: +{atkPercent * 100f:0.#}%, FireRate: +{fireRatePercent * 100f:0.#}%, Reload: +{reloadSpeedPercent * 100f:0.#}%");
     }
 
     // 2. 정비 창에서 선택한 무기 2종을 3D 캐릭터 손에 실제로 장착

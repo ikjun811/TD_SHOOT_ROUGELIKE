@@ -82,6 +82,12 @@ public class ExtractionZone : MonoBehaviour
 
         WaveManager.DespawnAllActiveEnemies();
 
+        // 탈출 성공 시에만 라운드 +1
+        if (WaveManager.Instance != null)
+        {
+            WaveManager.Instance.AdvanceRound();
+        }
+
         if (ItemDropManager.Instance != null)
         {
             ItemDropManager.Instance.CollectAllRemainingDropsOnField();

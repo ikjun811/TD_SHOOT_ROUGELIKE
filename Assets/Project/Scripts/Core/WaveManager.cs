@@ -37,6 +37,15 @@ public class WaveManager : MonoBehaviour
 
     private Transform playerTransform;
 
+    public int CurrentRound => currentRound;
+
+    // 탈출 성공 시 호출 (사망 시에는 호출하지 않아 실패한 라운드를 다시 시도, GDD 6-4)
+    public void AdvanceRound()
+    {
+        currentRound++;
+        Debug.Log($"WaveManager: Round advanced -> {currentRound}");
+    }
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -238,6 +247,6 @@ public class WaveManager : MonoBehaviour
 
         StopAllCoroutines();
         StartCoroutine(SpawnEnemyRoutine()); // 무한 적 스폰 코루틴 재가동
-        Debug.Log("WaveManager: Restarted wave spawning for next round.");
+        Debug.Log($"WaveManager: Restarted wave spawning. Round {currentRound}");
     }
 }

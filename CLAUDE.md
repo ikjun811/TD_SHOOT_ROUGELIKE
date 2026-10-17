@@ -24,10 +24,11 @@
   - 완료: 머티리얼 누적 수정, 금고 버그 2건 수정 (그리드 모듈·장착 무기 출처 복귀)
   - 완료: 총 끼임 방지를 Walls 레이어 전용으로 (PlayerStatAndWeaponSync.Awake). 벽만 Walls, 바닥은 Default 유지(플레이어 What Is Ground가 Default만 봄). 플레이어에 NavMesh Modifier(Remove)로 베이크 제외
 - 다음 작업 (순서대로)
-  1. Phase 4 남은 작업: 모듈 스탯 전체 적용 — 4-3a 공격력·연사(완료, 확인됨) / 4-3b 수류탄 쿨감(코드 연결 완료, GrenadeSkill이 씬에 없어 미확인) / 4-3c 치명타(구현, 확인 대기 — 탄 템플릿에 CriticalBullet 부착, 배율 2배 임시) / 4-3d 장전 속도
+  1. Phase 4 남은 작업: 모듈 스탯 전체 적용 — 4-3a 공격력·연사(완료, 확인됨) / 4-3b 수류탄 쿨감(코드 연결 완료, GrenadeSkill이 씬에 없어 미확인) / 4-3c 치명타(완료, 확인됨 — 탄 템플릿에 CriticalBullet 부착, 배율 2배 임시) / 4-3d 장전 속도(완료, 확인됨 — 장전 중에만 Animator.speed 상향)
+     - WeaponDataSO.reloadTime은 아직 미사용 (무기별 장전 시간은 JU 애니메이션 길이 그대로)
      - 스탯 모듈 32종(8스탯×4레어도) 생성 완료: Tools > TD Shoot > Generate Stat Modules, ItemDropManager에 등록됨
      - 툴팁: CriticalChance·SkillCooldownReduce가 %로 표시 안 됨, 스탯명이 영어 enum 그대로 (미수정)
-  2. 소규모 버그: 라운드 번호 증가(탈출 성공 시 +1, 사망 시 유지), 천장 로직
+  2. 소규모 버그: 라운드 번호 증가(구현, 확인 대기 — ExtractionZone 탈출 성공 시 WaveManager.AdvanceRound) / 천장 로직(다음, 상세는 GDD 8-2 미드랍 천장 버그)
 - 확인 보류: 금고 버그 수정분 재확인 (그리드 모듈 NEXT ROUND 유지, 장착 무기 복귀)
 - 주의: 씬의 플레이어 무기 오브젝트를 지우거나 끄지 말 것 (JU는 시작 시 오른손에 활성 상태로 있는 무기만 인식)
 - 에디터 미처리 항목: Q키 바인딩 제거(JU 입력 에셋), 툴팁 Txt_Description 폰트를 MALGUN SDF로, (선택) MaintenanceUI warningText 연결
