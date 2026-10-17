@@ -13,6 +13,10 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] private float attackRange = 1.8f;
     [SerializeField] private float attackCooldown = 1.2f; // 공격 쿨타임 (1.2초)
 
+    [Header("Pathfinding")]
+    [SerializeField] private float repathInterval = 0.2f;      // 경로 재계산 간격 (초)
+    [SerializeField] private float repathMoveThreshold = 1.5f; // 플레이어가 이만큼 움직이면 간격과 무관하게 즉시 재계산 (m)
+
     [Header("Effects")]
     [SerializeField] private GameObject deathVFX;
 
@@ -22,6 +26,9 @@ public class EnemyBase : MonoBehaviour
     private JUHealth playerHealth;
     private float lastAttackTime = -10f;
     private bool isDead = false;
+
+    private float nextRepathTime;
+    private Vector3 lastPathTarget;
 
     private void Awake()
     {
@@ -37,8 +44,11 @@ public class EnemyBase : MonoBehaviour
 
         if (StageDifficultyManager.Instance != null)
         {
-            currentHp *= StageDifficultyManager.Instance.GetEnemyHpMultiplier();
-            currentDmg *= StageDifficultyManager.Instance.GetEnemyDamageMultiplier();
+            int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
+
+            // 스테이지 시간 배율 x 라운드 배율
+            currentHp *= StageDifficultyManager.Instance.GetEnemyHpMultiplier() * StageDifficultyManager.Instance.GetRoundHpMultiplier(round);
+            currentDmg *= StageDifficultyManager.Instance.GetEnemyDamageMultiplier() * StageDifficultyManager.Instance.GetRoundDamageMultiplier(round);
             currentSpd *= StageDifficultyManager.Instance.GetEnemySpeedMultiplier();
         }
 
@@ -91,7 +101,15 @@ public class EnemyBase : MonoBehaviour
     {
         if (isDead || playerTransform == null) return;
 
-        agent.SetDestination(playerTransform.position);
+        // 경로 재계산은 일정 간격마다, 또는 플레이어가 크게 움직였을 때만 (매 프레임 재계산 비용 절감)
+        Vector3 playerPos = playerTransform.position;
+        if (Time.time >= nextRepathTime || (playerPos - lastPathTarget).sqrMagnitude > repathMoveThreshold * repathMoveThreshold)
+        {
+            agent.SetDestination(playerPos);
+            lastPathTarget = playerPos;
+            // 적마다 갱신 시점이 겹치지 않도록 약간의 무작위 간격
+            nextRepathTime = Time.time + repathInterval * Random.Range(0.8f, 1.2f);
+        }
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer <= attackRange)
@@ -114,14 +132,12 @@ public class EnemyBase : MonoBehaviour
         {
             lastAttackTime = Time.time;
             playerHealth.DoDamage(baseAttackDamage);
-            Debug.Log($"EnemyBase: Attacked player for {baseAttackDamage} damage. Remaining Player HP: {playerHealth.Health}");
         }
     }
 
     private void OnEnemyDamaged(IHealth.DamageResultInfo resultInfo)
     {
-        if (isDead) return;
-        Debug.Log($"EnemyBase: Damaged {gameObject.name}. Remaining Health: {juHealth.Health} / {juHealth.MaxHealth}");
+        // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
     }
 
     private void OnEnemyDeath()
@@ -129,16 +145,9 @@ public class EnemyBase : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
-        Debug.Log($"EnemyBase: Enemy {gameObject.name} killed.");
-
         if (ItemDropManager.Instance != null)
         {
-            int currentR = 1;
-            if (WaveManager.Instance != null)
-            {
-                currentR = (int)(WaveManager.Instance.GetType().GetField("currentRound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(WaveManager.Instance) ?? 1);
-            }
-
+            int currentR = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
             ItemDropManager.Instance.TryDropItem(transform.position, currentR);
         }
 

@@ -9,7 +9,7 @@ public class WaveManager : MonoBehaviour
 
     [Header("Round Settings")]
     [SerializeField] private int currentRound = 1;
-    [SerializeField] private int maxRound = 50;
+    [SerializeField] private int maxRound = 15; // 최종 라운드 (이 라운드 탈출 = 게임 클리어, GDD 8-4 #15)
     [SerializeField] private int baseKillsPerRound = 10; // 1라운드 목표 처치 수
     [SerializeField] private int extraKillsPerRound = 5; // 라운드당 추가 처치 수
 
@@ -22,8 +22,17 @@ public class WaveManager : MonoBehaviour
     [Header("Off-screen Spawn Settings")]
     [SerializeField] private float minSpawnDistance = 18f; // 화면 밖 최소 거리
     [SerializeField] private float maxSpawnDistance = 25f; // 화면 밖 최대 거리
-    [SerializeField] private float spawnInterval = 2.0f;   // 스폰 간격
-    [SerializeField] private int maxConcurrentEnemies = 20;// 필드 최대 동시 존재 적 수
+
+    [Header("Round Scaling (GDD 8-4 #15)")]
+    [SerializeField] private int baseMaxConcurrentEnemies = 12;          // 동시 최대 = 기본 + 라운드당 증가 x 라운드
+    [SerializeField] private int maxConcurrentPerRound = 1;
+    [SerializeField] private float baseSpawnInterval = 2.0f;             // 1라운드 스폰 간격 (초)
+    [SerializeField] private float spawnIntervalReductionPerRound = 0.08f;
+    [SerializeField] private float minSpawnInterval = 0.8f;
+
+    // 현재 라운드 기준 필드 최대 동시 적 수 / 스폰 간격
+    private int MaxConcurrentEnemies => baseMaxConcurrentEnemies + maxConcurrentPerRound * currentRound;
+    private float SpawnInterval => Mathf.Max(minSpawnInterval, baseSpawnInterval - spawnIntervalReductionPerRound * (currentRound - 1));
 
     [Header("Current Wave Status (Read Only)")]
     [SerializeField] private int targetKillsThisRound;
@@ -38,12 +47,20 @@ public class WaveManager : MonoBehaviour
     private Transform playerTransform;
 
     public int CurrentRound => currentRound;
+    public int MaxRound => maxRound;
 
     // 탈출 성공 시 호출 (사망 시에는 호출하지 않아 실패한 라운드를 다시 시도, GDD 6-4)
     public void AdvanceRound()
     {
+        // 최종 라운드 탈출 = 게임 클리어 (클리어 화면은 미구현, GDD 8-4 #10)
+        if (currentRound >= maxRound)
+        {
+            Debug.Log($"WaveManager: Final round {maxRound} extracted -> GAME CLEAR (클리어 화면 미구현)");
+            return;
+        }
+
         currentRound++;
-        Debug.Log($"WaveManager: Round advanced -> {currentRound}");
+        Debug.Log($"WaveManager: Round advanced -> {currentRound} (max enemies {MaxConcurrentEnemies}, spawn interval {SpawnInterval:0.##}s)");
     }
 
     private void Awake()
@@ -95,12 +112,12 @@ public class WaveManager : MonoBehaviour
         while (isWaveActive)
         {
             // 필드에 동시 존재하는 적 수가 최대 동시 스폰 제한 수보다 적으면 영구 지속 스폰
-            if (currentEnemiesAlive < maxConcurrentEnemies)
+            if (currentEnemiesAlive < MaxConcurrentEnemies)
             {
                 SpawnRandomNormalEnemy();
             }
 
-            yield return new WaitForSeconds(spawnInterval);
+            yield return new WaitForSeconds(SpawnInterval);
         }
     }
 
@@ -193,8 +210,6 @@ public class WaveManager : MonoBehaviour
 
         currentKillsCount++;
         currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
-
-        Debug.Log($"WaveManager: Enemy killed. Total Kills in this run: {currentKillsCount}");
 
         // 5마리 처치 시 엘리트 적 1마리 스폰 트리거 유지
         if (currentKillsCount >= 5 && !hasTriggered50PercentEvent)

@@ -13,6 +13,33 @@ public class ItemDropManager : MonoBehaviour
     [SerializeField] private List<WeaponDataSO> allWeapons = new List<WeaponDataSO>();
     [SerializeField] private List<ModuleDataSO> allModules = new List<ModuleDataSO>();
 
+    // 라운드 구간별 레어도 확률 (%) — fromRound 이상인 마지막 구간을 사용 (GDD 8-4 #15)
+    [System.Serializable]
+    public class RarityTier
+    {
+        public int fromRound;
+        public float common, rare, elite, legendary;
+
+        public RarityTier(int fromRound, float common, float rare, float elite, float legendary)
+        {
+            this.fromRound = fromRound;
+            this.common = common;
+            this.rare = rare;
+            this.elite = elite;
+            this.legendary = legendary;
+        }
+    }
+
+    [Header("Rarity Table (라운드 구간별 %, 합계 100 권장)")]
+    [SerializeField] private List<RarityTier> rarityTable = new List<RarityTier>
+    {
+        new RarityTier(1,  70f, 27f, 3f,  0f),
+        new RarityTier(4,  50f, 35f, 13f, 2f),
+        new RarityTier(7,  35f, 38f, 22f, 5f),
+        new RarityTier(10, 20f, 40f, 30f, 10f),
+        new RarityTier(13, 10f, 35f, 40f, 15f),
+    };
+
     [Header("Fallback Drop Settings")]
     [Range(0f, 1f)][SerializeField] private float overallDropChance = 0.35f;
 
@@ -81,17 +108,25 @@ public class ItemDropManager : MonoBehaviour
         }
     }
 
+    // 레어도 표에서 현재 라운드 구간을 찾아 확률대로 레어도 결정
     private RarityType DetermineRarityByRound(int round)
     {
-        float rand = Random.value * 100f;
+        RarityTier tier = null;
+        foreach (RarityTier t in rarityTable)
+        {
+            if (t != null && round >= t.fromRound && (tier == null || t.fromRound >= tier.fromRound)) tier = t;
+        }
+        if (tier == null) return RarityType.Common;
 
-        float legendaryChance = Mathf.Clamp((round - 10) * 1.5f, 0f, 20f);
-        float eliteChance = Mathf.Clamp(round * 1.5f, 5f, 35f);
-        float rareChance = Mathf.Clamp(30f + round, 30f, 40f);
+        float total = tier.common + tier.rare + tier.elite + tier.legendary;
+        if (total <= 0f) return RarityType.Common;
 
-        if (rand < legendaryChance) return RarityType.Legendary;
-        if (rand < legendaryChance + eliteChance) return RarityType.Elite;
-        if (rand < legendaryChance + eliteChance + rareChance) return RarityType.Rare;
+        float rand = Random.value * total;
+        if (rand < tier.legendary) return RarityType.Legendary;
+        rand -= tier.legendary;
+        if (rand < tier.elite) return RarityType.Elite;
+        rand -= tier.elite;
+        if (rand < tier.rare) return RarityType.Rare;
         return RarityType.Common;
     }
 

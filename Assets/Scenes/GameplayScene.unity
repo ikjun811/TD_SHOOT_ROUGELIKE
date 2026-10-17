@@ -419,7 +419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c61084bc81998248ae3953c6fc026ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExtractionZone
-  requiredExtractionTime: 40
+  requiredExtractionTime: 3
   currentExtractionProgress: 0
 --- !u!135 &78285917
 SphereCollider:
@@ -1164,7 +1164,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageDifficultyManager
   maxLives: 3
   currentLives: 3
-  baseDropChance: 0.35
+  baseDropChance: 0.3
   dropChanceReduction: 0.05
   minDropChance: 0.005
   currentDropChance: 0
@@ -1177,6 +1177,8 @@ MonoBehaviour:
   damageScalePerMinute: 0.2
   speedScalePerMinute: 0.05
   maxSpeedScaleCap: 0.3
+  hpGrowthPerRound: 1.17
+  damageIncreasePerRound: 0.08
 --- !u!1 &315524207
 GameObject:
   m_ObjectHideFlags: 0
@@ -2934,7 +2936,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   currentRound: 1
-  maxRound: 50
+  maxRound: 15
   baseKillsPerRound: 10
   extraKillsPerRound: 5
   normalEnemyPrefabs:
@@ -2946,8 +2948,11 @@ MonoBehaviour:
   - {fileID: 4547278137632484263, guid: 2a71425bdf7328941ba7517cdc23b6f9, type: 3}
   minSpawnDistance: 18
   maxSpawnDistance: 25
-  spawnInterval: 2
-  maxConcurrentEnemies: 15
+  baseMaxConcurrentEnemies: 12
+  maxConcurrentPerRound: 1
+  baseSpawnInterval: 2
+  spawnIntervalReductionPerRound: 0.08
+  minSpawnInterval: 0.8
   targetKillsThisRound: 0
   currentKillsCount: 0
   currentEnemiesAlive: 0
@@ -5555,6 +5560,32 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 24ad8e8ed5483a648ab86f58522280ab, type: 2}
   - {fileID: 11400000, guid: 1d22bf457acc21e478c7733942a0fc65, type: 2}
   - {fileID: 11400000, guid: 6b5b39e5cdc022b4f88c7796b903ac35, type: 2}
+  rarityTable:
+  - fromRound: 1
+    common: 70
+    rare: 27
+    elite: 3
+    legendary: 0
+  - fromRound: 4
+    common: 50
+    rare: 35
+    elite: 13
+    legendary: 2
+  - fromRound: 7
+    common: 35
+    rare: 38
+    elite: 22
+    legendary: 5
+  - fromRound: 10
+    common: 20
+    rare: 40
+    elite: 30
+    legendary: 10
+  - fromRound: 13
+    common: 10
+    rare: 35
+    elite: 40
+    legendary: 15
   overallDropChance: 0.4
 --- !u!1 &1374361119
 GameObject:
