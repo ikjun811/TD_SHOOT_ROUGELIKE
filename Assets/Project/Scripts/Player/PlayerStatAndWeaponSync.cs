@@ -27,6 +27,10 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     private readonly Dictionary<Weapon, GameObject> originalBulletPrefabs = new Dictionary<Weapon, GameObject>();
     private readonly Dictionary<Weapon, GameObject> bulletTemplates = new Dictionary<Weapon, GameObject>();
 
+    // 모듈 무기 보정값 (ApplyTetrisStatsToPlayer에서 갱신, ApplyWeaponData에서 사용)
+    private float moduleAttackPercent = 0f;
+    private float moduleFireRatePercent = 0f;
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -46,6 +50,27 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         {
             defaultWalkSpeed = controller.WalkSpeed;
             defaultRunSpeed = controller.RunSpeed;
+        }
+
+        ApplyGunClippingLayer();
+    }
+
+    // 총 끼임 방지가 벽 전용 레이어에만 반응하도록 설정 (적은 Default 레이어라 근접 시 사격이 막히던 문제)
+    // JU PreventGunClipping.Start()는 WallsLayer가 0일 때만 기본값을 넣으므로, 그보다 먼저 실행되는 Awake에서 지정
+    [SerializeField] private string gunClippingLayerName = "Walls";
+
+    private void ApplyGunClippingLayer()
+    {
+        int mask = LayerMask.GetMask(gunClippingLayerName);
+        if (mask == 0)
+        {
+            Debug.LogWarning($"[PlayerStatAndWeaponSync] '{gunClippingLayerName}' 레이어가 없습니다. 총 끼임 방지는 JU 기본 레이어를 사용합니다.");
+            return;
+        }
+
+        foreach (PreventGunClipping clipping in GetComponentsInChildren<PreventGunClipping>(true))
+        {
+            clipping.WallsLayer = mask;
         }
     }
 
@@ -77,6 +102,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float healthBonus = 0f;
         float armorBonus = 0f;
         float speedPercent = 0f;
+        float fireRatePercent = 0f;
 
         // 그리드 내 안착된 모든 모듈 스탯 가산
         foreach (var pm in GridInventorySystem.Instance.placedModules)
@@ -88,8 +114,13 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 case ModuleStatType.MaxHealthBonus: healthBonus += val; break;
                 case ModuleStatType.ArmorBonus: armorBonus += val; break;
                 case ModuleStatType.MoveSpeedPercent: speedPercent += val; break;
+                case ModuleStatType.FireRatePercent: fireRatePercent += val; break;
             }
         }
+
+        // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 적용
+        moduleAttackPercent = atkPercent;
+        moduleFireRatePercent = fireRatePercent;
 
         // 체력 및 방어력 적용
         if (juHealth != null)
@@ -107,7 +138,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             controller.RunSpeed = defaultRunSpeed * (1f + speedPercent);
         }
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied Stats -> Health: {defaultMaxHealth + healthBonus}, Armor: {defaultProtection + armorBonus}, Speed: {defaultRunSpeed * (1f + speedPercent)}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied Stats -> Health: {defaultMaxHealth + healthBonus}, Armor: {defaultProtection + armorBonus}, Speed: {defaultRunSpeed * (1f + speedPercent)}, Attack: +{atkPercent * 100f:0.#}%, FireRate: +{fireRatePercent * 100f:0.#}%");
     }
 
     // 2. 정비 창에서 선택한 무기 2종을 3D 캐릭터 손에 실제로 장착
@@ -157,13 +188,16 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         }
     }
 
-    // 3. WeaponDataSO 수치를 JU 무기에 적용 (모듈의 공격력·연사 보정은 추후 여기에 반영)
+    // 3. WeaponDataSO 수치를 JU 무기에 적용 (모듈 공격력·연사 보정 포함)
     private void ApplyWeaponData(Weapon weapon, WeaponDataSO data)
     {
         if (weapon == null || data == null) return;
 
+        float finalDamage = data.GetFinalDamage() * (1f + moduleAttackPercent);
+        float finalFireRate = data.fireRate / (1f + moduleFireRatePercent); // 발사 간격이므로 연사 % 만큼 나눔
+
         // 연사·탄창: 탄창은 가득 채우고, 예비탄은 무한 (재장전은 필요)
-        weapon.Fire_Rate = data.fireRate;
+        weapon.Fire_Rate = finalFireRate;
         weapon.BulletsPerMagazine = Mathf.Max(1, data.maxAmmo);
         weapon.BulletsAmounts = weapon.BulletsPerMagazine;
         weapon.InfiniteAmmo = true;
@@ -196,12 +230,12 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         template.name = $"{originalBullet.name} ({data.weaponName})";
 
         Bullet bullet = template.GetComponent<Bullet>();
-        if (bullet != null) bullet.BulletDamage = data.GetFinalDamage();
+        if (bullet != null) bullet.BulletDamage = finalDamage;
 
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {data.GetFinalDamage():0.#}, FireRate {data.fireRate}, Magazine {weapon.BulletsPerMagazine}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}");
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)
