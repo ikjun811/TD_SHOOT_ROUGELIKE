@@ -79,13 +79,20 @@ public class ItemTooltipUI : MonoBehaviour
         }
         if (itemRarityText != null) itemRarityText.text = $"[{module.rarity}] 강화 모듈 ({module.width}x{module.height})";
 
-        float finalStat = module.GetFinalStatValue();
-        string statSign = module.statType.ToString().Contains("Percent") ? $"{finalStat * 100}%" : $"+{finalStat}";
+        // 모양에서 실제로 채워진 칸 수 (L자 등은 가로x세로보다 작음)
+        int cellCount = 0;
+        if (module.shapeGrid != null)
+        {
+            foreach (bool filled in module.shapeGrid)
+            {
+                if (filled) cellCount++;
+            }
+        }
 
         if (itemStatsText != null)
         {
-            itemStatsText.text = $"• 스탯 효과: {module.statType} [{statSign}]\n" +
-                                 $"• 점유 공간: {module.width * module.height} 칸";
+            itemStatsText.text = $"• 스탯 효과: {GetModuleStatText(module.statType, module.GetFinalStatValue())}\n" +
+                                 $"• 점유 공간: {cellCount} 칸";
         }
 
         if (itemDescriptionText != null) itemDescriptionText.text = module.isUniqueModule ? "★ 유니크 교차 메커니즘 모듈" : "그리드에 배치 시 스탯이 적용됩니다.";
@@ -97,6 +104,24 @@ public class ItemTooltipUI : MonoBehaviour
         {
             tooltipPanel.SetActive(false);
         }
+    }
+
+    // 모듈 스탯 한글 표시 (% 스탯은 0.1 = 10%, 체력·방어력은 고정 수치)
+    private string GetModuleStatText(ModuleStatType statType, float value)
+    {
+        float percent = value * 100f;
+        return statType switch
+        {
+            ModuleStatType.AttackDamagePercent => $"공격력 +{percent:0.#}%",
+            ModuleStatType.MaxHealthBonus => $"최대 체력 +{value:0.#}",
+            ModuleStatType.ArmorBonus => $"방어력 +{value:0.#}",
+            ModuleStatType.FireRatePercent => $"연사력 +{percent:0.#}%",
+            ModuleStatType.ReloadSpeedPercent => $"장전 속도 +{percent:0.#}%",
+            ModuleStatType.CriticalChance => $"치명타 확률 +{percent:0.#}%",
+            ModuleStatType.MoveSpeedPercent => $"이동 속도 +{percent:0.#}%",
+            ModuleStatType.SkillCooldownReduce => $"수류탄 쿨타임 -{percent:0.#}%",
+            _ => $"{statType} +{value:0.##}"
+        };
     }
 
     private Color GetRarityColor(RarityType rarity)

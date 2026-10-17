@@ -1,4 +1,5 @@
 using UnityEngine;
+using JU;
 using JUTPS.WeaponSystem;
 
 // 치명타 판정 (PlayerStatAndWeaponSync가 무기별 런타임 탄 템플릿에 붙임)
@@ -12,12 +13,27 @@ public class CriticalBullet : MonoBehaviour
 
     public bool IsCritical { get; private set; }
 
+    private Bullet bullet;
+    private bool reported = false;
+
     private void Awake()
     {
         if (Random.value >= critChance) return;
 
-        Bullet bullet = GetComponent<Bullet>();
+        bullet = GetComponent<Bullet>();
         bullet.BulletDamage *= critMultiplier;
         IsCritical = true;
+    }
+
+    // 치명타 탄이 맞은 대상을 피해 숫자 매니저에 알림 (치명타 색상 표시용)
+    private void OnCollisionEnter(Collision col)
+    {
+        if (!IsCritical || reported) return;
+
+        JUHealth health = col.gameObject.GetComponentInParent<JUHealth>();
+        if (health == null) return;
+
+        DamageNumberManager.RegisterCriticalHit(health, bullet.BulletDamage);
+        reported = true;
     }
 }

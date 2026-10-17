@@ -16,8 +16,10 @@ public class StageDifficultyManager : MonoBehaviour
     public float currentDropChance;
 
     [Header("Limited Early Protection Pity")]
-    public int maxEarlyPityCount = 2; // 스테이지당 최초 2회만 천장 보장 
-    public int currentPityUsedCount = 0;
+    public int maxEarlyPityCount = 2; // 스테이지당 천장 발동 최대 2회
+    public int pityMissThreshold = 3; // 연속 미드랍 3회 후 다음 처치 확정 드랍
+    public int currentPityUsedCount = 0; // 천장으로 확정 드랍된 횟수
+    public int consecutiveMissCount = 0; // 현재 연속 미드랍 횟수
 
     [Header("Endless Difficulty Scaling")]
     public float elapsedTime = 0f;
@@ -45,6 +47,7 @@ public class StageDifficultyManager : MonoBehaviour
         elapsedTime = 0f;
         currentDropChance = baseDropChance;
         currentPityUsedCount = 0;
+        consecutiveMissCount = 0;
     }
 
     private void Update()

@@ -25,63 +25,59 @@ public class ItemDropManager : MonoBehaviour
     // 적 사망 시 드랍 시도 (실시간 감쇄 드랍률 및 천장 연동)
     public void TryDropItem(Vector3 spawnPosition, int currentRound)
     {
-        bool shouldDrop = false;
+        StageDifficultyManager sdm = StageDifficultyManager.Instance;
 
         // StageDifficultyManager의 실시간 드랍률 값 가져오기
-        float activeDropChance = overallDropChance;
-        int pityLimit = 3;
-        int pityUsed = 0;
-        int maxPityAllowed = 2;
+        float activeDropChance = sdm != null ? sdm.currentDropChance : overallDropChance;
 
-        if (StageDifficultyManager.Instance != null)
+        bool shouldDrop = Random.value <= activeDropChance;
+        bool isPityDrop = false;
+
+        // 천장: 발동 횟수가 남아 있고 연속 미드랍이 기준(3회)에 도달했으면 확정 드랍 (GDD 6-2)
+        if (!shouldDrop && sdm != null
+            && sdm.currentPityUsedCount < sdm.maxEarlyPityCount
+            && sdm.consecutiveMissCount >= sdm.pityMissThreshold)
         {
-            activeDropChance = StageDifficultyManager.Instance.currentDropChance;
-            pityUsed = StageDifficultyManager.Instance.currentPityUsedCount;
+            shouldDrop = true;
+            isPityDrop = true;
         }
 
-        // 천장 시스템 검사 (최초 2회 드랍까지만 3연속 미드랍 시 100% 드랍)
-        bool isPityActive = pityUsed < maxPityAllowed;
-
-        if (isPityActive)
+        if (!shouldDrop)
         {
-            // 천장 검사 로직
-            if (Random.value <= activeDropChance)
-            {
-                shouldDrop = true;
-            }
-        }
-        else
-        {
-            // 천장 소진 후 순수 감쇄 확률 검사
-            if (Random.value <= activeDropChance)
-            {
-                shouldDrop = true;
-            }
+            if (sdm != null) sdm.consecutiveMissCount++;
+            return;
         }
 
-        if (shouldDrop)
+        if (sdm != null)
         {
-            // ⭐ 드랍 성공 시 StageDifficultyManager의 드랍률 차감 함수 호출 (-5% 차감)
-            if (StageDifficultyManager.Instance != null)
+            sdm.consecutiveMissCount = 0;
+
+            if (isPityDrop)
             {
-                StageDifficultyManager.Instance.currentPityUsedCount++;
-                StageDifficultyManager.Instance.RegisterItemObtained();
-            }
-
-            RarityType selectedRarity = DetermineRarityByRound(currentRound);
-
-            bool dropWeapon = Random.value > 0.5f;
-
-            if (dropWeapon)
-            {
-                WeaponDataSO weapon = GetRandomWeaponOfRarity(selectedRarity);
-                if (weapon != null) SpawnDrop(spawnPosition, weapon, null);
+                // 천장 드랍은 발동 횟수만 올리고 드랍률 감쇄는 하지 않음
+                sdm.currentPityUsedCount++;
+                Debug.Log($"ItemDropManager: Pity drop ({sdm.currentPityUsedCount}/{sdm.maxEarlyPityCount}).");
             }
             else
             {
-                ModuleDataSO module = GetRandomModuleOfRarity(selectedRarity);
-                if (module != null) SpawnDrop(spawnPosition, null, module);
+                // 일반 드랍 시 드랍률 감쇄 (-5%)
+                sdm.RegisterItemObtained();
             }
+        }
+
+        RarityType selectedRarity = DetermineRarityByRound(currentRound);
+
+        bool dropWeapon = Random.value > 0.5f;
+
+        if (dropWeapon)
+        {
+            WeaponDataSO weapon = GetRandomWeaponOfRarity(selectedRarity);
+            if (weapon != null) SpawnDrop(spawnPosition, weapon, null);
+        }
+        else
+        {
+            ModuleDataSO module = GetRandomModuleOfRarity(selectedRarity);
+            if (module != null) SpawnDrop(spawnPosition, null, module);
         }
     }
 

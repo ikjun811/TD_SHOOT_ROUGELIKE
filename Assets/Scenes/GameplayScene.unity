@@ -1169,7 +1169,9 @@ MonoBehaviour:
   minDropChance: 0.005
   currentDropChance: 0
   maxEarlyPityCount: 2
+  pityMissThreshold: 3
   currentPityUsedCount: 0
+  consecutiveMissCount: 0
   elapsedTime: 0
   hpScalePerMinute: 0.25
   damageScalePerMinute: 0.2
@@ -7186,6 +7188,46 @@ MonoBehaviour:
   m_IgnoreFromBuild: 1
   m_ApplyToChildren: 1
   m_AffectedAgents: ffffffff
+--- !u!114 &1873019220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873019170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30e96fa57dbf52548b6a42c0466a23e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldHealthBar
+  showOnlyWhenDamaged: 0
+  visibleDuration: 3
+  fillColor: {r: 0.3, g: 0.85, b: 0.3, a: 1}
+  trailColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0.6}
+  barSize: {x: 1, y: 0.12}
+  extraHeight: 0.4
+  trailSpeed: 0.8
+--- !u!114 &1873019221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873019170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf92a2ac3f77eb44488e4441251b9185, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorldAmmoRing
+  sideOffset: 0.8
+  heightOffset: 0.8
+  ringSize: 0.6
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  lowAmmoColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  reloadColor: {r: 0.3, g: 0.85, b: 1, a: 1}
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0.5}
+  lowAmmoThreshold: 0.25
 --- !u!1 &1950587420
 GameObject:
   m_ObjectHideFlags: 0
@@ -8356,6 +8398,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1873019219}
+    - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1873019220}
+    - targetCorrespondingSourceObject: {fileID: 5772689799251578189, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1873019221}
   m_SourcePrefab: {fileID: 100100000, guid: 9275830849b6d5544833c64a15aeb65a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -68,6 +68,14 @@ public class EnemyBase : MonoBehaviour
             juHealth.OnDeath += OnEnemyDeath;
             juHealth.OnDamaged += OnEnemyDamaged;
         }
+
+        // 머리 위 체력바 자동 부착 (피격 후에만 표시, 프리팹에 이미 있으면 그 설정 사용)
+        if (GetComponent<WorldHealthBar>() == null)
+        {
+            WorldHealthBar bar = gameObject.AddComponent<WorldHealthBar>();
+            bar.showOnlyWhenDamaged = true;
+            bar.fillColor = new Color(0.9f, 0.2f, 0.2f);
+        }
     }
 
     private void OnDestroy()
