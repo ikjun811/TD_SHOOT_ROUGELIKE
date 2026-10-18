@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,12 +10,23 @@ public class ExtractionZone : MonoBehaviour
     [SerializeField] private float requiredExtractionTime = 60f;
     [SerializeField] private float currentExtractionProgress = 0f;
 
+    [Header("Placement")]
+    [Tooltip("플레이어와 이보다 가까운 위치에는 배치하지 않음 (시작과 동시에 탈출 방지)")]
+    [SerializeField] private float minDistanceFromPlayer = 25f;
+    [SerializeField] private int maxPlacementAttempts = 20;
+
     private bool isPlayerInsideZone = false;
     private bool isExtractionComplete = false;
 
     public float RemainingTime => Mathf.Max(0f, requiredExtractionTime - currentExtractionProgress);
     public bool IsPlayerInside => isPlayerInsideZone;
     public float ProgressPercent => Mathf.Clamp01(currentExtractionProgress / requiredExtractionTime);
+
+    // 첫 라운드도 무작위 배치 (BspArenaGenerator가 Awake에서 플레이어를 옮긴 뒤라 거리 검사가 맞게 적용됨)
+    private void Start()
+    {
+        RelocateAndResetZone();
+    }
 
     private void Update()
     {
@@ -39,20 +51,75 @@ public class ExtractionZone : MonoBehaviour
         isExtractionComplete = false;
         isPlayerInsideZone = false;
 
-        // 맵 무작위 좌표 연산 및 NavMesh 보정
-        Vector2 randomPoint = Random.insideUnitCircle.normalized * Random.Range(10f, 35f);
-        Vector3 newPos = new Vector3(randomPoint.x, 0.02f, randomPoint.y);
+        Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        if (NavMesh.SamplePosition(newPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+        BspArenaGenerator arena = FindFirstObjectByType<BspArenaGenerator>();
+        if (arena != null && arena.Leaves.Count > 0)
         {
-            transform.position = hit.position;
+            transform.position = PickZoneCenter(arena, player) + Vector3.up * 0.02f;
+            Debug.Log($"ExtractionZone: Relocated zone to zone center {transform.position}.");
+            return;
         }
-        else
+
+        // 기존 고정 맵: 맵 무작위 좌표 연산 및 NavMesh 보정, 플레이어와 너무 가까우면 다시 뽑음 (전부 실패 시 가장 먼 후보)
+        Vector3 bestPos = transform.position;
+        float bestDistance = -1f;
+
+        for (int attempt = 0; attempt < maxPlacementAttempts; attempt++)
         {
-            transform.position = newPos;
+            Vector2 randomPoint = Random.insideUnitCircle.normalized * Random.Range(10f, 35f);
+            Vector3 newPos = new Vector3(randomPoint.x, 0.02f, randomPoint.y);
+
+            if (NavMesh.SamplePosition(newPos, out NavMeshHit hit, 10f, NavMesh.AllAreas))
+            {
+                newPos = hit.position;
+            }
+
+            float distance = player != null ? HorizontalDistance(newPos, player.position) : float.MaxValue;
+            if (distance > bestDistance)
+            {
+                bestDistance = distance;
+                bestPos = newPos;
+            }
+            if (distance >= minDistanceFromPlayer) break;
         }
+
+        transform.position = bestPos;
 
         Debug.Log($"ExtractionZone: Relocated zone to new position {transform.position}.");
+    }
+
+    // BSP 맵: 플레이어 시작 구역을 뺀 구역 중 플레이어와 minDistanceFromPlayer 이상 떨어진 구역 중앙을 무작위 선택 (없으면 가장 먼 구역)
+    private Vector3 PickZoneCenter(BspArenaGenerator arena, Transform player)
+    {
+        List<Vector3> centers = arena.GetZoneCenters();
+        int playerZone = player != null ? arena.GetZoneIndexAt(player.position) : -1;
+
+        List<Vector3> candidates = new List<Vector3>();
+        Vector3 farthest = centers[0];
+        float farthestDistance = -1f;
+
+        for (int i = 0; i < centers.Count; i++)
+        {
+            if (i == playerZone) continue;
+
+            float distance = player != null ? HorizontalDistance(centers[i], player.position) : float.MaxValue;
+            if (distance >= minDistanceFromPlayer) candidates.Add(centers[i]);
+            if (distance > farthestDistance)
+            {
+                farthestDistance = distance;
+                farthest = centers[i];
+            }
+        }
+
+        return candidates.Count > 0 ? candidates[Random.Range(0, candidates.Count)] : farthest;
+    }
+
+    private static float HorizontalDistance(Vector3 a, Vector3 b)
+    {
+        a.y = 0f;
+        b.y = 0f;
+        return Vector3.Distance(a, b);
     }
 
     private void OnTriggerEnter(Collider other)

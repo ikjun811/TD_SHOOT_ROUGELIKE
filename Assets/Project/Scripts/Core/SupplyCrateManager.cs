@@ -10,12 +10,14 @@ public class SupplyCrateManager : MonoBehaviour
     public static SupplyCrateManager Instance { get; private set; }
 
     [Header("Spawn")]
-    [SerializeField] private int cratesPerStage = 2;
+    [SerializeField] private Vector2Int crateCountRange = new Vector2Int(2, 3); // 스테이지마다 이 범위에서 무작위
     [SerializeField] private float minSpawnRadius = 10f;          // 맵 중심 기준 생성 반경 (탈출 구역과 같은 범위)
     [SerializeField] private float maxSpawnRadius = 35f;
     [SerializeField] private float minDistanceFromPlayer = 15f;
     [SerializeField] private float minDistanceFromOthers = 10f;   // 탈출 구역·다른 상자와의 최소 거리
     [SerializeField] private int maxPlacementAttempts = 30;
+    [Tooltip("BSP 맵: 구역 중앙에서 이 거리(m) 안으로 위치를 흔듦 (중앙 빈 공간 8x8 안)")]
+    [SerializeField] private float zoneCenterJitter = 2f;
 
     [Header("Open")]
     [SerializeField] private float openRadius = 2f;
@@ -58,11 +60,22 @@ public class SupplyCrateManager : MonoBehaviour
         Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
         ExtractionZone zone = FindFirstObjectByType<ExtractionZone>();
 
-        for (int i = 0; i < cratesPerStage; i++)
+        int count = Random.Range(crateCountRange.x, crateCountRange.y + 1);
+
+        BspArenaGenerator arena = FindFirstObjectByType<BspArenaGenerator>();
+        if (arena != null && arena.Leaves.Count > 0)
         {
-            if (TryFindSpawnPosition(player, zone, out Vector3 position))
+            SpawnCratesInZones(arena, count, player, zone);
+        }
+        else
+        {
+            // 기존 고정 맵: 맵 중심 기준 반경 무작위
+            for (int i = 0; i < count; i++)
             {
-                activeCrates.Add(CreateCrate(position));
+                if (TryFindSpawnPosition(player, zone, out Vector3 position))
+                {
+                    activeCrates.Add(CreateCrate(position));
+                }
             }
         }
 
@@ -95,6 +108,54 @@ public class SupplyCrateManager : MonoBehaviour
             if (crate != null) Destroy(crate.gameObject);
         }
         activeCrates.Clear();
+    }
+
+    // BSP 맵: 구역 중앙 빈 공간에 구역당 최대 1개. 플레이어 시작 구역·탈출 구역이 있는 구역은 제외
+    // 1차는 거리 조건 적용, 개수가 모자라면 2차에서 거리 조건만 풀고 남은 구역에 배치
+    private void SpawnCratesInZones(BspArenaGenerator arena, int count, Transform player, ExtractionZone zone)
+    {
+        List<Vector3> centers = arena.GetZoneCenters();
+        int playerZone = player != null ? arena.GetZoneIndexAt(player.position) : -1;
+        int extractionZone = zone != null ? arena.GetZoneIndexAt(zone.transform.position) : -1;
+
+        List<int> order = new List<int>();
+        for (int i = 0; i < centers.Count; i++)
+        {
+            if (i != playerZone && i != extractionZone) order.Add(i);
+        }
+        for (int i = order.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+
+        HashSet<int> usedZones = new HashSet<int>();
+        for (int pass = 0; pass < 2 && activeCrates.Count < count; pass++)
+        {
+            foreach (int index in order)
+            {
+                if (activeCrates.Count >= count) break;
+                if (usedZones.Contains(index)) continue;
+
+                Vector3 candidate = centers[index] + new Vector3(Random.Range(-zoneCenterJitter, zoneCenterJitter), 0f, Random.Range(-zoneCenterJitter, zoneCenterJitter));
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, NavMesh.AllAreas)) continue;
+                candidate = hit.position;
+
+                if (pass == 0)
+                {
+                    if (player != null && HorizontalDistance(candidate, player.position) < minDistanceFromPlayer) continue;
+                    if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromOthers) continue;
+                }
+
+                usedZones.Add(index);
+                activeCrates.Add(CreateCrate(candidate));
+            }
+        }
+
+        if (activeCrates.Count < count)
+        {
+            Debug.LogWarning($"SupplyCrateManager: 빈 구역이 부족해 상자를 {activeCrates.Count}/{count}개만 생성했습니다.");
+        }
     }
 
     private bool TryFindSpawnPosition(Transform player, ExtractionZone zone, out Vector3 position)

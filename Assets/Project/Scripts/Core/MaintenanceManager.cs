@@ -138,9 +138,15 @@ public class MaintenanceManager : MonoBehaviour
 
     private void ResetAndStartNextRound()
     {
-        // 1. 플레이어 위치 및 물리 속도 초기화
+        // 1. 맵 재생성 (BSP 생성기가 있으면 새 맵 + NavMesh 재베이크 + 플레이어를 새 시작 구역으로 이동)
+        BspArenaGenerator arenaGenerator = FindFirstObjectByType<BspArenaGenerator>();
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
+        if (arenaGenerator != null)
+        {
+            arenaGenerator.Generate();
+        }
+        // 생성기가 없으면(기존 고정 맵) 플레이어 위치 및 물리 속도 초기화
+        else if (playerObj != null)
         {
             playerObj.transform.position = new Vector3(0f, 1f, 0f); // 시작 좌표 이동
             Rigidbody rb = playerObj.GetComponent<Rigidbody>();

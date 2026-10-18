@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 
 // BSP(이진 공간 분할) 기반 절차적 아레나 생성기 (GDD 1장 기술 주제 #2, 8-5 #5)
 // 미로형 방·복도 대신 "넓은 공간 + 장애물" 구조:
@@ -7,12 +9,14 @@ using UnityEngine;
 //   2) 분할선을 따라 폭 laneWidth의 빈 통로(레인)를 남기고, 구역 안쪽에만 장애물 배치 → 레인이 격자처럼 이어져 모든 공간이 항상 연결됨
 //   3) 구역 중앙은 비워 두어 시작 지점·탈출 구역·보급 상자 배치 자리로 사용 (M3)
 // 1m 격자(occupied)에 장애물 점유를 기록하고, 3D로는 큐브(또는 지정 머티리얼)로 바닥·외곽 벽·장애물을 만든다
+// 생성 직후 NavMesh를 런타임 베이크하고(벽·장애물 윗면은 Not Walkable), 플레이 중이면 플레이어를 무작위 구역 중앙으로 옮긴다
 // 에디터: 컴포넌트 우클릭 메뉴 Generate / Clear로 미리 보기 (생성물은 씬에 저장되지 않음)
 public class BspArenaGenerator : MonoBehaviour
 {
     [Header("Seed")]
     [Tooltip("0이면 매번 무작위, 그 외 값이면 같은 맵 재현")]
     [SerializeField] private int seed = 0;
+    [Tooltip("켜면 씬 시작 시(Awake) 생성 — 다른 스크립트가 NavMesh를 조회하기 전에 맵이 준비됨")]
     [SerializeField] private bool generateOnStart = false;
     [Tooltip("마지막으로 생성한 맵의 시드 (읽기 전용 확인용). 이 값을 Seed에 넣으면 같은 맵이 다시 생성됨")]
     [SerializeField] private int lastGeneratedSeed;
@@ -42,6 +46,10 @@ public class BspArenaGenerator : MonoBehaviour
     [SerializeField] private Material wallMaterial;
     [SerializeField] private string wallLayerName = "Walls";
 
+    [Header("Player Start")]
+    [Tooltip("플레이어를 구역 중앙에 놓을 때 바닥 위 높이")]
+    [SerializeField] private float playerSpawnHeight = 0.1f;
+
     // ===== 생성 결과 =====
     public class Leaf
     {
@@ -57,9 +65,11 @@ public class BspArenaGenerator : MonoBehaviour
     private bool[,] occupied;
     private Transform generatedRoot;
     private int usedSeed;
+    private Vector3 playerStartPosition;
 
     public IReadOnlyList<Leaf> Leaves => leaves;
     public int UsedSeed => usedSeed;
+    public Vector3 PlayerStartPosition => playerStartPosition; // 플레이어 시작 지점 (구역 중앙, M3에서 탈출·상자 배치 시 거리 기준)
 
     // 구역 중앙(월드 좌표) — 시작 지점·탈출 구역·상자 배치용 (M3)
     public List<Vector3> GetZoneCenters()
@@ -69,7 +79,19 @@ public class BspArenaGenerator : MonoBehaviour
         return centers;
     }
 
-    private void Start()
+    // 월드 좌표가 속한 구역 번호 (Leaves·GetZoneCenters와 같은 순서), 맵 밖이면 -1
+    public int GetZoneIndexAt(Vector3 worldPos)
+    {
+        Vector3 local = worldPos - Origin;
+        Vector2Int cell = new Vector2Int(Mathf.FloorToInt(local.x), Mathf.FloorToInt(local.z));
+        for (int i = 0; i < leaves.Count; i++)
+        {
+            if (leaves[i].rect.Contains(cell)) return i;
+        }
+        return -1;
+    }
+
+    private void Awake()
     {
         if (generateOnStart) Generate();
     }
@@ -96,6 +118,13 @@ public class BspArenaGenerator : MonoBehaviour
         BuildFloorAndBoundary();
         foreach (Leaf leaf in leaves) PlaceObstacles(leaf, rng);
 
+        BuildNavMesh();
+
+        // 시작 구역: 무작위 구역의 중앙 빈 공간
+        Leaf startLeaf = leaves[rng.Next(leaves.Count)];
+        playerStartPosition = CellCenterToWorld(startLeaf.centerClear.center) + Vector3.up * playerSpawnHeight;
+        if (Application.isPlaying) MovePlayerToStart();
+
         // 에디터 미리 보기는 씬에 저장되지 않도록 생성물 전체에 표시
         if (!Application.isPlaying)
         {
@@ -118,7 +147,12 @@ public class BspArenaGenerator : MonoBehaviour
         }
         if (generatedRoot == null) return;
 
-        if (Application.isPlaying) Destroy(generatedRoot.gameObject);
+        if (Application.isPlaying)
+        {
+            // Destroy는 프레임 끝에 실행되므로 먼저 꺼서 이전 NavMesh·콜라이더를 즉시 제거 (같은 프레임의 재배치가 새 맵 기준으로 동작)
+            generatedRoot.gameObject.SetActive(false);
+            Destroy(generatedRoot.gameObject);
+        }
         else DestroyImmediate(generatedRoot.gameObject);
         generatedRoot = null;
     }
@@ -290,6 +324,33 @@ public class BspArenaGenerator : MonoBehaviour
 
     #endregion
 
+    #region NavMesh / Player
+
+    // 생성물 루트의 자식(바닥·벽·장애물) 콜라이더로 NavMesh 베이크. 루트가 지워지면 NavMesh도 함께 제거됨
+    private void BuildNavMesh()
+    {
+        NavMeshSurface surface = generatedRoot.gameObject.AddComponent<NavMeshSurface>();
+        surface.collectObjects = CollectObjects.Children;
+        surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+        surface.BuildNavMesh();
+    }
+
+    private void MovePlayerToStart()
+    {
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj == null) return;
+
+        playerObj.transform.position = playerStartPosition;
+        Rigidbody rb = playerObj.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.position = playerStartPosition;
+            rb.linearVelocity = Vector3.zero;
+        }
+    }
+
+    #endregion
+
     #region 3D Build
 
     private Vector3 Origin => transform.position - new Vector3(arenaSize / 2f, 0f, arenaSize / 2f);
@@ -344,6 +405,11 @@ public class BspArenaGenerator : MonoBehaviour
         int layer = LayerMask.NameToLayer(wallLayerName);
         if (layer >= 0) obj.layer = layer;
         if (wallMaterial != null) obj.GetComponent<Renderer>().sharedMaterial = wallMaterial;
+
+        // 윗면이 걷기 영역이 되지 않게 (SamplePosition이 벽 꼭대기로 붙는 것 방지)
+        NavMeshModifier modifier = obj.AddComponent<NavMeshModifier>();
+        modifier.overrideArea = true;
+        modifier.area = NavMesh.GetAreaFromName("Not Walkable");
     }
 
     #endregion
