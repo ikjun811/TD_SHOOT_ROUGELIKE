@@ -146,7 +146,7 @@ public class ItemTooltipUI : MonoBehaviour
         if (module.category == ModuleCategory.Stat) return $"{category} 모듈";
 
         string text = $"{category} · {GetTargetName(module.target)}";
-        if (module.category == ModuleCategory.Mechanism && module.mechanismSlot != MechanismSlot.None)
+        if (module.mechanismSlot != MechanismSlot.None)
             text += $" · {GetSlotName(module.mechanismSlot)}";
         return text;
     }
@@ -175,6 +175,7 @@ public class ItemTooltipUI : MonoBehaviour
             MechanismSlot.Magazine => "탄창",
             MechanismSlot.Reload => "장전",
             MechanismSlot.GrenadeThrow => "투척 방식",
+            MechanismSlot.BulletPath => "탄 궤적",
             _ => ""
         };
     }

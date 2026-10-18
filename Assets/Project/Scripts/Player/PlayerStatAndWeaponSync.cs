@@ -37,6 +37,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         public Weapon.WeaponFireMode fireMode;
         public int pelletCount;
         public float spread;
+        public bool continuousUse; // JU는 이 값이 꺼져 있으면 FireMode와 무관하게 클릭할 때만 사격
     }
     private readonly Dictionary<Weapon, WeaponOriginals> weaponOriginals = new Dictionary<Weapon, WeaponOriginals>();
 
@@ -378,7 +379,8 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             {
                 fireMode = weapon.FireMode,
                 pelletCount = weapon.NumberOfShotgunBulletsPerShot,
-                spread = weapon.LossOfAccuracyPerShot
+                spread = weapon.LossOfAccuracyPerShot,
+                continuousUse = weapon.ContinuousUseItem
             };
         }
         WeaponOriginals originals = weaponOriginals[weapon];
@@ -389,6 +391,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float fireInterval = data.fireRate;
         float damageMultiplier = 1f;
         Weapon.WeaponFireMode fireMode = originals.fireMode;
+        bool continuousUse = originals.continuousUse;
         int pelletCount = originals.pelletCount;
         float spread = originals.spread;
         string mechanismNames = "";
@@ -406,8 +409,16 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 if (m.damageMultiplier > 0f) damageMultiplier *= m.damageMultiplier;
                 if (m.pelletCountOverride > 0) pelletCount = m.pelletCountOverride;
                 if (m.spreadOverride > 0f) spread = m.spreadOverride;
-                if (m.fireModeOverride == FireModeOverride.Auto) fireMode = Weapon.WeaponFireMode.Auto;
-                else if (m.fireModeOverride == FireModeOverride.SemiAuto) fireMode = Weapon.WeaponFireMode.SemiAuto;
+                if (m.fireModeOverride == FireModeOverride.Auto)
+                {
+                    fireMode = Weapon.WeaponFireMode.Auto;
+                    continuousUse = true;
+                }
+                else if (m.fireModeOverride == FireModeOverride.SemiAuto)
+                {
+                    fireMode = Weapon.WeaponFireMode.SemiAuto;
+                    continuousUse = false;
+                }
                 mechanismNames += $" [{m.moduleName}]";
             }
         }
@@ -416,6 +427,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         float finalFireRate = fireInterval / (1f + moduleFireRatePercent); // 발사 간격이므로 연사 % 만큼 나눔
 
         weapon.FireMode = fireMode;
+        weapon.ContinuousUseItem = continuousUse;
         weapon.NumberOfShotgunBulletsPerShot = pelletCount;
         weapon.LossOfAccuracyPerShot = spread;
 
@@ -465,12 +477,43 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 crit.critChance = moduleCritChance;
                 crit.critMultiplier = critDamageMultiplier;
             }
+
+            // 탄 궤적 특수 (관통·도탄은 충돌 칸이 같아 둘 중 하나만 배치됨). 공용 도탄은 산탄총에 효과 없음 (유니크가 담당)
+            ModuleDataSO pathModule = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Pierce);
+            if (pathModule == null && data.weaponType != WeaponType.Shotgun)
+            {
+                pathModule = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Ricochet);
+            }
+            if (pathModule != null)
+            {
+                BulletChain chain = template.AddComponent<BulletChain>();
+                chain.mode = pathModule.effect == ModuleEffect.Pierce ? BulletChain.ChainMode.Pierce : BulletChain.ChainMode.Ricochet;
+                chain.remaining = Mathf.Max(1, pathModule.effectCount);
+                if (pathModule.effectValue > 0f) chain.damageFactor = pathModule.effectValue;
+                chain.baseDamage = finalDamage;
+                mechanismNames += $" [{pathModule.moduleName}]";
+            }
         }
 
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
         Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
+    }
+
+    // 이 무기에 적용되는 특수 모듈 (공용 또는 이 무기 전용, 중복이면 효과가 적용되는 1개만)
+    private ModuleDataSO FindActiveWeaponSpecial(WeaponType weaponType, ModuleEffect effect)
+    {
+        if (GridInventorySystem.Instance == null) return null;
+
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m == null || m.category != ModuleCategory.Special || m.effect != effect) continue;
+            if (m.target != ModuleTarget.All && !m.TargetsWeapon(weaponType)) continue;
+            if (GridInventorySystem.Instance.IsEffectActive(pm)) return m;
+        }
+        return null;
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)

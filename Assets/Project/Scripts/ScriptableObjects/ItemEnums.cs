@@ -77,14 +77,15 @@ public enum ModuleTarget
     Character     // 캐릭터
 }
 
-// 작동 모듈 충돌 칸 (같은 대상에서 같은 칸은 1개만 배치 가능)
+// 충돌 칸 (계열 무관, 대상이 겹치고 같은 칸이면 1개만 배치 가능)
 public enum MechanismSlot
 {
     None,
     FireMode,      // 사격 방식
     Magazine,      // 탄창 (반드시 장전 시간도 변경)
     Reload,        // 장전
-    GrenadeThrow   // 투척 방식
+    GrenadeThrow,  // 투척 방식
+    BulletPath     // 탄 궤적 (관통·도탄 — 방향이 다른 선택지라 동시 불가)
 }
 
 // 작동 모듈의 사격 모드 변경 (JU WeaponFireMode에 대응, None = 원래 모드 유지)

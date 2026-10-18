@@ -30,7 +30,7 @@ MonoBehaviour:
   damageMultiplier: 0.55
   pelletCountOverride: 0
   spreadOverride: 0
-  fireModeOverride: 0
+  fireModeOverride: 1
   width: 3
   height: 2
   shapeGrid: 010101000100

@@ -49,7 +49,7 @@ public static class MechanismModuleGenerator
             target = ModuleTarget.Shotgun, slot = MechanismSlot.Magazine, magazine = 2, fireInterval = 0.3f, reloadTime = 1.0f, damageMultiplier = 0.8f,
             description = "2연발 속사 (발사 간격 0.3초), 장전 1.0초.\n대가: 탄창 2발, 발당 피해 −20%." },
         new Spec { fileKey = "MarksmanConversion", displayName = "지정사수 개조", effect = ModuleEffect.MarksmanConversion,
-            target = ModuleTarget.Sniper, slot = MechanismSlot.FireMode, fireInterval = 0.45f, magazine = 12, damageMultiplier = 0.55f,
+            target = ModuleTarget.Sniper, slot = MechanismSlot.FireMode, fireMode = FireModeOverride.Auto, fireInterval = 0.45f, magazine = 12, damageMultiplier = 0.55f, // Auto: M82 기본 BoltAction의 볼트 동작 제거
             description = "발사 간격 1.2→0.45초, 탄창 7→12발.\n대가: 발당 피해 −45%." },
         new Spec { fileKey = "LargeMagazine", displayName = "대형 탄창", effect = ModuleEffect.LargeMagazine,
             target = ModuleTarget.Sniper, slot = MechanismSlot.Magazine, magazine = 14, reloadTime = 4.5f,

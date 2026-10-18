@@ -13,7 +13,7 @@ public class ModuleDataSO : ScriptableObject
     [Header("Module Type (GDD 8-6 #17)")]
     public ModuleCategory category = ModuleCategory.Stat;
     public ModuleTarget target = ModuleTarget.All;
-    [Tooltip("작동 모듈만: 같은 대상·같은 칸은 1개만 배치 가능")]
+    [Tooltip("충돌 칸: 대상이 겹치고 같은 칸이면 1개만 배치 가능 (계열 무관)")]
     public MechanismSlot mechanismSlot = MechanismSlot.None;
     public ModuleEffect effect = ModuleEffect.None;
     [Tooltip("효과 보조 수치 (배율·확률 등, 효과마다 의미가 다름)")]
@@ -66,11 +66,10 @@ public class ModuleDataSO : ScriptableObject
         return statValue * multiplier;
     }
 
-    // 작동 모듈 충돌: 둘 다 작동 계열, 같은 칸, 대상이 같거나 한쪽이 공용
+    // 충돌: 계열 무관, 같은 칸, 대상이 같거나 한쪽이 공용 (작동 모듈의 사격 방식·탄창 등, 특수 모듈의 탄 궤적)
     public bool ConflictsWith(ModuleDataSO other)
     {
         if (other == null) return false;
-        if (category != ModuleCategory.Mechanism || other.category != ModuleCategory.Mechanism) return false;
         if (mechanismSlot == MechanismSlot.None || mechanismSlot != other.mechanismSlot) return false;
         return target == other.target || target == ModuleTarget.All || other.target == ModuleTarget.All;
     }
