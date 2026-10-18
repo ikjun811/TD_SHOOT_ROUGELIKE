@@ -27,7 +27,7 @@ public static class SpecialModuleGenerator
     {
         new Spec { fileKey = "Ricochet", displayName = "도탄", effect = ModuleEffect.Ricochet, slot = MechanismSlot.BulletPath,
             counts = new[] { 1, 1, 2, 4 }, effectValue = 0.7f,
-            descriptionFormat = "적에게 맞으면 8m 안의 다른 적에게 튕김 ({0}회, 튕길 때마다 피해 70%).\n관통과 함께 배치 불가. 산탄총에는 효과 없음." },
+            descriptionFormat = "적에게 맞으면 12m 안의 다른 적에게 튕김 ({0}회, 튕길 때마다 피해 70%).\n관통과 함께 배치 불가. 산탄총에는 효과 없음." },
         new Spec { fileKey = "Pierce", displayName = "관통", effect = ModuleEffect.Pierce, slot = MechanismSlot.BulletPath,
             counts = new[] { 1, 2, 2, 4 }, effectValue = 0.85f,
             descriptionFormat = "탄이 적을 관통해 계속 날아감 ({0}회, 관통할 때마다 피해 85%).\n도탄과 함께 배치 불가." },

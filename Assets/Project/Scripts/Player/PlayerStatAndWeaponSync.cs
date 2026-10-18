@@ -470,6 +470,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         {
             bullet.BulletDamage = finalDamage;
 
+            // 탑다운 수평 비행 + 좌우 분산만 (위아래 기울기·분산 제거)
+            template.AddComponent<FlatBullet>();
+
             // 치명타: 템플릿에 판정 컴포넌트를 붙여 두면 JU가 복제한 탄마다 판정 (템플릿은 비활성 부모 밑이라 판정 안 함)
             if (moduleCritChance > 0f)
             {
@@ -490,7 +493,6 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 chain.mode = pathModule.effect == ModuleEffect.Pierce ? BulletChain.ChainMode.Pierce : BulletChain.ChainMode.Ricochet;
                 chain.remaining = Mathf.Max(1, pathModule.effectCount);
                 if (pathModule.effectValue > 0f) chain.damageFactor = pathModule.effectValue;
-                chain.baseDamage = finalDamage;
                 mechanismNames += $" [{pathModule.moduleName}]";
             }
         }

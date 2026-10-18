@@ -473,7 +473,7 @@ MonoBehaviour:
       m_Flags: 0
   ItemSwitching:
     ItemSwitchingEnabled: 1
-    SlotInputsEnabled: 1
+    SlotInputsEnabled: 0
     EquipeNextItemAction:
       m_Name: Equipe Next Item
       m_Type: 1
