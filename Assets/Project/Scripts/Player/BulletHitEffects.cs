@@ -112,7 +112,7 @@ public class BulletHitEffects : MonoBehaviour
 
         if (explosionChance > 0f && Random.value < explosionChance)
         {
-            Explode(hitPoint, damage * explosionDamageRatio, enemy, owner);
+            ExplodeAt(hitPoint, explosionRadius, damage * explosionDamageRatio, enemy, owner, VfxScale);
         }
 
         if ((executeThreshold > 0f || refundRatio > 0f) && health != null)
@@ -122,12 +122,14 @@ public class BulletHitEffects : MonoBehaviour
         }
     }
 
-    private void Explode(Vector3 center, float damage, EnemyBase hitEnemy, GameObject owner)
+    // 반경 안 적에게 피해 + 폭발 이펙트 (착탄 폭발, 재장전 시 폭발(WeaponModuleRuntime)이 사용). exclude는 피해 제외, 플레이어는 대상 아님
+    public static void ExplodeAt(Vector3 center, float radius, float damage, EnemyBase exclude, GameObject owner, float vfxScale)
     {
-        SpawnExplosionVFX(center);
+        SpawnExplosionVFX(center, vfxScale);
 
         HashSet<JUHealth> damaged = new HashSet<JUHealth>();
-        int count = Physics.OverlapSphereNonAlloc(center, explosionRadius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
+        int count = Physics.OverlapSphereNonAlloc(center, radius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
+        EnemyBase hitEnemy = exclude;
         for (int i = 0; i < count; i++)
         {
             EnemyBase enemy = overlapBuffer[i].GetComponentInParent<EnemyBase>();
@@ -150,7 +152,7 @@ public class BulletHitEffects : MonoBehaviour
     }
 
     // GrenadeProjectile 폭발 이펙트와 같은 처리 (JU Explosion 피해·물리 힘은 끄고 이펙트만, 크기 축소)
-    private static void SpawnExplosionVFX(Vector3 center)
+    private static void SpawnExplosionVFX(Vector3 center, float scale)
     {
         if (ExplosionVFX == null) return;
 
@@ -160,7 +162,7 @@ public class BulletHitEffects : MonoBehaviour
             juExplosion.enabled = false;
         }
 
-        vfx.transform.localScale *= VfxScale;
+        vfx.transform.localScale *= scale;
         foreach (ParticleSystem ps in vfx.GetComponentsInChildren<ParticleSystem>(true))
         {
             ParticleSystem.MainModule main = ps.main;
@@ -168,7 +170,7 @@ public class BulletHitEffects : MonoBehaviour
         }
         foreach (Light light in vfx.GetComponentsInChildren<Light>(true))
         {
-            light.range *= VfxScale;
+            light.range *= scale;
         }
         Destroy(vfx, VfxDuration);
     }

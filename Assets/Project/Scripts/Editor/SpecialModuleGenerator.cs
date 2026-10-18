@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // 특수 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Special Modules)
-// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 x 레어도 4종 = 28개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 x 레어도 4종 = 32개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
 public static class SpecialModuleGenerator
 {
@@ -48,6 +48,10 @@ public static class SpecialModuleGenerator
         new Spec { fileKey = "AmmoRefund", displayName = "탄환 환수", effect = ModuleEffect.AmmoRefund,
             values = new[] { 0.1f, 0.15f, 0.2f, 0.25f },
             descriptionFormat = "탄으로 적 처치 시 탄창의 {1:0}%를 즉시 돌려받음 (최소 1발)." },
+        // A4a (동작은 WeaponModuleRuntime)
+        new Spec { fileKey = "ReloadExplosion", displayName = "재장전 시 폭발", effect = ModuleEffect.ReloadExplosion,
+            values = new[] { 1.5f, 2f, 2.5f, 3.5f },
+            descriptionFormat = "장전을 시작할 때 주변 4m에 충격파.\n피해: 사격 1회 피해의 {1:0}% (산탄총은 산탄 합)." },
     };
 
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };

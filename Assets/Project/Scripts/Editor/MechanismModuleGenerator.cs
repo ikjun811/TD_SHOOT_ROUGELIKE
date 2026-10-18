@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // 작동 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Mechanism Modules)
-// JU 무기 값만 바꾸는 작동 모듈 8종 x 레어도 4종 = 32개 (GDD 8-6 #17, A2). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A2 JU 무기 값만 바꾸는 작동 모듈 8종 + A4a 래퍼 작동 모듈 5종 x 레어도 4종 = 52개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 효과는 레어도와 무관하게 같고, 레어도가 높을수록 칸 수만 줄어듦 (5/5/4/3)
 // 수치는 생성 후 에셋에서 직접 조정 가능 (PlayerStatAndWeaponSync.ApplyWeaponData가 적용)
 public static class MechanismModuleGenerator
@@ -54,6 +54,22 @@ public static class MechanismModuleGenerator
         new Spec { fileKey = "LargeMagazine", displayName = "대형 탄창", effect = ModuleEffect.LargeMagazine,
             target = ModuleTarget.Sniper, slot = MechanismSlot.Magazine, magazine = 14, reloadTime = 4.5f,
             description = "탄창 7→14발.\n대가: 장전 시간 3.0→4.5초." },
+        // A4a 래퍼 모듈 (동작은 WeaponModuleRuntime, 수치는 그 상수)
+        new Spec { fileKey = "BurstFire", displayName = "3점사", effect = ModuleEffect.BurstFire,
+            target = ModuleTarget.SMG, slot = MechanismSlot.FireMode, damageMultiplier = 1.15f,
+            description = "3발 점사 (점사 안 간격 0.05초), 점사 중 분산 없음, 피해 +15%.\n대가: 점사 사이 0.25초 멈춤." },
+        new Spec { fileKey = "SpinUp", displayName = "연사 예열", effect = ModuleEffect.SpinUp,
+            target = ModuleTarget.SMG, slot = MechanismSlot.FireMode,
+            description = "계속 쏘면 발사 간격 0.13→0.05초 (1.5초에 걸쳐).\n대가: 쏘기 시작할 때 느림, 0.3초 쉬면 초기화." },
+        new Spec { fileKey = "QuickReload", displayName = "빠른 장전", effect = ModuleEffect.QuickReload,
+            target = ModuleTarget.Pistol, slot = MechanismSlot.Reload, reloadTime = 0.72f,
+            description = "장전 시간 1.2→0.72초 (−40%).\n장전 직후 3발 피해 +30%." },
+        new Spec { fileKey = "StationaryFire", displayName = "거치 사격", effect = ModuleEffect.StationaryFire,
+            target = ModuleTarget.DualPistols, slot = MechanismSlot.FireMode,
+            description = "0.3초 이상 제자리에 서 있으면 연사 +50%.\n대가: 이동 중 연사 −15%." },
+        new Spec { fileKey = "EmptyQuickReload", displayName = "빈 탄창 급속 장전", effect = ModuleEffect.EmptyQuickReload,
+            target = ModuleTarget.DualPistols, slot = MechanismSlot.Reload,
+            description = "탄창이 0발일 때 시작한 장전은 시간 −45% (1.8→1.0초).\nR키로 미리 하는 장전은 원래 속도." },
     };
 
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };

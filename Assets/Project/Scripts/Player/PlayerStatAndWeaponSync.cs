@@ -267,6 +267,24 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         // JU의 장전 판정과 같은 조건 (IsReloading 또는 장전 애니메이션 재생 중)
         bool isReloading = controller.IsReloading || reloadingRight || reloadingLeft;
 
+        // 장전 시작·완료 감지 → 무기 래퍼 (빈 탄창 급속 장전·재장전 시 폭발·빠른 장전 후 강화)
+        if (isReloading != wasReloading)
+        {
+            WeaponModuleRuntime rightRuntime = GetRuntime(controller.RightHandWeapon);
+            WeaponModuleRuntime leftRuntime = GetRuntime(controller.LeftHandWeapon);
+            if (isReloading)
+            {
+                if (rightRuntime != null) rightRuntime.OnReloadStarted(true);
+                if (leftRuntime != null) leftRuntime.OnReloadStarted(rightRuntime == null); // 쌍권총 폭발은 한 번만
+            }
+            else
+            {
+                if (rightRuntime != null) rightRuntime.OnReloadFinished();
+                if (leftRuntime != null) leftRuntime.OnReloadFinished();
+            }
+            wasReloading = isReloading;
+        }
+
         float targetSpeed = 1f;
         if (isReloading)
         {
@@ -280,12 +298,21 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 AnimatorClipInfo[] clips = anim.GetCurrentAnimatorClipInfo(armsLayer);
                 if (clips.Length > 0 && clips[0].clip != null)
                 {
-                    targetSpeed *= clips[0].clip.length / reloadTime;
+                    WeaponModuleRuntime runtime = GetRuntime(reloadingWeapon);
+                    float reloadMultiplier = runtime != null ? runtime.CurrentReloadMultiplier : 1f;
+                    targetSpeed *= clips[0].clip.length / (reloadTime * reloadMultiplier);
                 }
             }
         }
 
         if (!Mathf.Approximately(anim.speed, targetSpeed)) anim.speed = targetSpeed;
+    }
+
+    private bool wasReloading;
+
+    private static WeaponModuleRuntime GetRuntime(Weapon weapon)
+    {
+        return weapon != null ? weapon.GetComponent<WeaponModuleRuntime>() : null;
     }
 
     // JU의 시작 장착(첫 프레임 끝)과 시작 무기 지급이 끝난 뒤 최초 무기 동기화
@@ -481,6 +508,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         int pelletCount = originals.pelletCount;
         float spread = originals.spread;
         string mechanismNames = "";
+        ModuleEffect fireModeEffect = ModuleEffect.None; // 래퍼가 발사 간격을 조절하는 사격 방식 모듈
+        bool quickReload = false;
+        bool emptyQuickReload = false;
 
         if (GridInventorySystem.Instance != null)
         {
@@ -505,6 +535,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                     fireMode = Weapon.WeaponFireMode.SemiAuto;
                     continuousUse = false;
                 }
+                if (m.effect == ModuleEffect.BurstFire || m.effect == ModuleEffect.SpinUp || m.effect == ModuleEffect.StationaryFire) fireModeEffect = m.effect;
+                if (m.effect == ModuleEffect.QuickReload) quickReload = true;
+                if (m.effect == ModuleEffect.EmptyQuickReload) emptyQuickReload = true;
                 mechanismNames += $" [{m.moduleName}]";
             }
         }
@@ -523,6 +556,16 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         weapon.BulletsPerMagazine = Mathf.Max(1, magazine);
         weapon.BulletsAmounts = weapon.BulletsPerMagazine;
         weapon.InfiniteAmmo = true;
+
+        // 래퍼 모듈 (3점사·연사 예열·거치 사격·빠른 장전·빈 탄창 급속 장전·재장전 시 폭발). 모듈이 없으면 아무것도 바꾸지 않음
+        ModuleDataSO reloadExplosion = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.ReloadExplosion);
+        if (reloadExplosion != null) mechanismNames += $" [{reloadExplosion.moduleName}]";
+        WeaponModuleRuntime runtime = weapon.GetComponent<WeaponModuleRuntime>();
+        if (runtime == null) runtime = weapon.gameObject.AddComponent<WeaponModuleRuntime>();
+        float perShotDamage = finalDamage * (fireMode == Weapon.WeaponFireMode.Shotgun ? Mathf.Max(1, pelletCount) : 1);
+        runtime.Configure(weapon, finalFireRate, 1f + moduleFireRatePercent, fireModeEffect, quickReload, emptyQuickReload,
+            reloadExplosion != null ? reloadExplosion.effectValue : 0f, perShotDamage, GetComponent<Rigidbody>(), gameObject);
+        if (reloadExplosion != null) EnsureExplosionVFX();
 
         // JU는 재장전 시작 조건으로 예비탄 > 0을 검사하므로 0이면 채워 둠 (무한탄이라 이후 줄지 않음)
         if (weapon.TotalBullets <= 0) weapon.TotalBullets = weapon.BulletsPerMagazine;
@@ -559,6 +602,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             // 탑다운 수평 비행 + 좌우 분산만 (위아래 기울기·분산 제거)
             template.AddComponent<FlatBullet>();
 
+            // 빠른 장전: 장전 직후 3발 피해 증가 (WeaponModuleRuntime의 배율을 탄 생성 시 적용)
+            if (quickReload) template.AddComponent<BulletWeaponLink>().sourceWeapon = weapon;
+
             // 치명타: 템플릿에 판정 컴포넌트를 붙여 두면 JU가 복제한 탄마다 판정 (템플릿은 비활성 부모 밑이라 판정 안 함)
             if (moduleCritChance > 0f)
             {
@@ -582,8 +628,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 if (knockback != null) { effects.knockbackDistance = knockback.effectValue; mechanismNames += $" [{knockback.moduleName}]"; }
                 if (explosion != null) { effects.explosionChance = explosion.effectValue; mechanismNames += $" [{explosion.moduleName}]"; }
                 if (execute != null) { effects.executeThreshold = execute.effectValue; mechanismNames += $" [{execute.moduleName}]"; }
-                GrenadeSkill grenade = grenadeSkill != null ? grenadeSkill : GetComponent<GrenadeSkill>();
-                if (BulletHitEffects.ExplosionVFX == null && grenade != null) BulletHitEffects.ExplosionVFX = grenade.ExplosionVFX;
+                EnsureExplosionVFX();
             }
 
             // 탄 궤적 특수 (관통·도탄은 충돌 칸이 같아 둘 중 하나만 배치됨). 공용 도탄은 산탄총에 효과 없음 (유니크가 담당)
@@ -606,6 +651,14 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         weapon.BulletPrefab = template;
 
         Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
+    }
+
+    // 착탄 폭발·재장전 시 폭발 이펙트 (수류탄 폭발 이펙트 재사용)
+    private void EnsureExplosionVFX()
+    {
+        if (BulletHitEffects.ExplosionVFX != null) return;
+        GrenadeSkill grenade = grenadeSkill != null ? grenadeSkill : GetComponent<GrenadeSkill>();
+        if (grenade != null) BulletHitEffects.ExplosionVFX = grenade.ExplosionVFX;
     }
 
     // 이 무기에 적용되는 특수 모듈 (공용 또는 이 무기 전용, 중복이면 효과가 적용되는 1개만)

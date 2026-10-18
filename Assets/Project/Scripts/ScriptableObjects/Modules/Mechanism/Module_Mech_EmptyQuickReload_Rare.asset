@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86fdd4010375953458212be8e6647630, type: 3}
+  m_Name: Module_Mech_EmptyQuickReload_Rare
+  m_EditorClassIdentifier: Assembly-CSharp::ModuleDataSO
+  moduleName: "\uBE48 \uD0C4\uCC3D \uAE09\uC18D \uC7A5\uC804 (\uD76C\uADC0)"
+  rarity: 1
+  moduleIcon: {fileID: 0}
+  isUniqueModule: 0
+  category: 1
+  target: 3
+  mechanismSlot: 3
+  effect: 9
+  effectValue: 0
+  effectCount: 0
+  description: "\uD0C4\uCC3D\uC774 0\uBC1C\uC77C \uB54C \uC2DC\uC791\uD55C \uC7A5\uC804\uC740
+    \uC2DC\uAC04 \u221245% (1.8\u21921.0\uCD08).\nR\uD0A4\uB85C \uBBF8\uB9AC \uD558\uB294
+    \uC7A5\uC804\uC740 \uC6D0\uB798 \uC18D\uB3C4."
+  magazineOverride: 0
+  reloadTimeOverride: 0
+  fireIntervalOverride: 0
+  damageMultiplier: 1
+  pelletCountOverride: 0
+  spreadOverride: 0
+  fireModeOverride: 0
+  width: 2
+  height: 3
+  shapeGrid: 010101010100
+  statType: 0
+  statValue: 0

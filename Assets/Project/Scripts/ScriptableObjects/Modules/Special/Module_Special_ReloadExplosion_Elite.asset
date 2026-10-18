@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86fdd4010375953458212be8e6647630, type: 3}
+  m_Name: Module_Special_ReloadExplosion_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::ModuleDataSO
+  moduleName: "\uC7AC\uC7A5\uC804 \uC2DC \uD3ED\uBC1C (\uC5D8\uB9AC\uD2B8)"
+  rarity: 2
+  moduleIcon: {fileID: 0}
+  isUniqueModule: 0
+  category: 2
+  target: 0
+  mechanismSlot: 0
+  effect: 24
+  effectValue: 2.5
+  effectCount: 0
+  description: "\uC7A5\uC804\uC744 \uC2DC\uC791\uD560 \uB54C \uC8FC\uBCC0 4m\uC5D0
+    \uCDA9\uACA9\uD30C.\n\uD53C\uD574: \uC0AC\uACA9 1\uD68C \uD53C\uD574\uC758 250%
+    (\uC0B0\uD0C4\uCD1D\uC740 \uC0B0\uD0C4 \uD569)."
+  magazineOverride: 0
+  reloadTimeOverride: 0
+  fireIntervalOverride: 0
+  damageMultiplier: 1
+  pelletCountOverride: 0
+  spreadOverride: 0
+  fireModeOverride: 0
+  width: 3
+  height: 2
+  shapeGrid: 010001010101
+  statType: 0
+  statValue: 0
