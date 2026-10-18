@@ -21,7 +21,7 @@ public class GridSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             var handler = ModuleDragHandler.Instance;
             if (GridPanelUI.Instance != null)
             {
-                GridPanelUI.Instance.HighlightPlacementPreview(gridX, gridY, handler.currentWidth, handler.currentHeight, handler.currentShape);
+                GridPanelUI.Instance.HighlightPlacementPreview(gridX, gridY, handler.currentWidth, handler.currentHeight, handler.currentShape, handler.selectedModule);
             }
         }
         // 2. 맨손 상태이고 타일에 이미 모듈이 장착되어 있으면 ➔ 장착 모듈 툴팁 출력! ⭐
@@ -30,7 +30,7 @@ public class GridSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             var placed = GridInventorySystem.Instance.GetPlacedModuleAt(gridX, gridY);
             if (placed != null)
             {
-                ItemTooltipUI.Instance.ShowModuleTooltip(placed.moduleData);
+                ItemTooltipUI.Instance.ShowModuleTooltip(placed.moduleData, placed);
             }
         }
     }

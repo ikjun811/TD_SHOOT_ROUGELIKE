@@ -67,8 +67,8 @@ public class GridPanelUI : MonoBehaviour
         RefreshGridVisuals();
     }
 
-    // 마우스 미리보기 하이라이트 (초록/빨강)
-    public void HighlightPlacementPreview(int hoverX, int hoverY, int shapeW, int shapeH, bool[] shape)
+    // 마우스 미리보기 하이라이트 (초록: 배치 가능 / 노랑: 배치 가능하지만 같은 효과 중복 / 빨강: 공간 부족·작동 모듈 충돌)
+    public void HighlightPlacementPreview(int hoverX, int hoverY, int shapeW, int shapeH, bool[] shape, ModuleDataSO module = null)
     {
         RefreshGridVisuals();
 
@@ -77,8 +77,11 @@ public class GridPanelUI : MonoBehaviour
         int startX = hoverX - (shapeW / 2);
         int startY = hoverY - (shapeH / 2);
 
-        bool canPlace = GridInventorySystem.Instance.CanPlaceModule(startX, startY, shapeW, shapeH, shape);
-        Color previewColor = canPlace ? new Color(0.2f, 1f, 0.3f, 0.85f) : new Color(1f, 0.2f, 0.2f, 0.85f);
+        bool canPlace = GridInventorySystem.Instance.CanPlaceModule(startX, startY, shapeW, shapeH, shape, module);
+        bool duplicate = GridInventorySystem.Instance.FindSameEffect(module) != null;
+        Color previewColor = !canPlace ? new Color(1f, 0.2f, 0.2f, 0.85f)
+            : duplicate ? new Color(1f, 0.85f, 0.2f, 0.85f)
+            : new Color(0.2f, 1f, 0.3f, 0.85f);
 
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;

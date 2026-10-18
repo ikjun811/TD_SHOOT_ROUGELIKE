@@ -31,6 +31,15 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     // 무기별 장전 시간 (WeaponDataSO.reloadTime, 장전 애니메이션 속도 계산에 사용)
     private readonly Dictionary<Weapon, float> weaponReloadTimes = new Dictionary<Weapon, float>();
 
+    // 작동 모듈이 바꾸는 JU 무기 값의 원본 (모듈을 빼면 되돌림)
+    private struct WeaponOriginals
+    {
+        public Weapon.WeaponFireMode fireMode;
+        public int pelletCount;
+        public float spread;
+    }
+    private readonly Dictionary<Weapon, WeaponOriginals> weaponOriginals = new Dictionary<Weapon, WeaponOriginals>();
+
     // 모듈 무기 보정값 (ApplyTetrisStatsToPlayer에서 갱신, ApplyWeaponData에서 사용)
     private float moduleAttackPercent = 0f;
     private float moduleFireRatePercent = 0f;
@@ -254,6 +263,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         // 그리드 내 안착된 모든 모듈 스탯 가산
         foreach (var pm in GridInventorySystem.Instance.placedModules)
         {
+            if (pm.moduleData.category != ModuleCategory.Stat) continue; // 작동·특수·유니크는 스탯 없음
             float val = pm.moduleData.GetFinalStatValue();
             switch (pm.moduleData.statType)
             {
@@ -357,18 +367,62 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         }
     }
 
-    // 3. WeaponDataSO 수치를 JU 무기에 적용 (모듈 공격력·연사 보정 포함)
+    // 3. WeaponDataSO 수치를 JU 무기에 적용 (작동 모듈 → 모듈 공격력·연사 보정 순)
     private void ApplyWeaponData(Weapon weapon, WeaponDataSO data)
     {
         if (weapon == null || data == null) return;
 
-        float finalDamage = data.GetFinalDamage() * (1f + moduleAttackPercent);
-        float finalFireRate = data.fireRate / (1f + moduleFireRatePercent); // 발사 간격이므로 연사 % 만큼 나눔
+        if (!weaponOriginals.ContainsKey(weapon))
+        {
+            weaponOriginals[weapon] = new WeaponOriginals
+            {
+                fireMode = weapon.FireMode,
+                pelletCount = weapon.NumberOfShotgunBulletsPerShot,
+                spread = weapon.LossOfAccuracyPerShot
+            };
+        }
+        WeaponOriginals originals = weaponOriginals[weapon];
+
+        // SO 기본값에 이 무기 대상 작동 모듈의 값을 덮어씀 (같은 칸은 충돌 규칙으로 1개만 배치됨)
+        int magazine = data.maxAmmo;
+        float reloadTime = data.reloadTime;
+        float fireInterval = data.fireRate;
+        float damageMultiplier = 1f;
+        Weapon.WeaponFireMode fireMode = originals.fireMode;
+        int pelletCount = originals.pelletCount;
+        float spread = originals.spread;
+        string mechanismNames = "";
+
+        if (GridInventorySystem.Instance != null)
+        {
+            foreach (var pm in GridInventorySystem.Instance.placedModules)
+            {
+                ModuleDataSO m = pm.moduleData;
+                if (m == null || m.category != ModuleCategory.Mechanism || !m.TargetsWeapon(data.weaponType)) continue;
+
+                if (m.magazineOverride > 0) magazine = m.magazineOverride;
+                if (m.reloadTimeOverride > 0f) reloadTime = m.reloadTimeOverride;
+                if (m.fireIntervalOverride > 0f) fireInterval = m.fireIntervalOverride;
+                if (m.damageMultiplier > 0f) damageMultiplier *= m.damageMultiplier;
+                if (m.pelletCountOverride > 0) pelletCount = m.pelletCountOverride;
+                if (m.spreadOverride > 0f) spread = m.spreadOverride;
+                if (m.fireModeOverride == FireModeOverride.Auto) fireMode = Weapon.WeaponFireMode.Auto;
+                else if (m.fireModeOverride == FireModeOverride.SemiAuto) fireMode = Weapon.WeaponFireMode.SemiAuto;
+                mechanismNames += $" [{m.moduleName}]";
+            }
+        }
+
+        float finalDamage = data.GetFinalDamage() * damageMultiplier * (1f + moduleAttackPercent);
+        float finalFireRate = fireInterval / (1f + moduleFireRatePercent); // 발사 간격이므로 연사 % 만큼 나눔
+
+        weapon.FireMode = fireMode;
+        weapon.NumberOfShotgunBulletsPerShot = pelletCount;
+        weapon.LossOfAccuracyPerShot = spread;
 
         // 연사·탄창: 탄창은 가득 채우고, 예비탄은 무한 (재장전은 필요)
         weapon.Fire_Rate = finalFireRate;
-        weaponReloadTimes[weapon] = data.reloadTime;
-        weapon.BulletsPerMagazine = Mathf.Max(1, data.maxAmmo);
+        weaponReloadTimes[weapon] = reloadTime;
+        weapon.BulletsPerMagazine = Mathf.Max(1, magazine);
         weapon.BulletsAmounts = weapon.BulletsPerMagazine;
         weapon.InfiniteAmmo = true;
 
@@ -416,7 +470,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {data.reloadTime}s,Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
     }
 
     private JUHoldableItem FindRightHandItem(string juItemName)

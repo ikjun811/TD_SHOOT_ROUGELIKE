@@ -7,7 +7,36 @@ public class ModuleDataSO : ScriptableObject
     public string moduleName;
     public RarityType rarity;
     public Sprite moduleIcon;
-    public bool isUniqueModule; // 유니크 전용 모듈 여부
+    [Tooltip("사용하지 않음 — category(Unique)로 대체")]
+    public bool isUniqueModule; // 유니크 전용 모듈 여부 (구버전 필드, category 사용)
+
+    [Header("Module Type (GDD 8-6 #17)")]
+    public ModuleCategory category = ModuleCategory.Stat;
+    public ModuleTarget target = ModuleTarget.All;
+    [Tooltip("작동 모듈만: 같은 대상·같은 칸은 1개만 배치 가능")]
+    public MechanismSlot mechanismSlot = MechanismSlot.None;
+    public ModuleEffect effect = ModuleEffect.None;
+    [Tooltip("효과 보조 수치 (배율·확률 등, 효과마다 의미가 다름)")]
+    public float effectValue;
+    [Tooltip("효과 보조 횟수 (튕김 수·발 수 등)")]
+    public int effectCount;
+    [TextArea(2, 4)]
+    public string description;
+
+    [Header("Weapon Override (작동 모듈, 0 = 변경 없음)")]
+    [Tooltip("탄창 크기")]
+    public int magazineOverride;
+    [Tooltip("장전 시간 (초)")]
+    public float reloadTimeOverride;
+    [Tooltip("발사 간격 (초, 연사 스탯 적용 전)")]
+    public float fireIntervalOverride;
+    [Tooltip("피해 배율 (1 = 변경 없음, 공격력 스탯 적용 전)")]
+    public float damageMultiplier = 1f;
+    [Tooltip("산탄 수 (산탄총)")]
+    public int pelletCountOverride;
+    [Tooltip("산탄 퍼짐 (JU LossOfAccuracyPerShot)")]
+    public float spreadOverride;
+    public FireModeOverride fireModeOverride = FireModeOverride.None;
 
     [Header("Tetris Shape Settings")]
     [Tooltip("그리드 모양 (예: 2x2, 3x1 일자 등) 가로/세로 칸 수")]
@@ -35,5 +64,36 @@ public class ModuleDataSO : ScriptableObject
         };
 
         return statValue * multiplier;
+    }
+
+    // 작동 모듈 충돌: 둘 다 작동 계열, 같은 칸, 대상이 같거나 한쪽이 공용
+    public bool ConflictsWith(ModuleDataSO other)
+    {
+        if (other == null) return false;
+        if (category != ModuleCategory.Mechanism || other.category != ModuleCategory.Mechanism) return false;
+        if (mechanismSlot == MechanismSlot.None || mechanismSlot != other.mechanismSlot) return false;
+        return target == other.target || target == ModuleTarget.All || other.target == ModuleTarget.All;
+    }
+
+    // 이 모듈이 해당 무기군을 대상으로 하는지 (공용 제외, 무기 전용 대상만)
+    public bool TargetsWeapon(WeaponType weaponType)
+    {
+        return target switch
+        {
+            ModuleTarget.SMG => weaponType == WeaponType.SMG,
+            ModuleTarget.Pistol => weaponType == WeaponType.Pistol,
+            ModuleTarget.DualPistols => weaponType == WeaponType.DualPistols,
+            ModuleTarget.Shotgun => weaponType == WeaponType.Shotgun,
+            ModuleTarget.Sniper => weaponType == WeaponType.Sniper,
+            _ => false
+        };
+    }
+
+    // 같은 특수·유니크 효과인지 (중첩 없음 → 2개째부터 효과 없음)
+    public bool IsSameEffect(ModuleDataSO other)
+    {
+        if (other == null || effect == ModuleEffect.None) return false;
+        bool stackless = category == ModuleCategory.Special || category == ModuleCategory.Unique;
+        return stackless && other.category == category && other.effect == effect;
     }
 }

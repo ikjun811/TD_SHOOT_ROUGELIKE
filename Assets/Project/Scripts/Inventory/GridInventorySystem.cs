@@ -59,9 +59,12 @@ public class GridInventorySystem : MonoBehaviour
         return rotated;
     }
 
-    // 그리드 해당 위치에 모듈을 배치할 수 있는지 검증
-    public bool CanPlaceModule(int startX, int startY, int shapeWidth, int shapeHeight, bool[] shape)
+    // 그리드 해당 위치에 모듈을 배치할 수 있는지 검증 (module을 넘기면 작동 모듈 충돌도 검사)
+    public bool CanPlaceModule(int startX, int startY, int shapeWidth, int shapeHeight, bool[] shape, ModuleDataSO module = null)
     {
+        if (module != null && FindConflict(module) != null)
+            return false;
+
         for (int r = 0; r < shapeHeight; r++)
         {
             for (int c = 0; c < shapeWidth; c++)
@@ -88,7 +91,7 @@ public class GridInventorySystem : MonoBehaviour
     // 모듈 배치 및 그리드 점유 처리
     public bool TryPlaceModule(ModuleDataSO module, int startX, int startY, int shapeWidth, int shapeHeight, bool[] shape)
     {
-        if (!CanPlaceModule(startX, startY, shapeWidth, shapeHeight, shape))
+        if (!CanPlaceModule(startX, startY, shapeWidth, shapeHeight, shape, module))
             return false;
 
         // 그리드 매트릭스 점유 처리
@@ -152,6 +155,7 @@ public class GridInventorySystem : MonoBehaviour
 
         foreach (var pm in placedModules)
         {
+            if (pm.moduleData.category != ModuleCategory.Stat) continue; // 스탯 계열만 합산
             float statVal = pm.moduleData.GetFinalStatValue();
             switch (pm.moduleData.statType)
             {
@@ -163,6 +167,46 @@ public class GridInventorySystem : MonoBehaviour
 
         Debug.Log($"📊 [최종 스탯 갱신] 공격력: +{totalAtkPercent * 100}%, 추가 체력: +{totalHealthBonus}, 추가 방어력: +{totalArmorBonus}");
         // TODO: 캐릭터 스탯 컴포넌트에 최종 스탯 전달
+    }
+
+    // 배치된 모듈 중 module과 충돌하는 작동 모듈 (없으면 null)
+    public PlacedModule FindConflict(ModuleDataSO module)
+    {
+        if (module == null) return null;
+        foreach (var pm in placedModules)
+        {
+            if (pm.moduleData != null && module.ConflictsWith(pm.moduleData)) return pm;
+        }
+        return null;
+    }
+
+    // 배치된 모듈 중 module과 같은 특수·유니크 효과 (exclude 제외, 없으면 null)
+    public PlacedModule FindSameEffect(ModuleDataSO module, PlacedModule exclude = null)
+    {
+        if (module == null) return null;
+        foreach (var pm in placedModules)
+        {
+            if (pm == exclude || pm.moduleData == null) continue;
+            if (module.IsSameEffect(pm.moduleData)) return pm;
+        }
+        return null;
+    }
+
+    // 중첩 없음: 같은 효과가 여러 개면 레어도가 가장 높은 1개만 적용 (같으면 먼저 배치한 것)
+    public bool IsEffectActive(PlacedModule placed)
+    {
+        if (placed == null || placed.moduleData == null) return false;
+        int placedIndex = placedModules.IndexOf(placed);
+        for (int i = 0; i < placedModules.Count; i++)
+        {
+            var other = placedModules[i];
+            if (other == placed || other.moduleData == null) continue;
+            if (!placed.moduleData.IsSameEffect(other.moduleData)) continue;
+
+            if (other.moduleData.rarity > placed.moduleData.rarity) return false;
+            if (other.moduleData.rarity == placed.moduleData.rarity && i < placedIndex) return false;
+        }
+        return true;
     }
 
     // 특정 그리드 (x, y) 좌표에 배치되어 있는 모듈 찾아내기

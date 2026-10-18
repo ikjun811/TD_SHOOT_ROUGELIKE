@@ -55,6 +55,91 @@ public enum ModuleStatType
     SkillCooldownReduce  // 수류탄/스킬 쿨타임 감소 %
 }
 
+// 모듈 계열 (GDD 8-6 #17). 기본값 Stat → 기존 스탯 모듈 에셋은 그대로 스탯 계열
+public enum ModuleCategory
+{
+    Stat,       // 스탯: 공용 수치 증가
+    Mechanism,  // 작동: 무기·수류탄의 작동 방식 변경 (같은 대상·같은 칸 1개만)
+    Special,    // 특수: 부가 효과 (중첩 없음)
+    Unique      // 유니크: 레전더리 전용 교차 효과
+}
+
+// 모듈 적용 대상
+public enum ModuleTarget
+{
+    All,          // 공용
+    SMG,          // UMP
+    Pistol,       // P226
+    DualPistols,  // P226 Dual
+    Shotgun,      // Benelli M4
+    Sniper,       // M82
+    Grenade,      // 수류탄
+    Character     // 캐릭터
+}
+
+// 작동 모듈 충돌 칸 (같은 대상에서 같은 칸은 1개만 배치 가능)
+public enum MechanismSlot
+{
+    None,
+    FireMode,      // 사격 방식
+    Magazine,      // 탄창 (반드시 장전 시간도 변경)
+    Reload,        // 장전
+    GrenadeThrow   // 투척 방식
+}
+
+// 작동 모듈의 사격 모드 변경 (JU WeaponFireMode에 대응, None = 원래 모드 유지)
+public enum FireModeOverride
+{
+    None,
+    Auto,      // 누르고 있으면 연사
+    SemiAuto   // 클릭당 1발
+}
+
+// 모듈 효과 종류 (실제 효과는 A2~A5에서 단계별 구현)
+public enum ModuleEffect
+{
+    None,
+    // 작동·무기
+    BurstFire,           // UMP 3점사
+    SpinUp,              // UMP 연사 예열
+    DrumMagazine,        // UMP 드럼 탄창
+    MachinePistol,       // P226 기관권총 개조
+    RevolverConversion,  // P226 리볼버 개조
+    QuickReload,         // P226 빠른 장전
+    StationaryFire,      // Dual 거치 사격
+    ExtendedMagazine,    // Dual 확장 탄창
+    EmptyQuickReload,    // Dual 빈 탄창 급속 장전
+    SlugRounds,          // Benelli 슬러그탄
+    DoubleBarrel,        // Benelli 더블배럴 개조
+    ShellReload,         // Benelli 쉘 장전 (제외 후보)
+    MarksmanConversion,  // M82 지정사수 개조
+    LargeMagazine,       // M82 대형 탄창
+    // 작동·수류탄
+    AutoThrow,           // 자동 투척
+    MultiThrow,          // 다중 투척
+    // 특수·무기 공용
+    Ricochet,            // 도탄
+    Pierce,              // 관통
+    Knockback,           // 넉백
+    ImpactExplosion,     // 착탄 폭발
+    Execute,             // 처형
+    LastRoundBonus,      // 마지막 탄 추가 피해
+    AmmoRefund,          // 탄환 환수
+    ReloadExplosion,     // 재장전 시 폭발
+    // 특수·수류탄
+    ClusterGrenade,      // 집속탄
+    ExtraCharge,         // 충전 +1
+    KillCooldownRefund,  // 처치 시 쿨감
+    // 특수·캐릭터
+    DashBomb,            // 대시 폭탄
+    Lifesteal,           // 흡혈
+    ExtractionFocus,     // 탈출 집중
+    LastStand,           // 위기 반격
+    // 유니크
+    ShotgunRicochet,     // 산탄총 도탄
+    PistolMissile        // 권총 미사일 (제외 후보)
+}
+
 // 아이템 드래그 출처 구분
 public enum DragSource
 {

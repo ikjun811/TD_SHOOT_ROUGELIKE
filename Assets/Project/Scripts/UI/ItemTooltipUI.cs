@@ -54,7 +54,7 @@ public class ItemTooltipUI : MonoBehaviour
             itemNameText.text = weapon.weaponName;
             itemNameText.color = weapon.GetRarityColor();
         }
-        if (itemRarityText != null) itemRarityText.text = $"[{weapon.rarity}] {weapon.weaponType}";
+        if (itemRarityText != null) itemRarityText.text = $"[{GetRarityName(weapon.rarity)}] {GetWeaponTypeName(weapon.weaponType)}";
 
         if (itemStatsText != null)
         {
@@ -66,8 +66,8 @@ public class ItemTooltipUI : MonoBehaviour
         if (itemDescriptionText != null) itemDescriptionText.text = "주요 전투에 사용되는 기본 장착 무기입니다.";
     }
 
-    // 강화모듈 정보 툴팁 표시
-    public void ShowModuleTooltip(ModuleDataSO module)
+    // 강화모듈 정보 툴팁 표시 (placed: 그리드에 배치된 모듈에 마우스를 올렸을 때)
+    public void ShowModuleTooltip(ModuleDataSO module, GridInventorySystem.PlacedModule placed = null)
     {
         if (module == null || tooltipPanel == null) return;
 
@@ -77,7 +77,7 @@ public class ItemTooltipUI : MonoBehaviour
             itemNameText.text = module.moduleName;
             itemNameText.color = GetRarityColor(module.rarity);
         }
-        if (itemRarityText != null) itemRarityText.text = $"[{module.rarity}] 강화 모듈 ({module.width}x{module.height})";
+        if (itemRarityText != null) itemRarityText.text = $"[{GetRarityName(module.rarity)}] {GetModuleTypeText(module)} ({module.width}x{module.height})";
 
         // 모양에서 실제로 채워진 칸 수 (L자 등은 가로x세로보다 작음)
         int cellCount = 0;
@@ -91,11 +91,117 @@ public class ItemTooltipUI : MonoBehaviour
 
         if (itemStatsText != null)
         {
-            itemStatsText.text = $"• 스탯 효과: {GetModuleStatText(module.statType, module.GetFinalStatValue())}\n" +
-                                 $"• 점유 공간: {cellCount} 칸";
+            string text = "";
+            if (module.category == ModuleCategory.Stat)
+            {
+                text += $"• 스탯 효과: {GetModuleStatText(module.statType, module.GetFinalStatValue())}\n";
+            }
+            text += $"• 점유 공간: {cellCount} 칸";
+            text += GetPlacementStatusText(module, placed);
+            itemStatsText.text = text;
         }
 
-        if (itemDescriptionText != null) itemDescriptionText.text = module.isUniqueModule ? "★ 유니크 교차 메커니즘 모듈" : "그리드에 배치 시 스탯이 적용됩니다.";
+        if (itemDescriptionText != null)
+        {
+            if (!string.IsNullOrEmpty(module.description)) itemDescriptionText.text = module.description;
+            else itemDescriptionText.text = module.category == ModuleCategory.Stat ? "그리드에 배치 시 스탯이 적용됩니다." : "효과 구현 예정";
+        }
+    }
+
+    // 충돌·중복 상태 (빨간 글씨)
+    private string GetPlacementStatusText(ModuleDataSO module, GridInventorySystem.PlacedModule placed)
+    {
+        var grid = GridInventorySystem.Instance;
+        if (grid == null) return "";
+
+        if (placed != null)
+        {
+            // 배치된 모듈: 같은 효과 중 적용되지 않는 쪽이면 표시
+            if (grid.FindSameEffect(module, placed) != null && !grid.IsEffectActive(placed))
+                return "\n<color=#FF5555>• 중복 – 효과 없음 (레어도 높은 1개만 적용)</color>";
+            return "";
+        }
+
+        var conflict = grid.FindConflict(module);
+        if (conflict != null)
+            return $"\n<color=#FF5555>• 충돌: 배치된 {conflict.moduleData.moduleName} (같은 {GetSlotName(module.mechanismSlot)} 칸) – 배치 불가</color>";
+
+        if (grid.FindSameEffect(module) != null)
+            return "\n<color=#FF5555>• 중복: 같은 효과가 이미 배치됨 (레어도 높은 1개만 적용)</color>";
+
+        return "";
+    }
+
+    // 예: "스탯 모듈", "작동 · UMP 전용 · 사격 방식", "특수 · 공용"
+    private static string GetModuleTypeText(ModuleDataSO module)
+    {
+        string category = module.category switch
+        {
+            ModuleCategory.Stat => "스탯",
+            ModuleCategory.Mechanism => "작동",
+            ModuleCategory.Special => "특수",
+            ModuleCategory.Unique => "★ 유니크",
+            _ => module.category.ToString()
+        };
+        if (module.category == ModuleCategory.Stat) return $"{category} 모듈";
+
+        string text = $"{category} · {GetTargetName(module.target)}";
+        if (module.category == ModuleCategory.Mechanism && module.mechanismSlot != MechanismSlot.None)
+            text += $" · {GetSlotName(module.mechanismSlot)}";
+        return text;
+    }
+
+    private static string GetTargetName(ModuleTarget target)
+    {
+        return target switch
+        {
+            ModuleTarget.All => "공용",
+            ModuleTarget.SMG => "UMP 전용",
+            ModuleTarget.Pistol => "P226 전용",
+            ModuleTarget.DualPistols => "P226 Dual 전용",
+            ModuleTarget.Shotgun => "Benelli 전용",
+            ModuleTarget.Sniper => "M82 전용",
+            ModuleTarget.Grenade => "수류탄",
+            ModuleTarget.Character => "캐릭터",
+            _ => target.ToString()
+        };
+    }
+
+    private static string GetSlotName(MechanismSlot slot)
+    {
+        return slot switch
+        {
+            MechanismSlot.FireMode => "사격 방식",
+            MechanismSlot.Magazine => "탄창",
+            MechanismSlot.Reload => "장전",
+            MechanismSlot.GrenadeThrow => "투척 방식",
+            _ => ""
+        };
+    }
+
+    private static string GetRarityName(RarityType rarity)
+    {
+        return rarity switch
+        {
+            RarityType.Common => "일반",
+            RarityType.Rare => "희귀",
+            RarityType.Elite => "엘리트",
+            RarityType.Legendary => "레전더리",
+            _ => rarity.ToString()
+        };
+    }
+
+    private static string GetWeaponTypeName(WeaponType type)
+    {
+        return type switch
+        {
+            WeaponType.SMG => "기관단총",
+            WeaponType.Pistol => "권총",
+            WeaponType.DualPistols => "쌍권총",
+            WeaponType.Shotgun => "산탄총",
+            WeaponType.Sniper => "저격총",
+            _ => type.ToString()
+        };
     }
 
     public void HideTooltip()
