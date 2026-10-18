@@ -39,7 +39,11 @@ public class BspArenaGenerator : MonoBehaviour
 
     [Header("Boundary")]
     [SerializeField] private float boundaryHeight = 4f;
-    [SerializeField] private float boundaryThickness = 1f;
+    [SerializeField] private float boundaryThickness = 2f;
+    [Tooltip("바닥 두께 (윗면은 y=0 고정). 적에게 밀려 바닥을 뚫고 떨어지지 않도록 두껍게")]
+    [SerializeField] private float floorThickness = 2f;
+    [Tooltip("외곽 벽 바깥으로 더 까는 바닥 폭 (걷기 영역 아님). 벽을 뚫고 밀려나도 바로 떨어지지 않게")]
+    [SerializeField] private float outerFloorMargin = 4f;
 
     [Header("Visual (비우면 기본 머티리얼)")]
     [SerializeField] private Material floorMaterial;
@@ -363,20 +367,37 @@ public class BspArenaGenerator : MonoBehaviour
     private void BuildFloorAndBoundary()
     {
         // 바닥 (Default 레이어, 윗면이 y=0)
-        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        floor.name = "Floor";
-        floor.transform.SetParent(generatedRoot, false);
-        floor.transform.position = transform.position + new Vector3(0f, -0.1f, 0f);
-        floor.transform.localScale = new Vector3(arenaSize, 0.2f, arenaSize);
-        if (floorMaterial != null) floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
+        CreateFloor("Floor", Vector3.zero, new Vector2(arenaSize, arenaSize));
+
+        // 외곽 벽 아래·바깥 바닥 4면 (Default 레이어라 JU 바닥 판정은 되지만 NavMesh 걷기 영역에서는 제외)
+        float arenaHalf = arenaSize / 2f;
+        float outer = arenaHalf + boundaryThickness + outerFloorMargin;
+        float stripWidth = outer - arenaHalf;
+        float stripCenter = arenaHalf + stripWidth / 2f;
+        MarkNotWalkable(CreateFloor("OuterFloor_N", new Vector3(0f, 0f, stripCenter), new Vector2(outer * 2f, stripWidth)));
+        MarkNotWalkable(CreateFloor("OuterFloor_S", new Vector3(0f, 0f, -stripCenter), new Vector2(outer * 2f, stripWidth)));
+        MarkNotWalkable(CreateFloor("OuterFloor_E", new Vector3(stripCenter, 0f, 0f), new Vector2(stripWidth, arenaSize)));
+        MarkNotWalkable(CreateFloor("OuterFloor_W", new Vector3(-stripCenter, 0f, 0f), new Vector2(stripWidth, arenaSize)));
 
         // 외곽 벽 4면 (Walls 레이어)
-        float half = arenaSize / 2f + boundaryThickness / 2f;
+        float half = arenaHalf + boundaryThickness / 2f;
         float span = arenaSize + boundaryThickness * 2f;
         CreateWall("Boundary_N", new Vector3(0f, boundaryHeight / 2f, half), new Vector3(span, boundaryHeight, boundaryThickness));
         CreateWall("Boundary_S", new Vector3(0f, boundaryHeight / 2f, -half), new Vector3(span, boundaryHeight, boundaryThickness));
         CreateWall("Boundary_E", new Vector3(half, boundaryHeight / 2f, 0f), new Vector3(boundaryThickness, boundaryHeight, span));
         CreateWall("Boundary_W", new Vector3(-half, boundaryHeight / 2f, 0f), new Vector3(boundaryThickness, boundaryHeight, span));
+    }
+
+    // 윗면이 y=0인 바닥 블록 (size: x·z 크기)
+    private GameObject CreateFloor(string objName, Vector3 localPos, Vector2 size)
+    {
+        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        floor.name = objName;
+        floor.transform.SetParent(generatedRoot, false);
+        floor.transform.position = transform.position + localPos + Vector3.down * (floorThickness / 2f);
+        floor.transform.localScale = new Vector3(size.x, floorThickness, size.y);
+        if (floorMaterial != null) floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
+        return floor;
     }
 
     private void CreateWall(string objName, Vector3 localPos, Vector3 size)
@@ -407,6 +428,11 @@ public class BspArenaGenerator : MonoBehaviour
         if (wallMaterial != null) obj.GetComponent<Renderer>().sharedMaterial = wallMaterial;
 
         // 윗면이 걷기 영역이 되지 않게 (SamplePosition이 벽 꼭대기로 붙는 것 방지)
+        MarkNotWalkable(obj);
+    }
+
+    private static void MarkNotWalkable(GameObject obj)
+    {
         NavMeshModifier modifier = obj.AddComponent<NavMeshModifier>();
         modifier.overrideArea = true;
         modifier.area = NavMesh.GetAreaFromName("Not Walkable");

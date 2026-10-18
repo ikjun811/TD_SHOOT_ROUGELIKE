@@ -66,6 +66,9 @@ public class WorldHealthBar : MonoBehaviour
         CreateBarImage("Background", backgroundColor, rootRect);
         trailRect = CreateBarImage("Trail", trailColor, rootRect);
         fillRect = CreateBarImage("Fill", fillColor, rootRect);
+
+        // 벽 뒤에서도 보이게
+        WorldUIOverlay.Apply(barRoot);
     }
 
     // 앵커로 채움 비율을 조절하므로 스프라이트 없이 동작

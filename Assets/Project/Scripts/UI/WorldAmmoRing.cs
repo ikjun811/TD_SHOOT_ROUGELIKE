@@ -93,6 +93,9 @@ public class WorldAmmoRing : MonoBehaviour
         ammoText.raycastTarget = false;
 
         if (grenadeSkill != null) BuildGrenadeBars(rootRect);
+
+        // 벽 뒤에서도 보이게
+        WorldUIOverlay.Apply(ringRoot);
     }
 
     // 링 오른쪽에 수류탄 충전 칸을 아래→위로 세로 배치 (캔버스 100x100 기준 좌표)

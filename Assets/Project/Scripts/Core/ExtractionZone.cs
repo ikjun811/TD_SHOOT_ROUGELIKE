@@ -22,6 +22,13 @@ public class ExtractionZone : MonoBehaviour
     public bool IsPlayerInside => isPlayerInsideZone;
     public float ProgressPercent => Mathf.Clamp01(currentExtractionProgress / requiredExtractionTime);
 
+    // 트리거가 JU 바닥·계단 검사(WhatIsGround = Default, Queries Hit Triggers 켜짐)에 잡혀 가장자리에서 걸리지 않도록 Ignore Raycast 레이어로
+    // 트리거 진입·이탈 판정은 그대로 동작
+    private void Awake()
+    {
+        gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+    }
+
     // 첫 라운드도 무작위 배치 (BspArenaGenerator가 Awake에서 플레이어를 옮긴 뒤라 거리 검사가 맞게 적용됨)
     private void Start()
     {

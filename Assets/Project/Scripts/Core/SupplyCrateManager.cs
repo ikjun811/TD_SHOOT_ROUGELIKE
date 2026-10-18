@@ -14,7 +14,9 @@ public class SupplyCrateManager : MonoBehaviour
     [SerializeField] private float minSpawnRadius = 10f;          // 맵 중심 기준 생성 반경 (탈출 구역과 같은 범위)
     [SerializeField] private float maxSpawnRadius = 35f;
     [SerializeField] private float minDistanceFromPlayer = 15f;
-    [SerializeField] private float minDistanceFromOthers = 10f;   // 탈출 구역·다른 상자와의 최소 거리
+    [SerializeField] private float minDistanceFromOthers = 10f;   // 다른 상자와의 최소 거리
+    [Tooltip("탈출 구역 중심과의 최소 거리. 탈출 구역 반지름(10m) + 여는 범위 + 여유 → 탈출하면서 상자를 열 수 없게")]
+    [SerializeField] private float minDistanceFromExtraction = 16f;
     [SerializeField] private int maxPlacementAttempts = 30;
     [Tooltip("BSP 맵: 구역 중앙에서 이 거리(m) 안으로 위치를 흔듦 (중앙 빈 공간 8x8 안)")]
     [SerializeField] private float zoneCenterJitter = 2f;
@@ -144,7 +146,7 @@ public class SupplyCrateManager : MonoBehaviour
                 if (pass == 0)
                 {
                     if (player != null && HorizontalDistance(candidate, player.position) < minDistanceFromPlayer) continue;
-                    if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromOthers) continue;
+                    if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromExtraction) continue;
                 }
 
                 usedZones.Add(index);
@@ -169,7 +171,7 @@ public class SupplyCrateManager : MonoBehaviour
             candidate = hit.position;
 
             if (player != null && HorizontalDistance(candidate, player.position) < minDistanceFromPlayer) continue;
-            if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromOthers) continue;
+            if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromExtraction) continue;
 
             bool tooClose = false;
             foreach (SupplyCrate other in activeCrates)

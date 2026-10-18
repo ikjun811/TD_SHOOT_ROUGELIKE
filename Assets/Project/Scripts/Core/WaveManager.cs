@@ -222,8 +222,8 @@ public class WaveManager : MonoBehaviour
         // 1. 일반 적 리스트 중 무작위 하나 선택
         GameObject selectedPrefab = normalEnemyPrefabs[Random.Range(0, normalEnemyPrefabs.Count)];
 
-        // 2. 화면 밖 무작위 위치 계산
-        Vector3 spawnPosition = GetRandomOffscreenSpawnPosition();
+        // 2. 화면 밖 무작위 위치 계산 (NavMesh 위 위치를 못 찾으면 이번 스폰은 건너뜀, 다음 간격에 재시도)
+        if (!TryGetOffscreenSpawnPosition(out Vector3 spawnPosition)) return;
 
         // 3. 적 생성
         Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
@@ -242,8 +242,12 @@ public class WaveManager : MonoBehaviour
         // 1. 엘리트 적 리스트 중 무작위 하나 선택
         GameObject selectedPrefab = eliteEnemyPrefabs[Random.Range(0, eliteEnemyPrefabs.Count)];
 
-        // 2. 화면 밖 무작위 위치 계산
-        Vector3 spawnPosition = GetRandomOffscreenSpawnPosition();
+        // 2. 화면 밖 무작위 위치 계산 (못 찾으면 보류 수를 되돌려 다음 프레임에 재시도)
+        if (!TryGetOffscreenSpawnPosition(out Vector3 spawnPosition))
+        {
+            pendingElites++;
+            return;
+        }
 
         // 3. 엘리트 적 생성 (Start 전에 엘리트로 지정 → 배율·외형 적용). 일반 적 수와 따로 셈
         GameObject elite = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
@@ -257,12 +261,14 @@ public class WaveManager : MonoBehaviour
 
     // 화면 밖 무작위 좌표 계산 함수 (NavMesh 보정 포함)
     // 카메라 화면 안에 들어오는 위치는 다시 뽑음 (카메라 각도·크기·룩어헤드가 바뀌어도 자동 대응)
-    private Vector3 GetRandomOffscreenSpawnPosition()
+    // NavMesh 보정에 실패한 위치(맵 밖 등)는 버림. 모든 시도가 화면 안이면 NavMesh 위였던 마지막 위치 사용, 그것도 없으면 false
+    private bool TryGetOffscreenSpawnPosition(out Vector3 position)
     {
-        if (playerTransform == null) return transform.position;
+        position = transform.position;
+        if (playerTransform == null) return false;
 
         Camera cam = Camera.main;
-        Vector3 candidate = playerTransform.position;
+        bool hasOnMeshFallback = false;
 
         for (int attempt = 0; attempt < MaxSpawnAttempts; attempt++)
         {
@@ -271,18 +277,18 @@ public class WaveManager : MonoBehaviour
             float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
 
             Vector3 spawnOffset = new Vector3(randomCircle.x, 0f, randomCircle.y) * randomDistance;
-            candidate = playerTransform.position + spawnOffset;
+            Vector3 candidate = playerTransform.position + spawnOffset;
 
-            // NavMesh 바닥 유효 좌표로 자동 보정
-            if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 8.0f, NavMesh.AllAreas))
-            {
-                candidate = hit.position;
-            }
+            // NavMesh 바닥 유효 좌표로 자동 보정, 실패하면(맵 밖) 다시 뽑음
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 8.0f, NavMesh.AllAreas)) continue;
+            candidate = hit.position;
 
-            if (cam == null || !IsVisibleOnScreen(cam, candidate)) return candidate;
+            position = candidate;
+            hasOnMeshFallback = true;
+            if (cam == null || !IsVisibleOnScreen(cam, candidate)) return true;
         }
 
-        return candidate; // 모든 시도가 화면 안이면 마지막 좌표 사용
+        return hasOnMeshFallback; // 모든 시도가 화면 안이면 NavMesh 위였던 마지막 좌표 사용
     }
 
     private const int MaxSpawnAttempts = 10;

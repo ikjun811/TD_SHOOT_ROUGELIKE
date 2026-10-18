@@ -110,6 +110,11 @@ public class EnemyBase : MonoBehaviour
             bar.showOnlyWhenDamaged = !IsElite;
             bar.fillColor = IsElite ? eliteColor : new Color(0.9f, 0.2f, 0.2f);
         }
+
+        // 벽 뒤 실루엣 (일반: 빨강 / 엘리트: 보라). 엘리트 크기·색 적용 뒤라 복제 렌더러에 섞이지 않음
+        Color silhouetteColor = IsElite ? eliteColor : new Color(1f, 0.25f, 0.2f);
+        silhouetteColor.a = 0.6f;
+        SilhouetteRenderer.Attach(gameObject, silhouetteColor);
     }
 
     // 엘리트 외형: 크기 확대 + 보라색 (MaterialPropertyBlock이라 머티리얼 복사본이 생기지 않음)

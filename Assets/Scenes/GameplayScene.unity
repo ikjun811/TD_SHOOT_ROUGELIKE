@@ -421,6 +421,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExtractionZone
   requiredExtractionTime: 3
   currentExtractionProgress: 0
+  minDistanceFromPlayer: 25
+  maxPlacementAttempts: 20
 --- !u!135 &78285917
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -941,7 +943,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &277796833
 Transform:
   m_ObjectHideFlags: 0
@@ -1366,7 +1368,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &322044028
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5471,7 +5473,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1349081376
 Transform:
   m_ObjectHideFlags: 0
@@ -6014,7 +6016,6 @@ GameObject:
   - component: {fileID: 1608594947}
   - component: {fileID: 1608594950}
   - component: {fileID: 1608594949}
-  - component: {fileID: 1608594948}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -6037,27 +6038,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 78285918}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &1608594948
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1608594946}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1608594949
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7391,7 +7371,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1950587421
 Transform:
   m_ObjectHideFlags: 0
@@ -7932,7 +7912,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BspArenaGenerator
   seed: 0
-  generateOnStart: 0
+  generateOnStart: 1
   lastGeneratedSeed: 661905549
   arenaSize: 90
   minLeafSize: 18
@@ -7940,7 +7920,7 @@ MonoBehaviour:
   minSplitRatio: 0.35
   laneWidth: 6
   centerClearSize: 8
-  obstaclesPerLeaf: {x: 0, y: 2}
+  obstaclesPerLeaf: {x: 1, y: 2}
   obstacleSpacing: 3
   wallLengthRange: {x: 4, y: 7}
   pillarSize: 2
@@ -7951,6 +7931,7 @@ MonoBehaviour:
   floorMaterial: {fileID: 0}
   wallMaterial: {fileID: 0}
   wallLayerName: Walls
+  playerSpawnHeight: 0.1
 --- !u!4 &2119934852
 Transform:
   m_ObjectHideFlags: 0
@@ -7960,7 +7941,7 @@ Transform:
   m_GameObject: {fileID: 2119934850}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 300, y: -0, z: 0}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8057,13 +8038,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2120986317}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.89590603, y: -0.043565575, z: 0.34482953, w: 0.27667135}
+  m_LocalRotation: {x: -0.39713123, y: 0.30997556, z: -0.8516508, w: -0.14454396}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 148.27899, y: -44.26999, z: -7.6170044}
+  m_LocalEulerAnglesHint: {x: 140, y: 230, z: 0}
 --- !u!114 &2120986320
 MonoBehaviour:
   m_ObjectHideFlags: 0
