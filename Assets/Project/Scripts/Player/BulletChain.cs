@@ -33,6 +33,7 @@ public class BulletChain : MonoBehaviour
     private Bullet bullet;
     private Rigidbody rb;
     private Collider selfCollider;
+    private BulletHitEffects hitEffects;
     private GameObject owner;
     private Vector3 startPosition;
     private int wallMask;
@@ -46,6 +47,7 @@ public class BulletChain : MonoBehaviour
         bullet = GetComponent<Bullet>();
         rb = GetComponent<Rigidbody>();
         selfCollider = GetComponent<Collider>();
+        hitEffects = GetComponent<BulletHitEffects>();
     }
 
     private void Start()
@@ -148,7 +150,9 @@ public class BulletChain : MonoBehaviour
             }
         }
 
+        float damage = bullet.BulletDamage;
         ApplyDamage(enemy, hitPoint);
+        if (hitEffects != null) hitEffects.OnEnemyHit(enemy, hitPoint, damage); // 넉백·착탄 폭발·처형
         hitEnemies.Add(enemy);
         IgnoreAll(enemy.gameObject);
         remaining--;

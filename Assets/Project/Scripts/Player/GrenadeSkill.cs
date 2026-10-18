@@ -39,6 +39,7 @@ public class GrenadeSkill : MonoBehaviour
     private JUHealth health;
     private Collider[] ownColliders;
 
+    public GameObject ExplosionVFX => explosionVFX; // 착탄 폭발 모듈이 이펙트 재사용 (BulletHitEffects)
     public int CurrentCharges => currentCharges;
     public int MaxCharges => maxCharges;
     public float CooldownProgress => currentCooldownTimer / cooldown;

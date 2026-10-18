@@ -481,6 +481,20 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 crit.critMultiplier = critDamageMultiplier;
             }
 
+            // 적중 효과 특수 (넉백·착탄 폭발·처형, 함께 사용 가능). BulletChain보다 먼저 붙여 가로챈 적중에서도 호출되게 함
+            ModuleDataSO knockback = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Knockback);
+            ModuleDataSO explosion = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.ImpactExplosion);
+            ModuleDataSO execute = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Execute);
+            if (knockback != null || explosion != null || execute != null)
+            {
+                BulletHitEffects effects = template.AddComponent<BulletHitEffects>();
+                if (knockback != null) { effects.knockbackDistance = knockback.effectValue; mechanismNames += $" [{knockback.moduleName}]"; }
+                if (explosion != null) { effects.explosionChance = explosion.effectValue; mechanismNames += $" [{explosion.moduleName}]"; }
+                if (execute != null) { effects.executeThreshold = execute.effectValue; mechanismNames += $" [{execute.moduleName}]"; }
+                GrenadeSkill grenade = grenadeSkill != null ? grenadeSkill : GetComponent<GrenadeSkill>();
+                if (BulletHitEffects.ExplosionVFX == null && grenade != null) BulletHitEffects.ExplosionVFX = grenade.ExplosionVFX;
+            }
+
             // 탄 궤적 특수 (관통·도탄은 충돌 칸이 같아 둘 중 하나만 배치됨). 공용 도탄은 산탄총에 효과 없음 (유니크가 담당)
             ModuleDataSO pathModule = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Pierce);
             if (pathModule == null && data.weaponType != WeaponType.Shotgun)

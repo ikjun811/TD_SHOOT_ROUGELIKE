@@ -20,11 +20,9 @@ MonoBehaviour:
   target: 0
   mechanismSlot: 5
   effect: 18
-  effectValue: 0.85
-  effectCount: 2
-  description: "\uD0C4\uC774 \uC801\uC744 \uAD00\uD1B5\uD574 \uACC4\uC18D \uB0A0\uC544\uAC10
-    (2\uD68C, \uAD00\uD1B5\uD560 \uB54C\uB9C8\uB2E4 \uD53C\uD574 85%).\n\uB3C4\uD0C4\uACFC
-    \uD568\uAED8 \uBC30\uCE58 \uBD88\uAC00."
+  effectValue: 1
+  effectCount: 3
+  description: "\uD0C4\uC774 \uC801\uC744 \uAD00\uD1B5\uD574 \uACC4\uC18D \uB0A0\uC544\uAC10 (3\uD68C, \uD53C\uD574 \uAC10\uC18C \uC5C6\uC74C).\n\uB3C4\uD0C4\uACFC \uD568\uAED8 \uBC30\uCE58 \uBD88\uAC00."
   magazineOverride: 0
   reloadTimeOverride: 0
   fireIntervalOverride: 0
