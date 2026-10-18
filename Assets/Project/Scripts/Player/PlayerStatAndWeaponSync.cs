@@ -164,6 +164,92 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         lastDualLeftAmmo = left.BulletsAmounts;
     }
 
+    // 탄환 환수 모듈 (BulletHitEffects가 처치 시 호출): 탄창의 ratio만큼(올림, 최소 1발) 채움
+    // 쌍권총은 좌우 번갈아 쏘기 + 양손 0발일 때만 자동 장전이라, 한 손만 채우면 다른 손이 0발로 남아 사격이 멈춤 → 양손에 같은 양
+    // 쌍권총 장전 보정은 "탄이 늘면 장전 완료"로 보므로 추적값도 함께 갱신 (안 하면 반대손이 가득 차고 장전이 취소됨)
+    public void RefundAmmo(Weapon weapon, float ratio)
+    {
+        if (weapon == null || ratio <= 0f) return;
+
+        bool isDual = lastDualRight != null && lastDualLeft != null && (weapon == lastDualRight || weapon == lastDualLeft);
+        if (isDual)
+        {
+            AddAmmo(lastDualRight, ratio);
+            AddAmmo(lastDualLeft, ratio);
+            lastDualRightAmmo = lastDualRight.BulletsAmounts;
+            lastDualLeftAmmo = lastDualLeft.BulletsAmounts;
+            ReleaseReloadHold(lastDualRight);
+            ReleaseReloadHold(lastDualLeft);
+            return;
+        }
+
+        AddAmmo(weapon, ratio);
+        ReleaseReloadHold(weapon);
+    }
+
+    // 막탄 장전 보류 (탄환 환수 모듈): JU 자동 장전은 탄창 0발 다음 프레임에 바로 시작돼 막탄 처치 환수가 늦음
+    // → 막탄이 결과를 낼 때까지 예비탄(TotalBullets)을 0으로 둬 장전 시작을 막음 (JU 장전 시작 조건: 예비탄 > 0, 무한탄이라 장전 결과엔 영향 없음)
+    // 환수되면 즉시 해제, 막탄(산탄은 전부)이 사라지면 그 프레임 LateUpdate에서 해제, 최대 0.3초
+    private class ReloadHold
+    {
+        public int savedTotalBullets;
+        public int pendingBullets;
+        public float releaseTime;
+    }
+    private const float ReloadHoldMaxTime = 0.3f;
+    private readonly Dictionary<Weapon, ReloadHold> reloadHolds = new Dictionary<Weapon, ReloadHold>();
+    private readonly List<Weapon> releaseBuffer = new List<Weapon>();
+
+    // 막탄 생성 시 (BulletHitEffects.Awake, 탄창이 줄기 전)
+    public void BeginReloadHold(Weapon weapon)
+    {
+        if (weapon == null) return;
+        if (!reloadHolds.TryGetValue(weapon, out ReloadHold hold))
+        {
+            hold = new ReloadHold { savedTotalBullets = Mathf.Max(1, weapon.TotalBullets) };
+            reloadHolds[weapon] = hold;
+            weapon.TotalBullets = 0;
+        }
+        hold.pendingBullets++;
+        hold.releaseTime = Time.time + ReloadHoldMaxTime;
+    }
+
+    // 막탄이 사라질 때 (BulletHitEffects.OnDestroy). 해제는 LateUpdate에서 (같은 프레임 처치 환수 판정 이후)
+    public void EndReloadHoldBullet(Weapon weapon)
+    {
+        if (weapon != null && reloadHolds.TryGetValue(weapon, out ReloadHold hold)) hold.pendingBullets--;
+    }
+
+    private void ReleaseReloadHold(Weapon weapon)
+    {
+        if (weapon == null || !reloadHolds.TryGetValue(weapon, out ReloadHold hold)) return;
+        weapon.TotalBullets = hold.savedTotalBullets;
+        reloadHolds.Remove(weapon);
+    }
+
+    private void LateUpdate()
+    {
+        if (reloadHolds.Count == 0) return;
+
+        releaseBuffer.Clear();
+        foreach (var pair in reloadHolds)
+        {
+            if (pair.Key == null || pair.Value.pendingBullets <= 0 || Time.time >= pair.Value.releaseTime) releaseBuffer.Add(pair.Key);
+        }
+        foreach (Weapon weapon in releaseBuffer)
+        {
+            if (weapon == null) reloadHolds.Remove(weapon);
+            else ReleaseReloadHold(weapon);
+        }
+    }
+
+    // 손당 탄창의 ratio만큼 (올림, 최소 1발)
+    private static void AddAmmo(Weapon weapon, float ratio)
+    {
+        int amount = Mathf.Max(1, Mathf.CeilToInt(weapon.BulletsPerMagazine * ratio));
+        weapon.BulletsAmounts = Mathf.Min(weapon.BulletsPerMagazine, weapon.BulletsAmounts + amount);
+    }
+
     // 장전 속도: JU 장전은 애니메이션 이벤트(reloadRightHandWeapon)로 끝나므로, 장전 중에만 애니메이터 속도를 조절
     // 속도 = (장전 애니메이션 원래 길이 / 무기 reloadTime) x (1 + 장전 속도 모듈%) → 장전 모션 전체 길이 = reloadTime
     // JU는 RootMotion을 쓰지 않아 이동 속도에는 영향 없음 (장전 중 하체 애니메이션만 같이 빨라짐)
@@ -485,9 +571,14 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             ModuleDataSO knockback = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Knockback);
             ModuleDataSO explosion = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.ImpactExplosion);
             ModuleDataSO execute = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Execute);
-            if (knockback != null || explosion != null || execute != null)
+            ModuleDataSO lastRound = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.LastRoundBonus);
+            ModuleDataSO refund = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.AmmoRefund);
+            if (knockback != null || explosion != null || execute != null || lastRound != null || refund != null)
             {
                 BulletHitEffects effects = template.AddComponent<BulletHitEffects>();
+                effects.sourceWeapon = weapon;
+                if (lastRound != null) { effects.lastRoundBonus = lastRound.effectValue; mechanismNames += $" [{lastRound.moduleName}]"; }
+                if (refund != null) { effects.refundRatio = refund.effectValue; mechanismNames += $" [{refund.moduleName}]"; }
                 if (knockback != null) { effects.knockbackDistance = knockback.effectValue; mechanismNames += $" [{knockback.moduleName}]"; }
                 if (explosion != null) { effects.explosionChance = explosion.effectValue; mechanismNames += $" [{explosion.moduleName}]"; }
                 if (execute != null) { effects.executeThreshold = execute.effectValue; mechanismNames += $" [{execute.moduleName}]"; }

@@ -3,9 +3,8 @@ using UnityEditor;
 using UnityEngine;
 
 // 특수 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Special Modules)
-// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 x 레어도 4종 = 20개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 x 레어도 4종 = 28개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
-// A3c 특수 모듈도 이 목록에 추가
 public static class SpecialModuleGenerator
 {
     private const string ParentFolder = "Assets/Project/Scripts/ScriptableObjects/Modules";
@@ -42,6 +41,13 @@ public static class SpecialModuleGenerator
         new Spec { fileKey = "Execute", displayName = "처형", effect = ModuleEffect.Execute,
             values = new[] { 0.1f, 0.12f, 0.15f, 0.2f },
             descriptionFormat = "적중 후 남은 체력이 {1:0}% 이하면 즉사.\n엘리트는 기준 절반." },
+        // A3c
+        new Spec { fileKey = "LastRoundBonus", displayName = "마지막 탄 추가 피해", effect = ModuleEffect.LastRoundBonus,
+            values = new[] { 0.5f, 0.7f, 0.9f, 1.2f },
+            descriptionFormat = "탄창의 마지막 탄 피해 +{1:0}%.\n탄창이 작은 무기일수록 효과적 (산탄총은 마지막 사격의 산탄 전부)." },
+        new Spec { fileKey = "AmmoRefund", displayName = "탄환 환수", effect = ModuleEffect.AmmoRefund,
+            values = new[] { 0.1f, 0.15f, 0.2f, 0.25f },
+            descriptionFormat = "탄으로 적 처치 시 탄창의 {1:0}%를 즉시 돌려받음 (최소 1발)." },
     };
 
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };

@@ -30,6 +30,9 @@ public class EnemyBase : MonoBehaviour
 
     public bool IsElite { get; private set; }
 
+    // 사망한 프레임 (탄환 환수: 같은 프레임 충돌에서 JU 피해가 먼저 처리돼도 이번 적중의 처치로 판정, BulletHitEffects)
+    public int DeathFrame { get; private set; } = -1;
+
     // 생성 직후(Start 전) 호출하면 Start에서 엘리트 배율·외형 적용
     public void MarkAsElite()
     {
@@ -191,6 +194,7 @@ public class EnemyBase : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
+        DeathFrame = Time.frameCount;
 
         if (ItemDropManager.Instance != null)
         {

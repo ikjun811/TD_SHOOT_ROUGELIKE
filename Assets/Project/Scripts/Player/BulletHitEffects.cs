@@ -12,6 +12,8 @@ using JUTPS.WeaponSystem;
 //   착탄 폭발: 확률로 맞은 적 주변 적에게 탄 피해 x 비율 (맞은 적·플레이어 제외, 폭발 피해는 다시 폭발·처형을 일으키지 않음)
 //   처형: 이번 피해 후 남은 체력이 최대 체력 x 기준 이하면 즉사 (엘리트는 기준 절반)
 //         JU 피해와 이 컴포넌트의 충돌 처리 순서가 정해져 있지 않아, 같은 프레임 LateUpdate에서 실제 체력으로 판정
+//   마지막 탄 추가 피해: 탄창 마지막 탄의 피해 증가 (생성 순간 판정)
+//   탄환 환수: 탄으로 적 처치 시 쏜 무기 탄창에 비율만큼 환수 (처형과 같은 LateUpdate 판정, PlayerStatAndWeaponSync.RefundAmmo)
 [RequireComponent(typeof(Bullet))]
 public class BulletHitEffects : MonoBehaviour
 {
@@ -22,6 +24,9 @@ public class BulletHitEffects : MonoBehaviour
     public float explosionRadius = 2.5f;
     public float executeThreshold;           // 0.15 = 남은 체력 15% 이하 즉사
     public float eliteExecuteFactor = 0.5f;
+    public float lastRoundBonus;             // 0.5 = 탄창 마지막 탄 피해 +50%
+    public float refundRatio;                // 0.1 = 처치 시 탄창의 10% 환수 (올림, 최소 1발)
+    public Weapon sourceWeapon;              // 이 템플릿을 쓰는 JU 무기 (마지막 탄 판정·환수 대상, 쌍권총은 손마다 따로)
 
     // 착탄 폭발 이펙트 (수류탄 폭발 이펙트 재사용, PlayerStatAndWeaponSync가 지정)
     public static GameObject ExplosionVFX;
@@ -32,10 +37,34 @@ public class BulletHitEffects : MonoBehaviour
 
     private Bullet bullet;
     private bool collisionHandled;
+    private bool holdingReload;
 
     private void Awake()
     {
         bullet = GetComponent<Bullet>();
+
+        // 마지막 탄: JU는 탄을 생성한 뒤 탄창을 줄이므로(Weapon.Shot), 생성 순간(Awake) 남은 탄이 1이면 마지막 탄
+        // 산탄총은 마지막 사격의 산탄 전부가 해당
+        bool isLastRound = sourceWeapon != null && sourceWeapon.BulletsAmounts == 1;
+        if (lastRoundBonus > 0f && isLastRound)
+        {
+            bullet.BulletDamage *= 1f + lastRoundBonus;
+        }
+
+        // 탄환 환수: 막탄이 결과를 낼 때까지 자동 장전 보류 (처치 환수 후 장전 없이 계속 사격)
+        if (refundRatio > 0f && isLastRound && PlayerStatAndWeaponSync.Instance != null)
+        {
+            PlayerStatAndWeaponSync.Instance.BeginReloadHold(sourceWeapon);
+            holdingReload = true;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (holdingReload && PlayerStatAndWeaponSync.Instance != null)
+        {
+            PlayerStatAndWeaponSync.Instance.EndReloadHoldBullet(sourceWeapon);
+        }
     }
 
     // JU 탄의 일반 적중 (관통·도탄 횟수를 다 쓴 마지막 적중 포함)
@@ -58,9 +87,17 @@ public class BulletHitEffects : MonoBehaviour
     {
         if (enemy == null) return;
         JUHealth health = enemy.GetComponent<JUHealth>();
-        if (health != null && health.IsDead) return;
-
         GameObject owner = bullet != null ? bullet.GetOwner() : null;
+
+        if (health != null && health.IsDead)
+        {
+            // 일반 충돌은 JU 피해와 처리 순서가 정해져 있지 않음 → 이 프레임에 막 죽었으면 이번 적중의 처치로 보고 환수만 대기
+            if (refundRatio > 0f && enemy.DeathFrame == Time.frameCount)
+            {
+                PostHitChecker.Queue(health, 0f, hitPoint, owner, sourceWeapon, refundRatio);
+            }
+            return;
+        }
 
         if (knockbackDistance > 0f && owner != null)
         {
@@ -78,10 +115,10 @@ public class BulletHitEffects : MonoBehaviour
             Explode(hitPoint, damage * explosionDamageRatio, enemy, owner);
         }
 
-        if (executeThreshold > 0f && health != null)
+        if ((executeThreshold > 0f || refundRatio > 0f) && health != null)
         {
             float threshold = executeThreshold * (enemy.IsElite ? eliteExecuteFactor : 1f);
-            ExecuteChecker.Queue(health, threshold, hitPoint, owner);
+            PostHitChecker.Queue(health, threshold, hitPoint, owner, refundRatio > 0f ? sourceWeapon : null, refundRatio);
         }
     }
 
@@ -136,8 +173,9 @@ public class BulletHitEffects : MonoBehaviour
         Destroy(vfx, VfxDuration);
     }
 
-    // 처형 판정 대기열: 같은 프레임의 모든 충돌·피해 처리가 끝난 뒤(LateUpdate) 실제 체력으로 판정
-    private class ExecuteChecker : MonoBehaviour
+    // 적중 후 판정 대기열: 같은 프레임의 모든 충돌·피해 처리가 끝난 뒤(LateUpdate) 실제 체력으로 판정
+    //   1) 처형: 남은 체력이 기준 이하면 즉사  2) 탄환 환수: 적중 시 살아 있던 적이 죽었으면 쏜 무기에 탄 환수 (같은 적은 1번만)
+    private class PostHitChecker : MonoBehaviour
     {
         private struct Pending
         {
@@ -145,27 +183,36 @@ public class BulletHitEffects : MonoBehaviour
             public float threshold;
             public Vector3 point;
             public GameObject owner;
+            public Weapon refundWeapon;
+            public float refundRatio;
         }
 
-        private static ExecuteChecker instance;
+        private static PostHitChecker instance;
         private readonly List<Pending> pending = new List<Pending>();
+        private readonly HashSet<JUHealth> refunded = new HashSet<JUHealth>();
 
-        public static void Queue(JUHealth health, float threshold, Vector3 point, GameObject owner)
+        public static void Queue(JUHealth health, float threshold, Vector3 point, GameObject owner, Weapon refundWeapon, float refundRatio)
         {
             if (instance == null)
             {
-                GameObject obj = new GameObject("ExecuteChecker");
-                instance = obj.AddComponent<ExecuteChecker>();
+                GameObject obj = new GameObject("PostHitChecker");
+                instance = obj.AddComponent<PostHitChecker>();
             }
-            instance.pending.Add(new Pending { health = health, threshold = threshold, point = point, owner = owner });
+            instance.pending.Add(new Pending
+            {
+                health = health, threshold = threshold, point = point, owner = owner,
+                refundWeapon = refundWeapon, refundRatio = refundRatio
+            });
         }
 
         private void LateUpdate()
         {
+            if (pending.Count == 0) return;
+
             for (int i = 0; i < pending.Count; i++)
             {
                 Pending p = pending[i];
-                if (p.health == null || p.health.IsDead) continue;
+                if (p.threshold <= 0f || p.health == null || p.health.IsDead) continue;
                 if (p.health.Health > p.health.MaxHealth * p.threshold) continue;
 
                 // 방어력만큼 깎이므로 더해서 확실히 0으로
@@ -177,6 +224,20 @@ public class BulletHitEffects : MonoBehaviour
                     HitOriginPosition = p.point,
                     DamageOwner = p.owner
                 });
+            }
+
+            // 처치 판정 (처형으로 죽은 경우 포함, 폭발 피해만으로 죽은 적은 대기열에 없으므로 제외)
+            refunded.Clear();
+            for (int i = 0; i < pending.Count; i++)
+            {
+                Pending p = pending[i];
+                if (p.refundWeapon == null || p.health == null || !p.health.IsDead) continue;
+                if (!refunded.Add(p.health)) continue;
+
+                if (PlayerStatAndWeaponSync.Instance != null)
+                {
+                    PlayerStatAndWeaponSync.Instance.RefundAmmo(p.refundWeapon, p.refundRatio);
+                }
             }
             pending.Clear();
         }
