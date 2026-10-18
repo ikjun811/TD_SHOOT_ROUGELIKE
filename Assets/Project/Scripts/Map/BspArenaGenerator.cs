@@ -50,6 +50,13 @@ public class BspArenaGenerator : MonoBehaviour
     [SerializeField] private Material wallMaterial;
     [SerializeField] private string wallLayerName = "Walls";
 
+    [Header("Visual Prefabs (비우면 큐브 표시)")]
+    [Tooltip("1x1x1m·중심 피벗 기준으로 만든 프리팹. 큐브 크기에 맞게 늘어남. 충돌은 큐브 콜라이더가 담당하고 프리팹 콜라이더는 꺼짐")]
+    [SerializeField] private GameObject pillarPrefab;
+    [Tooltip("직선 벽·ㄱ자 벽의 각 토막에 사용")]
+    [SerializeField] private GameObject wallPrefab;
+    [SerializeField] private GameObject boundaryPrefab;
+
     [Header("Player Start")]
     [Tooltip("플레이어를 구역 중앙에 놓을 때 바닥 위 높이")]
     [SerializeField] private float playerSpawnHeight = 0.1f;
@@ -103,6 +110,9 @@ public class BspArenaGenerator : MonoBehaviour
     [ContextMenu("Generate")]
     public void Generate()
     {
+        // 생성·NavMesh 베이크 소요 시간 측정 (라운드 시작 순간 멈춤 확인용)
+        System.Diagnostics.Stopwatch totalWatch = System.Diagnostics.Stopwatch.StartNew();
+
         Clear();
 
         usedSeed = seed != 0 ? seed : Random.Range(1, int.MaxValue);
@@ -122,7 +132,9 @@ public class BspArenaGenerator : MonoBehaviour
         BuildFloorAndBoundary();
         foreach (Leaf leaf in leaves) PlaceObstacles(leaf, rng);
 
+        System.Diagnostics.Stopwatch navMeshWatch = System.Diagnostics.Stopwatch.StartNew();
         BuildNavMesh();
+        navMeshWatch.Stop();
 
         // 시작 구역: 무작위 구역의 중앙 빈 공간
         Leaf startLeaf = leaves[rng.Next(leaves.Count)];
@@ -138,7 +150,8 @@ public class BspArenaGenerator : MonoBehaviour
             }
         }
 
-        Debug.Log($"BspArenaGenerator: seed {usedSeed}, zones {leaves.Count}");
+        totalWatch.Stop();
+        Debug.Log($"BspArenaGenerator: seed {usedSeed}, zones {leaves.Count}, build {totalWatch.ElapsedMilliseconds}ms (navmesh {navMeshWatch.ElapsedMilliseconds}ms)");
     }
 
     [ContextMenu("Clear")]
@@ -235,7 +248,8 @@ public class BspArenaGenerator : MonoBehaviour
                 foreach (RectInt part in placed)
                 {
                     MarkOccupied(part);
-                    CreateBlock(part, obstacleHeight, "Obstacle");
+                    bool isPillar = part.width == pillarSize && part.height == pillarSize;
+                    CreateBlock(part, obstacleHeight, isPillar ? "Pillar" : "Wall", isPillar ? pillarPrefab : wallPrefab);
                 }
                 break;
             }
@@ -408,10 +422,11 @@ public class BspArenaGenerator : MonoBehaviour
         wall.transform.position = transform.position + localPos;
         wall.transform.localScale = size;
         ApplyWallStyle(wall);
+        ApplyVisualPrefab(wall, boundaryPrefab);
     }
 
     // 격자 사각형 → 큐브 장애물
-    private void CreateBlock(RectInt cells, float height, string objName)
+    private void CreateBlock(RectInt cells, float height, string objName, GameObject visualPrefab)
     {
         GameObject block = GameObject.CreatePrimitive(PrimitiveType.Cube);
         block.name = objName;
@@ -419,6 +434,24 @@ public class BspArenaGenerator : MonoBehaviour
         block.transform.position = CellCenterToWorld(cells.center) + Vector3.up * (height / 2f);
         block.transform.localScale = new Vector3(cells.width, height, cells.height);
         ApplyWallStyle(block);
+        ApplyVisualPrefab(block, visualPrefab);
+    }
+
+    // 큐브 렌더러를 끄고 프리팹을 자식으로 붙여 큐브 크기에 맞춤 (부모 스케일을 그대로 받음)
+    // 프리팹 콜라이더는 꺼서 NavMesh·벽 판정은 큐브 콜라이더만 사용
+    private static void ApplyVisualPrefab(GameObject block, GameObject prefab)
+    {
+        if (prefab == null) return;
+
+        block.GetComponent<Renderer>().enabled = false;
+
+        GameObject visual = Instantiate(prefab, block.transform);
+        visual.name = prefab.name;
+        visual.transform.localPosition = Vector3.zero;
+        visual.transform.localRotation = Quaternion.identity;
+        visual.transform.localScale = Vector3.one;
+
+        foreach (Collider col in visual.GetComponentsInChildren<Collider>(true)) col.enabled = false;
     }
 
     private void ApplyWallStyle(GameObject obj)
