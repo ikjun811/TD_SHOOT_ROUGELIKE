@@ -395,10 +395,24 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         // 장전 속도는 장전 중에만 Update에서 애니메이터 속도로 적용
         moduleReloadSpeedPercent = reloadSpeedPercent;
 
-        // 수류탄 쿨감 (GrenadeSkill이 플레이어에 붙어 있을 때만)
+        // 수류탄 쿨감·모듈 (GrenadeSkill이 플레이어에 붙어 있을 때만). 공격력 % 스탯 공유 (GDD 8-6 #17)
+        if (grenadeSkill == null) grenadeSkill = GetComponent<GrenadeSkill>();
         if (grenadeSkill != null)
         {
+            ModuleDataSO multi = FindGrenadeModule(ModuleEffect.MultiThrow);
+            ModuleDataSO cluster = FindGrenadeModule(ModuleEffect.ClusterGrenade);
+            ModuleDataSO extraCharge = FindGrenadeModule(ModuleEffect.ExtraCharge);
+            ModuleDataSO killRefund = FindGrenadeModule(ModuleEffect.KillCooldownRefund);
+
             grenadeSkill.SetCooldownReduction(cooldownReduce);
+            grenadeSkill.ApplyModules(
+                1f + atkPercent,
+                FindGrenadeModule(ModuleEffect.AutoThrow) != null,
+                multi != null ? multi.effectCount : 1,
+                multi != null ? multi.effectValue : 1f,
+                cluster != null ? cluster.effectValue : 0f,
+                extraCharge != null ? extraCharge.effectCount : 0,
+                killRefund != null ? killRefund.effectValue : 0f);
             grenadeSkill.RefillCharges(); // 다음 라운드 시작 시 충전 가득
         }
 
@@ -619,10 +633,12 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             ModuleDataSO execute = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Execute);
             ModuleDataSO lastRound = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.LastRoundBonus);
             ModuleDataSO refund = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.AmmoRefund);
-            if (knockback != null || explosion != null || execute != null || lastRound != null || refund != null)
+            bool autoThrow = FindGrenadeModule(ModuleEffect.AutoThrow) != null;
+            if (knockback != null || explosion != null || execute != null || lastRound != null || refund != null || autoThrow)
             {
                 BulletHitEffects effects = template.AddComponent<BulletHitEffects>();
                 effects.sourceWeapon = weapon;
+                effects.autoThrowGrenade = autoThrow;
                 if (lastRound != null) { effects.lastRoundBonus = lastRound.effectValue; mechanismNames += $" [{lastRound.moduleName}]"; }
                 if (refund != null) { effects.refundRatio = refund.effectValue; mechanismNames += $" [{refund.moduleName}]"; }
                 if (knockback != null) { effects.knockbackDistance = knockback.effectValue; mechanismNames += $" [{knockback.moduleName}]"; }
@@ -651,6 +667,20 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         weapon.BulletPrefab = template;
 
         Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
+    }
+
+    // 수류탄 대상 모듈 (작동: 자동 투척 / 특수: 중복이면 효과가 적용되는 1개만)
+    private ModuleDataSO FindGrenadeModule(ModuleEffect effect)
+    {
+        if (GridInventorySystem.Instance == null) return null;
+
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m == null || m.target != ModuleTarget.Grenade || m.effect != effect) continue;
+            if (m.category == ModuleCategory.Mechanism || GridInventorySystem.Instance.IsEffectActive(pm)) return m;
+        }
+        return null;
     }
 
     // 착탄 폭발·재장전 시 폭발 이펙트 (수류탄 폭발 이펙트 재사용)

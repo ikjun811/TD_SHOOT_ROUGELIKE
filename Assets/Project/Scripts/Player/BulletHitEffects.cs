@@ -27,6 +27,7 @@ public class BulletHitEffects : MonoBehaviour
     public float lastRoundBonus;             // 0.5 = 탄창 마지막 탄 피해 +50%
     public float refundRatio;                // 0.1 = 처치 시 탄창의 10% 환수 (올림, 최소 1발)
     public Weapon sourceWeapon;              // 이 템플릿을 쓰는 JU 무기 (마지막 탄 판정·환수 대상, 쌍권총은 손마다 따로)
+    public bool autoThrowGrenade;            // 자동 투척 모듈: 적중마다 GrenadeSkill.TryAutoThrow (확률·내부 쿨은 GrenadeSkill)
 
     // 착탄 폭발 이펙트 (수류탄 폭발 이펙트 재사용, PlayerStatAndWeaponSync가 지정)
     public static GameObject ExplosionVFX;
@@ -108,6 +109,12 @@ public class BulletHitEffects : MonoBehaviour
                 float distance = knockbackDistance * (enemy.IsElite ? eliteKnockbackFactor : 1f);
                 EnemyKnockback.Apply(enemy, away.normalized, distance);
             }
+        }
+
+        if (autoThrowGrenade && owner != null)
+        {
+            GrenadeSkill grenade = owner.GetComponent<GrenadeSkill>();
+            if (grenade != null) grenade.TryAutoThrow(enemy);
         }
 
         if (explosionChance > 0f && Random.value < explosionChance)

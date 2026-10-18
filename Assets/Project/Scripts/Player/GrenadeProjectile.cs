@@ -18,6 +18,13 @@ public class GrenadeProjectile : MonoBehaviour
     [HideInInspector] public float vfxSpeed = 1.5f;     // 이펙트 재생 속도 배율 (클수록 빨리 끝남)
     [HideInInspector] public float vfxDuration = 2f;    // 이 시간 뒤 이펙트 제거 (초)
     [HideInInspector] public GameObject owner;
+    [HideInInspector] public float clusterDamageRatio;  // 집속탄 모듈: 소형 폭탄 피해 비율 (0 = 없음, 소형 폭탄은 다시 집속 안 함)
+
+    private const int ClusterCount = 4;
+    private const float ClusterSpread = 3f;      // 소형 폭탄 흩어지는 반경 (m)
+    private const float ClusterFuse = 0.4f;
+    private const float ClusterRadius = 2f;
+    private const float ClusterVfxScale = 0.5f;  // 원래 이펙트 크기 대비
 
     private float timer;
     private bool exploded;
@@ -81,7 +88,35 @@ public class GrenadeProjectile : MonoBehaviour
             });
         }
 
+        if (clusterDamageRatio > 0f) SpawnClusterBomblets(center);
+
         Destroy(gameObject);
+    }
+
+    // 집속탄: 주변에 소형 폭탄을 흩뿌림 (같은 클래스를 작게 재사용, 물리 없이 그 자리에서 짧은 지연 후 폭발)
+    private void SpawnClusterBomblets(Vector3 center)
+    {
+        for (int i = 0; i < ClusterCount; i++)
+        {
+            Vector2 offset = Random.insideUnitCircle * ClusterSpread;
+            Vector3 position = center + new Vector3(offset.x, 0f, offset.y);
+
+            GameObject bomblet = new GameObject("Cluster Bomblet");
+            bomblet.transform.position = position;
+            GrenadeProjectile projectile = bomblet.AddComponent<GrenadeProjectile>(); // Rigidbody는 RequireComponent로 자동 추가
+            bomblet.GetComponent<Rigidbody>().isKinematic = true;
+
+            projectile.fuseTime = ClusterFuse + Random.Range(0f, 0.15f); // 동시에 터지지 않게 약간씩 엇갈림
+            projectile.radius = ClusterRadius;
+            projectile.centerDamage = centerDamage * clusterDamageRatio;
+            projectile.edgeDamage = edgeDamage * clusterDamageRatio;
+            projectile.explosionVFX = explosionVFX;
+            projectile.vfxScale = vfxScale * ClusterVfxScale;
+            projectile.vfxSpeed = vfxSpeed;
+            projectile.vfxDuration = vfxDuration;
+            projectile.owner = owner;
+            projectile.clusterDamageRatio = 0f;
+        }
     }
 
     private void OnDrawGizmosSelected()

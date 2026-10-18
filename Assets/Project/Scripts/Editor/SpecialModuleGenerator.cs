@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // 특수 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Special Modules)
-// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 x 레어도 4종 = 32개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 + A4b 수류탄 4종 x 레어도 4종 = 48개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
 public static class SpecialModuleGenerator
 {
@@ -52,6 +52,19 @@ public static class SpecialModuleGenerator
         new Spec { fileKey = "ReloadExplosion", displayName = "재장전 시 폭발", effect = ModuleEffect.ReloadExplosion,
             values = new[] { 1.5f, 2f, 2.5f, 3.5f },
             descriptionFormat = "장전을 시작할 때 주변 4m에 충격파.\n피해: 사격 1회 피해의 {1:0}% (산탄총은 산탄 합)." },
+        // A4b 수류탄 특수 (동작은 GrenadeSkill·GrenadeProjectile)
+        new Spec { fileKey = "MultiThrow", displayName = "다중 투척", effect = ModuleEffect.MultiThrow, target = ModuleTarget.Grenade,
+            counts = new[] { 2, 2, 3, 3 }, values = new[] { 0.6f, 0.65f, 0.55f, 0.6f },
+            descriptionFormat = "한 번에 수류탄 {0}개를 좌우로 투척 (개당 피해 {1:0}%).\n자동 투척에도 적용." },
+        new Spec { fileKey = "ClusterGrenade", displayName = "집속탄", effect = ModuleEffect.ClusterGrenade, target = ModuleTarget.Grenade,
+            values = new[] { 0.3f, 0.35f, 0.4f, 0.5f },
+            descriptionFormat = "폭발 시 주변 3m에 소형 폭탄 4개 (반경 2m, 피해 {1:0}%)." },
+        new Spec { fileKey = "ExtraCharge", displayName = "충전 +1", effect = ModuleEffect.ExtraCharge, target = ModuleTarget.Grenade,
+            counts = new[] { 1, 1, 1, 2 },
+            descriptionFormat = "수류탄 최대 충전 +{0}.\n자동 투척과 함께 쓰면 효과 없음." },
+        new Spec { fileKey = "KillCooldownRefund", displayName = "처치 시 쿨감", effect = ModuleEffect.KillCooldownRefund, target = ModuleTarget.Grenade,
+            values = new[] { 0.5f, 0.7f, 0.9f, 1.2f },
+            descriptionFormat = "적 처치 시 수류탄 충전 대기 시간 −{2:0.#}초.\n자동 투척과 함께 쓰면 효과 없음." },
     };
 
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };

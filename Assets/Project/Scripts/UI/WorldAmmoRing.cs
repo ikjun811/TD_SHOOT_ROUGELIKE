@@ -41,6 +41,8 @@ public class WorldAmmoRing : MonoBehaviour
 
     private GrenadeSkill grenadeSkill;
     private RectTransform[] grenadeFills;
+    private GameObject[] grenadeBars;      // 칸 배경 (최대 충전 수가 바뀌면 다시 만듦)
+    private RectTransform grenadeBarParent;
 
     private void Awake()
     {
@@ -99,11 +101,22 @@ public class WorldAmmoRing : MonoBehaviour
     }
 
     // 링 오른쪽에 수류탄 충전 칸을 아래→위로 세로 배치 (캔버스 100x100 기준 좌표)
+    // 충전 +1 모듈로 최대 충전 수가 바뀌면 UpdateGrenadeBars가 기존 칸을 지우고 다시 호출
     private void BuildGrenadeBars(RectTransform parent)
     {
+        grenadeBarParent = parent;
+        if (grenadeBars != null)
+        {
+            foreach (GameObject old in grenadeBars)
+            {
+                if (old != null) Destroy(old);
+            }
+        }
+
         int count = Mathf.Max(1, grenadeSkill.MaxCharges);
         float segmentHeight = (100f - grenadeSegmentGap * (count - 1)) / count;
         grenadeFills = new RectTransform[count];
+        grenadeBars = new GameObject[count];
 
         for (int i = 0; i < count; i++)
         {
@@ -129,6 +142,7 @@ public class WorldAmmoRing : MonoBehaviour
             fill.GetComponent<Image>().raycastTarget = false;
 
             grenadeFills[i] = fillRect;
+            grenadeBars[i] = bg;
         }
     }
 
@@ -136,6 +150,21 @@ public class WorldAmmoRing : MonoBehaviour
     private void UpdateGrenadeBars()
     {
         if (grenadeFills == null || grenadeSkill == null) return;
+
+        // 최대 충전 수가 바뀌었으면 칸 다시 만들기 (벽 뒤 표시 재질도 다시 적용)
+        if (grenadeFills.Length != Mathf.Max(1, grenadeSkill.MaxCharges) && grenadeBarParent != null)
+        {
+            BuildGrenadeBars(grenadeBarParent);
+            WorldUIOverlay.Apply(ringRoot);
+        }
+
+        // 자동 투척 모듈이면 충전을 쓰지 않으므로 숨김
+        bool visible = grenadeSkill.UsesCharges;
+        foreach (GameObject bar in grenadeBars)
+        {
+            if (bar != null && bar.activeSelf != visible) bar.SetActive(visible);
+        }
+        if (!visible) return;
 
         int charges = grenadeSkill.CurrentCharges;
         float progress = Mathf.Clamp01(grenadeSkill.CooldownProgress);

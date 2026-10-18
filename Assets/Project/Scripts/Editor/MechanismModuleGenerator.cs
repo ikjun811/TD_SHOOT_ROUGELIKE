@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // 작동 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Mechanism Modules)
-// A2 JU 무기 값만 바꾸는 작동 모듈 8종 + A4a 래퍼 작동 모듈 5종 x 레어도 4종 = 52개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A2 JU 무기 값만 바꾸는 작동 모듈 8종 + A4a 래퍼 작동 모듈 5종 + A4b 자동 투척 x 레어도 4종 = 56개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 효과는 레어도와 무관하게 같고, 레어도가 높을수록 칸 수만 줄어듦 (5/5/4/3)
 // 수치는 생성 후 에셋에서 직접 조정 가능 (PlayerStatAndWeaponSync.ApplyWeaponData가 적용)
 public static class MechanismModuleGenerator
@@ -67,6 +67,10 @@ public static class MechanismModuleGenerator
         new Spec { fileKey = "StationaryFire", displayName = "거치 사격", effect = ModuleEffect.StationaryFire,
             target = ModuleTarget.DualPistols, slot = MechanismSlot.FireMode,
             description = "0.3초 이상 제자리에 서 있으면 연사 +50%.\n대가: 이동 중 연사 −15%." },
+        // A4b 수류탄 작동 (동작은 GrenadeSkill)
+        new Spec { fileKey = "AutoThrow", displayName = "자동 투척", effect = ModuleEffect.AutoThrow,
+            target = ModuleTarget.Grenade, slot = MechanismSlot.GrenadeThrow,
+            description = "내 탄이 적에게 맞으면 8% 확률로 그 적에게 수류탄 자동 투척 (내부 쿨 1초, 피해 60%, 충전 무관).\n대가: G키 투척 불가. 충전 +1·처치 시 쿨감은 효과 없음." },
         new Spec { fileKey = "EmptyQuickReload", displayName = "빈 탄창 급속 장전", effect = ModuleEffect.EmptyQuickReload,
             target = ModuleTarget.DualPistols, slot = MechanismSlot.Reload,
             description = "탄창이 0발일 때 시작한 장전은 시간 −45% (1.8→1.0초).\nR키로 미리 하는 장전은 원래 속도." },
