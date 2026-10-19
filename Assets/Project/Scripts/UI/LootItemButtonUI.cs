@@ -43,96 +43,27 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         moduleData = module;
         weaponData = null;
 
-        BuildMiniShapeVisual(module);
-    }
-
-    private void BuildMiniShapeVisual(ModuleDataSO module)
-    {
-        if (module == null) return;
-
-        if (miniShapeParent == null)
-        {
-            GameObject container = new GameObject("MiniShapeContainer", typeof(RectTransform), typeof(GridLayoutGroup));
-            container.transform.SetParent(transform, false);
-            miniShapeParent = container.transform;
-
-            RectTransform rect = container.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(80, 60);
-            rect.anchoredPosition = new Vector2(0, 8);
-        }
-
         ClearMiniShape();
 
-        float containerW = 76f;
-        float containerH = 56f;
-        float spacing = 2f;
-
-        float maxTileW = (containerW - (spacing * (module.width - 1))) / module.width;
-        float maxTileH = (containerH - (spacing * (module.height - 1))) / module.height;
-        float dynamicTileSize = Mathf.Clamp(Mathf.Min(maxTileW, maxTileH), 8f, 22f);
-
-        GridLayoutGroup grid = miniShapeParent.GetComponent<GridLayoutGroup>();
-        if (grid != null)
-        {
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = module.width;
-            grid.cellSize = new Vector2(dynamicTileSize, dynamicTileSize);
-            grid.spacing = new Vector2(spacing, spacing);
-            grid.childAlignment = TextAnchor.MiddleCenter;
-        }
-
+        // U6b: 금고 슬롯과 같은 모습: 레어도 테두리 + 모양 칸·계열 색 띠·스탯 아이콘 (이름은 툴팁). 테마가 없으면 기존 색·글자
         Image btnBg = GetComponent<Image>();
-        if (btnBg != null)
-        {
-            btnBg.color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
-        }
+        bool framed = UITheme.Current.ApplyRaritySlot(btnBg, module.rarity);
+        if (!framed && btnBg != null) btnBg.color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
 
-        Color rarityColor = GetRarityColor(module.rarity);
-
-        for (int r = 0; r < module.height; r++)
-        {
-            for (int c = 0; c < module.width; c++)
-            {
-                int index = r * module.width + c;
-
-                GameObject tileObj = new GameObject($"MiniTile_{c}_{r}", typeof(RectTransform), typeof(Image), typeof(Outline));
-                tileObj.transform.SetParent(miniShapeParent, false);
-
-                Image img = tileObj.GetComponent<Image>();
-                img.raycastTarget = false;
-
-                Outline outline = tileObj.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    outline.effectColor = new Color(0f, 0f, 0f, 0.9f);
-                    outline.effectDistance = new Vector2(1, -1);
-                }
-
-                if (module.shapeGrid[index])
-                {
-                    img.color = rarityColor;
-                }
-                else
-                {
-                    img.color = new Color(0, 0, 0, 0);
-                }
-            }
-        }
+        SlotContentView view = SlotContentView.Get(btnBg);
+        bool hasPicture = view != null && view.ShowModule(module);
 
         TextMeshProUGUI btnText = GetComponentInChildren<TextMeshProUGUI>();
         if (btnText != null)
         {
-            btnText.text = module.moduleName;
+            btnText.text = hasPicture ? "" : module.moduleName;
             btnText.fontSize = 11;
-            btnText.color = rarityColor;
+            btnText.color = GetRarityColor(module.rarity);
             btnText.alignment = TextAlignmentOptions.Bottom;
-            btnText.transform.SetAsLastSibling();
         }
     }
 
+    // 예전 미니 모양(MiniShapeContainer) 정리 — 프리팹에 연결돼 있을 수 있어 필드는 유지
     private void ClearMiniShape()
     {
         if (miniShapeParent != null)

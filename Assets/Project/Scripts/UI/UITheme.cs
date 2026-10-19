@@ -103,6 +103,21 @@ public class UITheme : ScriptableObject
     public Color effectsTextColor = new Color(0.9f, 0.92f, 0.95f);
     public Color effectsInactiveColor = new Color(0.45f, 0.47f, 0.5f);
 
+    [Header("Tooltip (설명창, 높이는 내용에 맞춰 자동 — 값은 정비 화면 시작 시 적용)")]
+    [Min(150f)] public float tooltipWidth = 340f;
+    [Tooltip("테두리 안쪽 여백 (캔버스 단위)")]
+    [Min(0f)] public float tooltipPadding = 14f;
+    [Tooltip("이름·레어도·수치·설명 사이 간격")]
+    [Min(0f)] public float tooltipSpacing = 6f;
+    [Tooltip("글자 크기 (0이면 씬에 설정된 값 유지)")]
+    [Min(0f)] public float tooltipTitleFontSize = 24f;
+    [Min(0f)] public float tooltipBodyFontSize = 18f;
+    [Tooltip("레어도 줄과 수치 사이 구분선 (알파 0이면 숨김)")]
+    public Color tooltipDividerColor = new Color(64f / 255f, 208f / 255f, 236f / 255f, 0.5f);
+    public Color tooltipSubTextColor = new Color(0.65f, 0.7f, 0.75f);
+    [Tooltip("마우스에서 떨어진 거리")]
+    public Vector2 tooltipCursorOffset = new Vector2(18f, 18f);
+
     private static UITheme current;
     private static bool loadedFromAsset;
 

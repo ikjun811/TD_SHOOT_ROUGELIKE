@@ -50,9 +50,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     }
     private readonly Dictionary<Weapon, WeaponOriginals> weaponOriginals = new Dictionary<Weapon, WeaponOriginals>();
 
-    // 모듈 무기 보정값 (ApplyTetrisStatsToPlayer에서 갱신, ApplyWeaponData에서 사용)
-    private float moduleAttackPercent = 0f;
-    private float moduleFireRatePercent = 0f;
+    // 모듈 보정값 (ApplyTetrisStatsToPlayer에서 갱신). 공격력·연사는 WeaponStatCalculator가 그리드에서 직접 합산
     private float moduleCritChance = 0f;
     private float moduleReloadSpeedPercent = 0f;
 
@@ -428,9 +426,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             grenadeSkill.RefillCharges(); // 다음 라운드 시작 시 충전 가득
         }
 
-        // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 적용
-        moduleAttackPercent = atkPercent;
-        moduleFireRatePercent = fireRatePercent;
+        // 공격력·연사는 무기 동기화(ApplyWeaponData) 시 WeaponStatCalculator가 적용
         moduleCritChance = Mathf.Clamp01(critChance);
 
         // 체력 및 방어력 적용
@@ -542,52 +538,23 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         }
         WeaponOriginals originals = weaponOriginals[weapon];
 
-        // SO 기본값에 이 무기 대상 작동 모듈의 값을 덮어씀 (같은 칸은 충돌 규칙으로 1개만 배치됨)
-        int magazine = data.maxAmmo;
-        float reloadTime = data.reloadTime;
-        float fireInterval = data.fireRate;
-        float damageMultiplier = 1f;
-        Weapon.WeaponFireMode fireMode = originals.fireMode;
-        bool continuousUse = originals.continuousUse;
-        int pelletCount = originals.pelletCount;
-        float spread = originals.spread;
+        // 최종 수치: SO 기본값 → 작동 모듈 → 스탯 % (툴팁과 같은 계산, WeaponStatCalculator)
+        WeaponStatCalculator.Result stats = WeaponStatCalculator.Calculate(data, ToBaseValues(originals),
+            GridInventorySystem.Instance != null ? GridInventorySystem.Instance.placedModules : null);
+        int magazine = stats.magazine;
+        float reloadTime = stats.reloadTime;
+        Weapon.WeaponFireMode fireMode = stats.fireMode;
+        bool continuousUse = stats.continuousUse;
+        int pelletCount = stats.pelletCountSetting;
+        float spread = stats.spread;
+        ModuleEffect fireModeEffect = stats.fireModeEffect; // 래퍼가 발사 간격을 조절하는 사격 방식 모듈
+        bool quickReload = stats.quickReload;
+        bool emptyQuickReload = stats.emptyQuickReload;
         string mechanismNames = "";
-        ModuleEffect fireModeEffect = ModuleEffect.None; // 래퍼가 발사 간격을 조절하는 사격 방식 모듈
-        bool quickReload = false;
-        bool emptyQuickReload = false;
+        foreach (ModuleDataSO m in stats.mechanisms) mechanismNames += $" [{m.moduleName}]";
 
-        if (GridInventorySystem.Instance != null)
-        {
-            foreach (var pm in GridInventorySystem.Instance.placedModules)
-            {
-                ModuleDataSO m = pm.moduleData;
-                if (m == null || m.category != ModuleCategory.Mechanism || !m.TargetsWeapon(data.weaponType)) continue;
-
-                if (m.magazineOverride > 0) magazine = m.magazineOverride;
-                if (m.reloadTimeOverride > 0f) reloadTime = m.reloadTimeOverride;
-                if (m.fireIntervalOverride > 0f) fireInterval = m.fireIntervalOverride;
-                if (m.damageMultiplier > 0f) damageMultiplier *= m.damageMultiplier;
-                if (m.pelletCountOverride > 0) pelletCount = m.pelletCountOverride;
-                if (m.spreadOverride > 0f) spread = m.spreadOverride;
-                if (m.fireModeOverride == FireModeOverride.Auto)
-                {
-                    fireMode = Weapon.WeaponFireMode.Auto;
-                    continuousUse = true;
-                }
-                else if (m.fireModeOverride == FireModeOverride.SemiAuto)
-                {
-                    fireMode = Weapon.WeaponFireMode.SemiAuto;
-                    continuousUse = false;
-                }
-                if (m.effect == ModuleEffect.BurstFire || m.effect == ModuleEffect.SpinUp || m.effect == ModuleEffect.StationaryFire) fireModeEffect = m.effect;
-                if (m.effect == ModuleEffect.QuickReload) quickReload = true;
-                if (m.effect == ModuleEffect.EmptyQuickReload) emptyQuickReload = true;
-                mechanismNames += $" [{m.moduleName}]";
-            }
-        }
-
-        float finalDamage = data.GetFinalDamage() * damageMultiplier * (1f + moduleAttackPercent);
-        float finalFireRate = fireInterval / (1f + moduleFireRatePercent); // 발사 간격이므로 연사 % 만큼 나눔
+        float finalDamage = stats.damage;
+        float finalFireRate = stats.FireInterval; // 발사 간격이므로 연사 % 만큼 나눈 값
 
         weapon.FireMode = fireMode;
         weapon.ContinuousUseItem = continuousUse;
@@ -607,8 +574,8 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         if (reloadExplosion != null) mechanismNames += $" [{reloadExplosion.moduleName}]";
         WeaponModuleRuntime runtime = weapon.GetComponent<WeaponModuleRuntime>();
         if (runtime == null) runtime = weapon.gameObject.AddComponent<WeaponModuleRuntime>();
-        float perShotDamage = finalDamage * (fireMode == Weapon.WeaponFireMode.Shotgun ? Mathf.Max(1, pelletCount) : 1);
-        runtime.Configure(weapon, finalFireRate, 1f + moduleFireRatePercent, fireModeEffect, quickReload, emptyQuickReload,
+        float perShotDamage = stats.PerShotDamage;
+        runtime.Configure(weapon, finalFireRate, stats.fireRateFactor, fireModeEffect, quickReload, emptyQuickReload,
             reloadExplosion != null ? reloadExplosion.effectValue : 0f, perShotDamage, GetComponent<Rigidbody>(), gameObject);
         if (reloadExplosion != null) EnsureExplosionVFX();
 
@@ -703,6 +670,39 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         weapon.BulletPrefab = template;
 
         Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
+    }
+
+    private static WeaponStatCalculator.BaseValues ToBaseValues(WeaponOriginals originals)
+    {
+        return new WeaponStatCalculator.BaseValues
+        {
+            fireMode = originals.fireMode,
+            continuousUse = originals.continuousUse,
+            pelletCount = originals.pelletCount,
+            spread = originals.spread
+        };
+    }
+
+    // 툴팁용: 지금 그리드 기준으로 이 무기를 장착하면 적용될 최종 수치 (JU 무기 원래 값은 플레이어 인벤토리에서 찾음)
+    public bool TryPreviewWeaponStats(WeaponDataSO data, out WeaponStatCalculator.Result result)
+    {
+        result = default;
+        if (data == null || juInventory == null || juInventory.HoldableItensRightHand == null) return false;
+
+        JUHoldableItem item = FindRightHandItem(data.juItemName);
+        Weapon weapon = item != null ? item.GetComponent<Weapon>() : null;
+        if (weapon == null) return false;
+
+        WeaponOriginals originals = weaponOriginals.TryGetValue(weapon, out WeaponOriginals saved) ? saved : new WeaponOriginals
+        {
+            fireMode = weapon.FireMode,
+            pelletCount = weapon.NumberOfShotgunBulletsPerShot,
+            spread = weapon.LossOfAccuracyPerShot,
+            continuousUse = weapon.ContinuousUseItem
+        };
+        result = WeaponStatCalculator.Calculate(data, ToBaseValues(originals),
+            GridInventorySystem.Instance != null ? GridInventorySystem.Instance.placedModules : null);
+        return true;
     }
 
     // 수류탄 대상 모듈 (작동: 자동 투척 / 특수: 중복이면 효과가 적용되는 1개만)
