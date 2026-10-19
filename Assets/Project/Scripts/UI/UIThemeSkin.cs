@@ -33,6 +33,11 @@ public class UIThemeSkin : MonoBehaviour
         Image image = GetComponent<Image>();
         if (theme == null || image == null) return;
 
+#if UNITY_EDITOR
+        // 바뀐 게 있을 때만 씬 변경 표시 (매번 표시하면 저장 직후에도 변경 있음으로 뜸)
+        string before = Snapshot(image);
+#endif
+
         Sprite sprite = role switch
         {
             Role.Panel => theme.panelSprite,
@@ -65,7 +70,28 @@ public class UIThemeSkin : MonoBehaviour
         }
 
 #if UNITY_EDITOR
-        if (!Application.isPlaying) UnityEditor.EditorUtility.SetDirty(image);
+        if (!Application.isPlaying && Snapshot(image) != before)
+        {
+            UnityEditor.EditorUtility.SetDirty(image);
+            Selectable changed = GetComponent<Selectable>();
+            if (changed != null) UnityEditor.EditorUtility.SetDirty(changed);
+        }
 #endif
     }
+
+#if UNITY_EDITOR
+    private string Snapshot(Image image)
+    {
+        string text = $"{N(image.sprite)}|{image.type}|{image.pixelsPerUnitMultiplier}|{image.color}";
+        Selectable selectable = GetComponent<Selectable>();
+        if (selectable != null)
+        {
+            SpriteState s = selectable.spriteState;
+            text += $"|{selectable.transition}|{N(selectable.targetGraphic)}|{N(s.highlightedSprite)}|{N(s.selectedSprite)}|{N(s.pressedSprite)}|{N(s.disabledSprite)}";
+        }
+        return text;
+    }
+
+    private static string N(Object o) => o == null ? "-" : o.name;
+#endif
 }
