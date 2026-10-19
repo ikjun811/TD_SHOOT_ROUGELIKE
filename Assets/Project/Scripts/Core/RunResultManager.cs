@@ -11,7 +11,7 @@ public class RunResultManager : MonoBehaviour
     public static RunResultManager Instance { get; private set; }
 
     // 메인 화면 씬 이름 (빌드 설정에 있을 때만 "메인 화면" 버튼 표시)
-    public const string MainMenuSceneName = "MainMenu";
+    public const string MainMenuSceneName = GameSession.MainMenuSceneName;
 
     [Header("Run Stats (Read Only)")]
     [SerializeField] private float combatTime;   // 정비·결과 화면(시간 정지) 제외
@@ -102,11 +102,11 @@ public class RunResultManager : MonoBehaviour
         CreateText("Stats", panel, BuildStatsText(), 30f, Color.white,
                    new Vector2(0f, 20f), new Vector2(660f, 340f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
 
-        bool hasMainMenu = Application.CanStreamedLevelBeLoaded(MainMenuSceneName);
-        float buttonX = hasMainMenu ? -150f : 0f;
-
-        CreateButton("RestartButton", panel, "다시 시작", new Vector2(buttonX, -250f), RestartRun);
-        if (hasMainMenu) CreateButton("MainMenuButton", panel, "메인 화면", new Vector2(150f, -250f), GoToMainMenu);
+        // 결과 화면은 메인 화면으로만 (사용자 결정 2026-10-19). 메인 화면 씬이 빌드 설정에 없을 때(전투 씬 단독 시험)만 다시 시작
+        if (Application.CanStreamedLevelBeLoaded(MainMenuSceneName))
+            CreateButton("MainMenuButton", panel, "메인 화면", new Vector2(0f, -250f), GoToMainMenu);
+        else
+            CreateButton("RestartButton", panel, "다시 시작", new Vector2(0f, -250f), RestartRun);
     }
 
     private string BuildStatsText()
@@ -229,15 +229,14 @@ public class RunResultManager : MonoBehaviour
 
     #endregion
 
+    // 씬 전환은 GameSession으로 통일 (timeScale 1 복구, 다시 시작은 같은 모드 유지)
     private void RestartRun()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        GameSession.StartGame(GameSession.Mode);
     }
 
     private void GoToMainMenu()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(MainMenuSceneName);
+        GameSession.LoadMainMenu();
     }
 }
