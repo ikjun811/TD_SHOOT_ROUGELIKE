@@ -57,6 +57,46 @@ public class BspArenaGenerator : MonoBehaviour
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject boundaryPrefab;
 
+    [Header("Kit Floor (W3a, 비우면 큐브 바닥 표시)")]
+    [Tooltip("바닥 타일 프리팹 (기준점 위치 무관, 메시 바운드 기준으로 윗면 y=0에 맞춤). 여러 개면 칸마다 무작위")]
+    [SerializeField] private GameObject[] floorTilePrefabs;
+    [Tooltip("타일 한 칸 크기 (Warehouse 6, 산업 에셋 도로 타일 10). 타일 실제 크기와 다르면 가로·세로를 맞춰 늘림")]
+    [SerializeField] private float floorTileSize = 6f;
+    [Tooltip("타일마다 90도 단위 무작위 회전 (반복 무늬 완화)")]
+    [SerializeField] private bool randomFloorRotation = true;
+    [Tooltip("바깥 바닥 띠 밖으로 더 까는 타일 폭 (겉모습만). 바닥 끝 너머로 바닥 아래(묻힌 벽)가 보이지 않게")]
+    [SerializeField] private float kitFloorExtraMargin = 18f;
+
+    [Header("Kit Boundary Walls (W3b, 비우면 큐브·Boundary Prefab 표시)")]
+    [Tooltip("기본 벽 (메시 바운드 기준: 긴 축 = 길이, 짧은 축 = 두께). 첫 번째 벽 길이로 한 변 개수를 정하고 길이 방향만 늘리거나 줄여 맞춤")]
+    [SerializeField] private GameObject[] boundaryWallPrefabs;
+    [Tooltip("가끔 섞는 벽 (창문·환풍기·셔터문 등)")]
+    [SerializeField] private GameObject[] boundaryAccentPrefabs;
+    [Range(0f, 1f)][SerializeField] private float boundaryAccentChance = 0.2f;
+    [Tooltip("벽 아래 끝을 바닥 아래로 내리는 깊이 (보이는 높이 = 벽 높이 - 이 값). 늘림이 아니라 무늬가 유지됨. Warehouse 벽(높이 10) 6 = 보이는 4m, 콘크리트 펜스는 0")]
+    [SerializeField] private float kitWallSink = 6f;
+    [Tooltip("벽 앞뒤 뒤집기 (장식 면이 바깥을 보면 켬)")]
+    [SerializeField] private bool flipWallFacing = false;
+    [Tooltip("네 모서리 틈을 덮는 기둥")]
+    [SerializeField] private GameObject boundaryCornerPrefab;
+
+    [Header("Kit Obstacle Props (W3c, 비우면 큐브·Pillar/Wall Prefab 표시)")]
+    [Tooltip("직선·ㄱ자 벽(폭 1m)을 채울 소품 (상자 등). 장애물마다 하나 골라 줄지어 쌓음")]
+    [SerializeField] private GameObject[] wallPropPrefabs;
+    [Tooltip("기둥(2x2)을 채울 소품 (짐 실은 팔레트 등)")]
+    [SerializeField] private GameObject[] pillarPropPrefabs;
+    [Tooltip("쌓아 올릴 목표 높이 (탄 높이보다 높게 → 막히는 모습이 판정과 맞음)")]
+    [SerializeField] private float propTargetHeight = 1.8f;
+    [Tooltip("칸에 맞추려고 늘리거나 줄이는 최대 배율 (넘으면 가운데 정렬로 여백)")]
+    [SerializeField] private float propMaxStretch = 1.3f;
+    [Tooltip("소품마다 무작위로 살짝 돌리는 각도 (한 변 1.5m 미만 소품만 — 펜스·컨테이너 등 큰 소품은 이음새가 어긋나므로 제외)")]
+    [SerializeField] private float propYawJitter = 3f;
+    [Tooltip("장애물 콜라이더를 실제 소품 크기에 맞춤 (보이지 않는 여백 판정 제거, 칸 배치 규칙은 그대로)")]
+    [SerializeField] private bool fitColliderToProps = true;
+    [Tooltip("대형 장애물 소품 (컨테이너·덤프스터·발전기 등). 소품 크기만큼 칸을 차지하는 별도 장애물 종류")]
+    [SerializeField] private GameObject[] largePropPrefabs;
+    [Range(0f, 1f)][SerializeField] private float largeObstacleChance = 0.25f;
+
     [Header("Player Start")]
     [Tooltip("플레이어를 구역 중앙에 놓을 때 바닥 위 높이")]
     [SerializeField] private float playerSpawnHeight = 0.1f;
@@ -130,6 +170,9 @@ public class BspArenaGenerator : MonoBehaviour
         generatedRoot.SetParent(transform, false);
 
         BuildFloorAndBoundary();
+        BuildKitFloor(new System.Random(usedSeed + 1)); // 별도 난수 → 같은 시드의 구역·장애물 배치는 그대로
+        BuildKitBoundary(new System.Random(usedSeed + 2));
+        propRng = new System.Random(usedSeed + 3);
         foreach (Leaf leaf in leaves) PlaceObstacles(leaf, rng);
 
         System.Diagnostics.Stopwatch navMeshWatch = System.Diagnostics.Stopwatch.StartNew();
@@ -242,14 +285,27 @@ public class BspArenaGenerator : MonoBehaviour
         {
             for (int attempt = 0; attempt < placementAttemptsPerObstacle; attempt++)
             {
-                List<RectInt> parts = CreateObstacleShape(rng);
+                List<RectInt> parts = CreateObstacleShape(rng, out GameObject largePrefab);
                 if (!TryPlaceShape(leaf, parts, rng, out List<RectInt> placed)) continue;
 
-                foreach (RectInt part in placed)
+                for (int p = 0; p < placed.Count; p++)
                 {
+                    RectInt part = placed[p];
                     MarkOccupied(part);
+
+                    if (largePrefab != null)
+                    {
+                        GameObject large = CreateBlock(part, obstacleHeight, "Large", null);
+                        FillWithProps(large, part, ToRect(part), new[] { largePrefab });
+                        continue;
+                    }
+
                     bool isPillar = part.width == pillarSize && part.height == pillarSize;
-                    CreateBlock(part, obstacleHeight, isPillar ? "Pillar" : "Wall", isPillar ? pillarPrefab : wallPrefab);
+                    GameObject block = CreateBlock(part, obstacleHeight, isPillar ? "Pillar" : "Wall", isPillar ? pillarPrefab : wallPrefab);
+
+                    // 소품 채우기: ㄱ자 벽의 두 번째 부분은 겹치는 모서리 칸 절반을 빼서 첫 부분 중심선에 맞물리게
+                    Rect visualPart = p > 0 ? TrimOverlap(part, placed[0]) : ToRect(part);
+                    FillWithProps(block, part, visualPart, isPillar ? pillarPropPrefabs : wallPropPrefabs);
                 }
                 break;
             }
@@ -257,9 +313,25 @@ public class BspArenaGenerator : MonoBehaviour
     }
 
     // 원점 기준 모양: 기둥 / 직선 벽 / ㄱ자 벽
-    private List<RectInt> CreateObstacleShape(System.Random rng)
+    private List<RectInt> CreateObstacleShape(System.Random rng, out GameObject largePrefab)
     {
         List<RectInt> parts = new List<RectInt>();
+
+        // 대형 장애물: 소품 크기(올림)만큼 칸 차지, 방향 무작위
+        largePrefab = null;
+        if (largePropPrefabs != null && largePropPrefabs.Length > 0 && rng.NextDouble() < largeObstacleChance)
+        {
+            GameObject candidate = largePropPrefabs[rng.Next(largePropPrefabs.Length)];
+            if (candidate != null && TryGetPropBounds(candidate, out Bounds lb))
+            {
+                int w = Mathf.Max(1, Mathf.CeilToInt(lb.size.x - 0.05f));
+                int d = Mathf.Max(1, Mathf.CeilToInt(lb.size.z - 0.05f));
+                bool turn = rng.NextDouble() < 0.5;
+                parts.Add(turn ? new RectInt(0, 0, d, w) : new RectInt(0, 0, w, d));
+                largePrefab = candidate;
+                return parts;
+            }
+        }
         int type = rng.Next(0, 3);
         int len = rng.Next(wallLengthRange.x, wallLengthRange.y + 1);
         bool horizontal = rng.NextDouble() < 0.5;
@@ -347,6 +419,7 @@ public class BspArenaGenerator : MonoBehaviour
     // 생성물 루트의 자식(바닥·벽·장애물) 콜라이더로 NavMesh 베이크. 루트가 지워지면 NavMesh도 함께 제거됨
     private void BuildNavMesh()
     {
+        Physics.SyncTransforms(); // 소품 크기에 맞춰 줄인 장애물 콜라이더를 베이크 전에 반영
         NavMeshSurface surface = generatedRoot.gameObject.AddComponent<NavMeshSurface>();
         surface.collectObjects = CollectObjects.Children;
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
@@ -402,6 +475,121 @@ public class BspArenaGenerator : MonoBehaviour
         CreateWall("Boundary_W", new Vector3(-half, boundaryHeight / 2f, 0f), new Vector3(boundaryThickness, boundaryHeight, span));
     }
 
+    // 키트 바닥 타일 (W3a): 바닥 큐브(안쪽 + 바깥 띠) 렌더러를 끄고, 바깥 띠까지 덮는 범위에 타일을 깖
+    // 판정·NavMesh는 기존 바닥 큐브 그대로 (타일 콜라이더는 끔)
+    // 기준점 위치와 무관하게 메시 바운드 기준으로 배치 (Warehouse = 모서리 기준점, 산업 에셋 = 가운데 기준점 모두 대응)
+    private void BuildKitFloor(System.Random rng)
+    {
+        if (floorTilePrefabs == null || floorTilePrefabs.Length == 0 || floorTileSize <= 0.01f) return;
+
+        foreach (Transform child in generatedRoot)
+        {
+            if (child.name == "Floor" || child.name.StartsWith("OuterFloor")) child.GetComponent<Renderer>().enabled = false;
+        }
+
+        Transform floorRoot = new GameObject("KitFloor").transform;
+        floorRoot.SetParent(generatedRoot, false);
+
+        float outer = arenaSize / 2f + boundaryThickness + outerFloorMargin + Mathf.Max(0f, kitFloorExtraMargin);
+        int count = Mathf.CeilToInt(outer * 2f / floorTileSize);
+        float start = -count * floorTileSize / 2f; // 가운데 정렬 (90m 맵 + 바깥 띠 6m + 추가 18m = 138m → 6m 타일 23칸)
+
+        for (int x = 0; x < count; x++)
+        {
+            for (int z = 0; z < count; z++)
+            {
+                GameObject prefab = floorTilePrefabs[rng.Next(floorTilePrefabs.Length)];
+                if (prefab == null || !TryGetPropBounds(prefab, out Bounds b)) continue;
+
+                // 타일 크기가 floorTileSize와 다르면 가로·세로만 맞춤, 윗면 = y 0
+                Vector3 scale = new Vector3(floorTileSize / Mathf.Max(0.01f, b.size.x), 1f, floorTileSize / Mathf.Max(0.01f, b.size.z));
+                Quaternion rot = Quaternion.Euler(0f, randomFloorRotation ? rng.Next(4) * 90f : 0f, 0f);
+                Vector3 center = transform.position + new Vector3(start + (x + 0.5f) * floorTileSize, -b.size.y / 2f, start + (z + 0.5f) * floorTileSize);
+                GameObject tile = Instantiate(prefab, center - rot * Vector3.Scale(scale, b.center), rot, floorRoot);
+                tile.transform.localScale = scale;
+                foreach (Collider col in tile.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+            }
+        }
+
+        // 움직이지 않는 타일 수백 개 → 정적 배칭으로 그리기 호출 줄임 (실행 중에만)
+        if (Application.isPlaying) StaticBatchingUtility.Combine(floorRoot.gameObject);
+    }
+
+    // 키트 외곽 벽 (W3b): 외곽 큐브 겉모습을 끄고, 안쪽 면을 맵 경계에 맞춰 벽을 이어 붙임
+    // 메시 바운드 기준: 긴 축 = 길이, 짧은 축 = 두께. 첫 기본 벽 길이로 한 변 개수를 정하고 길이 방향만 늘리거나 줄여 딱 맞춤
+    // 판정은 기존 외곽 큐브(Walls 레이어) 그대로, 벽 콜라이더는 끔
+    private void BuildKitBoundary(System.Random rng)
+    {
+        if (boundaryWallPrefabs == null || boundaryWallPrefabs.Length == 0 || boundaryWallPrefabs[0] == null) return;
+        if (!TryGetPropBounds(boundaryWallPrefabs[0], out Bounds baseBounds)) return;
+
+        foreach (Transform child in generatedRoot)
+        {
+            if (!child.name.StartsWith("Boundary_")) continue;
+            child.GetComponent<Renderer>().enabled = false;
+            foreach (Transform visual in child) visual.gameObject.SetActive(false); // Boundary Prefab 표시도 끔
+        }
+
+        Transform wallRoot = new GameObject("KitBoundary").transform;
+        wallRoot.SetParent(generatedRoot, false);
+
+        float half = arenaSize / 2f;
+        float baseLength = Mathf.Max(baseBounds.size.x, baseBounds.size.z);
+        float baseThickness = Mathf.Min(baseBounds.size.x, baseBounds.size.z);
+        int count = Mathf.Max(1, Mathf.RoundToInt(arenaSize / baseLength));
+        float segment = (float)arenaSize / count;
+        float start = -arenaSize / 2f;
+        Vector3[] inwardNormals = { Vector3.back, Vector3.forward, Vector3.left, Vector3.right }; // 북·남·동·서 벽의 안쪽 방향
+
+        foreach (Vector3 inward in inwardNormals)
+        {
+            Vector3 sideCenter = -inward * half; // 맵 경계선 위의 점
+            Vector3 run = Vector3.Cross(inward, Vector3.up); // LookRotation(run)이면 프리팹 Z → run, X → 안쪽
+
+            for (int i = 0; i < count; i++)
+            {
+                GameObject prefab = PickWallPrefab(rng);
+                if (prefab == null || !TryGetPropBounds(prefab, out Bounds b)) continue;
+
+                // 길이 축이 X인 프리팹은 90도 돌려 길이를 run에 맞춤, 뒤집기는 180도 (가운데 기준이라 위치 그대로)
+                bool lengthIsZ = b.size.z >= b.size.x;
+                Quaternion rot = Quaternion.LookRotation(run, Vector3.up)
+                                 * Quaternion.Euler(0f, (lengthIsZ ? 0f : -90f) + (flipWallFacing ? 180f : 0f), 0f);
+                float length = lengthIsZ ? b.size.z : b.size.x;
+                float thickness = lengthIsZ ? b.size.x : b.size.z;
+                float k = segment / Mathf.Max(0.01f, length);
+                Vector3 scale = lengthIsZ ? new Vector3(1f, 1f, k) : new Vector3(k, 1f, 1f);
+
+                // 안쪽 면 = 맵 경계, 바닥 = -kitWallSink
+                Vector3 center = transform.position + sideCenter + run * (start + (i + 0.5f) * segment) - inward * (thickness / 2f)
+                                 + Vector3.up * (b.size.y / 2f - kitWallSink);
+                GameObject wall = Instantiate(prefab, center - rot * Vector3.Scale(scale, b.center), rot, wallRoot);
+                wall.transform.localScale = scale;
+                foreach (Collider col in wall.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+            }
+        }
+
+        if (boundaryCornerPrefab != null && TryGetPropBounds(boundaryCornerPrefab, out Bounds cb))
+        {
+            float c = half + baseThickness / 2f;
+            foreach (Vector2 sign in new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(-1, -1) })
+            {
+                Vector3 center = transform.position + new Vector3(sign.x * c, cb.size.y / 2f - kitWallSink, sign.y * c);
+                GameObject corner = Instantiate(boundaryCornerPrefab, center - cb.center, Quaternion.identity, wallRoot);
+                foreach (Collider col in corner.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+            }
+        }
+
+        if (Application.isPlaying) StaticBatchingUtility.Combine(wallRoot.gameObject);
+    }
+
+    private GameObject PickWallPrefab(System.Random rng)
+    {
+        bool accent = boundaryAccentPrefabs != null && boundaryAccentPrefabs.Length > 0 && rng.NextDouble() < boundaryAccentChance;
+        GameObject[] pool = accent ? boundaryAccentPrefabs : boundaryWallPrefabs;
+        return pool[rng.Next(pool.Length)];
+    }
+
     // 윗면이 y=0인 바닥 블록 (size: x·z 크기)
     private GameObject CreateFloor(string objName, Vector3 localPos, Vector2 size)
     {
@@ -425,8 +613,131 @@ public class BspArenaGenerator : MonoBehaviour
         ApplyVisualPrefab(wall, boundaryPrefab);
     }
 
+    // 폭 1인 막대(rect)가 다른 사각형과 끝 칸에서 겹치면 그 칸을 뺌 (ㄱ자 벽 모서리 중복 채우기 방지)
+    // 겹치는 끝 칸의 절반만 빼서 첫 부분 중심선까지 닿게 함 (얇은 펜스가 모서리에서 틈 없이 맞물림)
+    private static Rect TrimOverlap(RectInt rect, RectInt other)
+    {
+        if (!rect.Overlaps(other)) return ToRect(rect);
+        if (rect.width == 1 && rect.height > 1)
+        {
+            if (other.Contains(new Vector2Int(rect.x, rect.yMin))) return new Rect(rect.x, rect.y + 0.5f, 1f, rect.height - 0.5f);
+            if (other.Contains(new Vector2Int(rect.x, rect.yMax - 1))) return new Rect(rect.x, rect.y, 1f, rect.height - 0.5f);
+        }
+        else if (rect.height == 1 && rect.width > 1)
+        {
+            if (other.Contains(new Vector2Int(rect.xMin, rect.y))) return new Rect(rect.x + 0.5f, rect.y, rect.width - 0.5f, 1f);
+            if (other.Contains(new Vector2Int(rect.xMax - 1, rect.y))) return new Rect(rect.x, rect.y, rect.width - 0.5f, 1f);
+        }
+        return ToRect(rect);
+    }
+
+    private static Rect ToRect(RectInt r) => new Rect(r.x, r.y, r.width, r.height);
+
+    // 키트 소품으로 장애물 겉모습 채우기 (W3c): 큐브 렌더러·늘린 프리팹 표시를 끄고, 칸 영역에 소품을 줄지어 쌓음
+    // 장애물마다 소품 하나를 골라 긴 쪽을 맞춰 배치, 칸에 맞게 propMaxStretch 안에서 늘리거나 줄임, 높이는 propTargetHeight까지 쌓음
+    private System.Random propRng;
+    private static readonly Dictionary<GameObject, Bounds> propBoundsCache = new Dictionary<GameObject, Bounds>();
+
+    private void FillWithProps(GameObject block, RectInt blockCells, Rect cells, GameObject[] prefabs)
+    {
+        if (prefabs == null || prefabs.Length == 0 || cells.width <= 0f || cells.height <= 0f) return;
+        GameObject prefab = prefabs[propRng.Next(prefabs.Length)];
+        if (prefab == null || !TryGetPropBounds(prefab, out Bounds b)) return;
+
+        block.GetComponent<Renderer>().enabled = false;
+        foreach (Transform visual in block.transform) visual.gameObject.SetActive(false); // Pillar/Wall Prefab 표시도 끔
+
+        // 소품 긴 쪽을 칸의 긴 쪽에 맞춤 (90도 회전 시 소품 X → 월드 -Z, 소품 Z → 월드 X)
+        float width = cells.width, depth = cells.height;
+        bool rotate = (b.size.x >= b.size.z) != (width >= depth);
+        bool jitter = Mathf.Max(b.size.x, b.size.z) < 1.5f;
+        float footX = rotate ? b.size.z : b.size.x;
+        float footZ = rotate ? b.size.x : b.size.z;
+
+        int nx = Mathf.Max(1, Mathf.RoundToInt(width / footX));
+        int nz = Mathf.Max(1, Mathf.RoundToInt(depth / footZ));
+        float kx = Mathf.Clamp(width / (nx * footX), 1f / propMaxStretch, propMaxStretch);
+        float kz = Mathf.Clamp(depth / (nz * footZ), 1f / propMaxStretch, propMaxStretch);
+        Vector3 localScale = rotate ? new Vector3(kz, 1f, kx) : new Vector3(kx, 1f, kz);
+        float stepX = footX * kx, stepZ = footZ * kz;
+        int layers = Mathf.Clamp(Mathf.CeilToInt(propTargetHeight / Mathf.Max(0.05f, b.size.y) - 0.15f), 1, 4);
+
+        // 소품은 늘린 큐브 아래가 아니라 스케일 없는 묶음에 둠 (늘린 부모 아래에서 회전하면 모양이 비틀림)
+        Transform propRoot = new GameObject(block.name + "_Props").transform;
+        propRoot.SetParent(generatedRoot, false);
+
+        Vector3 rectCenter = CellCenterToWorld(cells.center);
+        float x0 = rectCenter.x - stepX * nx / 2f + stepX / 2f;
+        float z0 = rectCenter.z - stepZ * nz / 2f + stepZ / 2f;
+
+        for (int ix = 0; ix < nx; ix++)
+        {
+            for (int iz = 0; iz < nz; iz++)
+            {
+                for (int layer = 0; layer < layers; layer++)
+                {
+                    float yaw = (rotate ? 90f : 0f) + (jitter ? (float)(propRng.NextDouble() * 2.0 - 1.0) * propYawJitter : 0f);
+                    Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
+                    Vector3 center = new Vector3(x0 + ix * stepX, transform.position.y + b.size.y * (layer + 0.5f), z0 + iz * stepZ);
+                    Vector3 pos = center - rot * Vector3.Scale(localScale, b.center); // 소품 바운드 중심을 목표 위치에
+
+                    GameObject prop = Instantiate(prefab, pos, rot, propRoot);
+                    prop.transform.localScale = localScale;
+                    foreach (Collider col in prop.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+                }
+            }
+        }
+
+        if (fitColliderToProps) FitBlockToProps(block, blockCells, propRoot);
+        if (Application.isPlaying) StaticBatchingUtility.Combine(propRoot.gameObject);
+    }
+
+    // 장애물 큐브(콜라이더)의 가로·세로를 원래 칸 영역과 소품 영역이 겹치는 부분으로 줄임 (높이는 그대로)
+    private void FitBlockToProps(GameObject block, RectInt blockCells, Transform propRoot)
+    {
+        Renderer[] renderers = propRoot.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return;
+        Bounds visual = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++) visual.Encapsulate(renderers[i].bounds);
+
+        Vector3 cellMin = Origin + new Vector3(blockCells.xMin, 0f, blockCells.yMin);
+        Vector3 cellMax = Origin + new Vector3(blockCells.xMax, 0f, blockCells.yMax);
+        float minX = Mathf.Max(cellMin.x, visual.min.x), maxX = Mathf.Min(cellMax.x, visual.max.x);
+        float minZ = Mathf.Max(cellMin.z, visual.min.z), maxZ = Mathf.Min(cellMax.z, visual.max.z);
+        if (maxX - minX < 0.1f || maxZ - minZ < 0.1f) return;
+
+        Vector3 pos = block.transform.position;
+        block.transform.position = new Vector3((minX + maxX) / 2f, pos.y, (minZ + maxZ) / 2f);
+        block.transform.localScale = new Vector3(maxX - minX, block.transform.localScale.y, maxZ - minZ);
+    }
+
+    // 프리팹 루트 기준 메시 바운드 (크기·기준점 위치)
+    private static bool TryGetPropBounds(GameObject prefab, out Bounds bounds)
+    {
+        if (propBoundsCache.TryGetValue(prefab, out bounds)) return true;
+
+        Matrix4x4 rootInverse = Matrix4x4.TRS(prefab.transform.position, prefab.transform.rotation, Vector3.one).inverse;
+        bool has = false;
+        bounds = new Bounds();
+        foreach (MeshFilter mf in prefab.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (mf.sharedMesh == null) continue;
+            Matrix4x4 m = rootInverse * mf.transform.localToWorldMatrix;
+            Bounds mb = mf.sharedMesh.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 corner = mb.center + Vector3.Scale(mb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                Vector3 p = m.MultiplyPoint3x4(corner);
+                if (!has) { bounds = new Bounds(p, Vector3.zero); has = true; }
+                else bounds.Encapsulate(p);
+            }
+        }
+        if (has) propBoundsCache[prefab] = bounds;
+        return has;
+    }
+
     // 격자 사각형 → 큐브 장애물
-    private void CreateBlock(RectInt cells, float height, string objName, GameObject visualPrefab)
+    private GameObject CreateBlock(RectInt cells, float height, string objName, GameObject visualPrefab)
     {
         GameObject block = GameObject.CreatePrimitive(PrimitiveType.Cube);
         block.name = objName;
@@ -435,6 +746,7 @@ public class BspArenaGenerator : MonoBehaviour
         block.transform.localScale = new Vector3(cells.width, height, cells.height);
         ApplyWallStyle(block);
         ApplyVisualPrefab(block, visualPrefab);
+        return block;
     }
 
     // 큐브 렌더러를 끄고 프리팹을 자식으로 붙여 큐브 크기에 맞춤 (부모 스케일을 그대로 받음)
