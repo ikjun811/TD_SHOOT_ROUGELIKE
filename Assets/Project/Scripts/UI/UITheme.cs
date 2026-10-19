@@ -92,6 +92,17 @@ public class UITheme : ScriptableObject
     public Color gridModuleBorderColor = new Color(5f / 255f, 11f / 255f, 18f / 255f);
     [Min(1f)] public float gridModuleBorderWidth = 3f;
 
+    [Header("Active Effects Panel (적용 효과 목록)")]
+    [Tooltip("효과 줄에 마우스를 올렸을 때 해당 모듈 경계선 색")]
+    public Color gridHighlightBorderColor = new Color(64f / 255f, 208f / 255f, 236f / 255f);
+    [Tooltip("강조 중일 때 나머지 모듈 밝기")]
+    [Range(0.1f, 1f)] public float gridDimBrightness = 0.35f;
+    [Min(8f)] public float effectsFontSize = 18f;
+    [Min(10f)] public float effectsRowHeight = 28f;
+    public Color effectsHeaderColor = new Color(0.55f, 0.85f, 0.95f);
+    public Color effectsTextColor = new Color(0.9f, 0.92f, 0.95f);
+    public Color effectsInactiveColor = new Color(0.45f, 0.47f, 0.5f);
+
     private static UITheme current;
     private static bool loadedFromAsset;
 

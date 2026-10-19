@@ -151,7 +151,7 @@ public class ItemTooltipUI : MonoBehaviour
         return text;
     }
 
-    private static string GetTargetName(ModuleTarget target)
+    public static string GetTargetName(ModuleTarget target)
     {
         return target switch
         {
@@ -213,8 +213,8 @@ public class ItemTooltipUI : MonoBehaviour
         }
     }
 
-    // 모듈 스탯 한글 표시 (% 스탯은 0.1 = 10%, 체력·방어력은 고정 수치)
-    private string GetModuleStatText(ModuleStatType statType, float value)
+    // 모듈 스탯 한글 표시 (% 스탯은 0.1 = 10%, 체력·방어력은 고정 수치). 적용 효과 패널(ActiveEffectsPanelUI)도 사용
+    public static string GetModuleStatText(ModuleStatType statType, float value)
     {
         float percent = value * 100f;
         return statType switch

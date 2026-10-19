@@ -20,6 +20,22 @@ public class GridPanelUI : MonoBehaviour
 
     private const int EdgeTop = 0, EdgeBottom = 1, EdgeLeft = 2, EdgeRight = 3;
 
+    // 적용 효과 패널에서 마우스를 올린 효과의 모듈 (밝게 + 강조 경계선, 나머지는 어둡게)
+    private readonly HashSet<GridInventorySystem.PlacedModule> highlightedModules = new HashSet<GridInventorySystem.PlacedModule>();
+
+    public void SetHighlightedModules(IEnumerable<GridInventorySystem.PlacedModule> modules)
+    {
+        highlightedModules.Clear();
+        if (modules != null)
+        {
+            foreach (var module in modules)
+            {
+                if (module != null) highlightedModules.Add(module);
+            }
+        }
+        RefreshGridVisuals();
+    }
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -204,17 +220,20 @@ public class GridPanelUI : MonoBehaviour
                     // 채움은 스프라이트 없이 단색 (칸 테두리가 생기면 모듈 모양이 다시 안 보임)
                     tile.sprite = null;
                     tile.type = Image.Type.Simple;
-                    Color fill = GetRarityColor(owner.moduleData.rarity) * theme.gridFillBrightness;
+                    float brightness = highlightedModules.Count == 0 ? theme.gridFillBrightness
+                        : (highlightedModules.Contains(owner) ? 1f : theme.gridDimBrightness);
+                    Color fill = GetRarityColor(owner.moduleData.rarity) * brightness;
                     fill.a = 1f;
                     tile.color = fill;
                 }
 
                 // 경계선: 모듈 칸이고 이웃이 다른 모듈·빈 칸·그리드 밖이면 그 변에 선
                 // 그리드 Y는 위에서 아래로 증가 (y - 1 = 위쪽 칸)
-                SetEdge(x, y, EdgeTop, owner != null && GetOwner(x, y - 1, width, height) != owner, borderWidth, theme);
-                SetEdge(x, y, EdgeBottom, owner != null && GetOwner(x, y + 1, width, height) != owner, borderWidth, theme);
-                SetEdge(x, y, EdgeLeft, owner != null && GetOwner(x - 1, y, width, height) != owner, borderWidth, theme);
-                SetEdge(x, y, EdgeRight, owner != null && GetOwner(x + 1, y, width, height) != owner, borderWidth, theme);
+                Color edgeColor = owner != null && highlightedModules.Contains(owner) ? theme.gridHighlightBorderColor : theme.gridModuleBorderColor;
+                SetEdge(x, y, EdgeTop, owner != null && GetOwner(x, y - 1, width, height) != owner, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeBottom, owner != null && GetOwner(x, y + 1, width, height) != owner, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeLeft, owner != null && GetOwner(x - 1, y, width, height) != owner, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeRight, owner != null && GetOwner(x + 1, y, width, height) != owner, borderWidth, edgeColor);
             }
         }
     }
@@ -225,7 +244,7 @@ public class GridPanelUI : MonoBehaviour
         return cellOwners[x, y];
     }
 
-    private void SetEdge(int x, int y, int edge, bool visible, float borderWidth, UITheme theme)
+    private void SetEdge(int x, int y, int edge, bool visible, float borderWidth, Color color)
     {
         Image line = slotEdges[x, y, edge];
         if (line == null) return;
@@ -233,7 +252,7 @@ public class GridPanelUI : MonoBehaviour
         line.enabled = visible;
         if (!visible) return;
 
-        line.color = theme.gridModuleBorderColor;
+        line.color = color;
         RectTransform rect = line.rectTransform;
         bool horizontal = edge == EdgeTop || edge == EdgeBottom;
         rect.sizeDelta = horizontal ? new Vector2(0f, borderWidth) : new Vector2(borderWidth, 0f);
