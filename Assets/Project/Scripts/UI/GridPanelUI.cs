@@ -11,7 +11,14 @@ public class GridPanelUI : MonoBehaviour
     [SerializeField] private Transform gridSlotParent;
 
     private Image[,] slotImages;
+    private Image[,,] slotEdges; // 칸마다 위·아래·왼쪽·오른쪽 경계선 (모듈 경계에만 켬)
     private Color defaultSlotColor = new Color(0.18f, 0.18f, 0.22f, 0.95f); // 깔끔한 회색톤 바닥
+    private Sprite defaultSlotSprite; // 테마에 빈 칸 스프라이트가 없을 때 쓰는 프리팹 원래 스프라이트
+    private float defaultSlotPpuMultiplier = 1f;
+    private Image.Type defaultSlotType = Image.Type.Simple;
+    private GridInventorySystem.PlacedModule[,] cellOwners; // 칸마다 놓인 모듈 (경계 판정용)
+
+    private const int EdgeTop = 0, EdgeBottom = 1, EdgeLeft = 2, EdgeRight = 3;
 
     private void Awake()
     {
@@ -36,12 +43,15 @@ public class GridPanelUI : MonoBehaviour
         GridLayoutGroup gridLayout = gridSlotParent.GetComponent<GridLayoutGroup>();
         if (gridLayout != null)
         {
-            gridLayout.spacing = new Vector2(2f, 2f);
+            float spacing = UITheme.Current.gridSpacing; // 0 = 모듈 안쪽 틈 없음 (UI 테마)
+            gridLayout.spacing = new Vector2(spacing, spacing);
         }
 
         int width = GridInventorySystem.Instance.gridWidth;   // 8
         int height = GridInventorySystem.Instance.gridHeight; // 8
         slotImages = new Image[width, height];
+        slotEdges = new Image[width, height, 4];
+        cellOwners = new GridInventorySystem.PlacedModule[width, height];
 
         for (int y = 0; y < height; y++)
         {
@@ -60,6 +70,18 @@ public class GridPanelUI : MonoBehaviour
                 if (x == 0 && y == 0 && slotImg != null)
                 {
                     defaultSlotColor = slotImg.color;
+                    defaultSlotSprite = slotImg.sprite;
+                    defaultSlotPpuMultiplier = slotImg.pixelsPerUnitMultiplier;
+                    defaultSlotType = slotImg.type;
+                }
+
+                // 이전 방식의 칸 전체 Outline은 사용하지 않음 (모든 변에 선이 생겨 모듈 모양이 안 보이던 원인)
+                Outline oldOutline = slot.GetComponent<Outline>();
+                if (oldOutline != null) oldOutline.enabled = false;
+
+                for (int e = 0; e < 4; e++)
+                {
+                    slotEdges[x, y, e] = CreateEdge(slot.transform, e);
                 }
             }
         }
@@ -106,95 +128,119 @@ public class GridPanelUI : MonoBehaviour
         }
     }
 
-    // ⭐ [고대비 흰색 테두리 적용]
+    // 경계선 1개 생성 (칸 안쪽 가장자리에 붙은 얇은 막대, 클릭은 칸이 받음)
+    private Image CreateEdge(Transform slot, int edge)
+    {
+        GameObject obj = new GameObject($"Edge_{edge}", typeof(RectTransform), typeof(Image));
+        obj.transform.SetParent(slot, false);
+
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        switch (edge)
+        {
+            case EdgeTop: rect.anchorMin = new Vector2(0f, 1f); rect.anchorMax = new Vector2(1f, 1f); rect.pivot = new Vector2(0.5f, 1f); break;
+            case EdgeBottom: rect.anchorMin = new Vector2(0f, 0f); rect.anchorMax = new Vector2(1f, 0f); rect.pivot = new Vector2(0.5f, 0f); break;
+            case EdgeLeft: rect.anchorMin = new Vector2(0f, 0f); rect.anchorMax = new Vector2(0f, 1f); rect.pivot = new Vector2(0f, 0.5f); break;
+            default: rect.anchorMin = new Vector2(1f, 0f); rect.anchorMax = new Vector2(1f, 1f); rect.pivot = new Vector2(1f, 0.5f); break;
+        }
+        rect.anchoredPosition = Vector2.zero;
+
+        Image image = obj.GetComponent<Image>();
+        image.raycastTarget = false;
+        image.enabled = false;
+        return image;
+    }
+
+    // 그리드 다시 그리기: 빈 칸은 테마 빈 칸 스프라이트, 모듈 칸은 레어도 색 채움 + 다른 모듈·빈 칸과 맞닿은 변에만 경계선
     public void RefreshGridVisuals()
     {
         if (slotImages == null || GridInventorySystem.Instance == null) return;
 
+        UITheme theme = UITheme.Current;
         int width = GridInventorySystem.Instance.gridWidth;
         int height = GridInventorySystem.Instance.gridHeight;
 
-        // 1. 바닥 타일 원본 회색톤으로 복원
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (slotImages[x, y] != null)
-                {
-                    slotImages[x, y].color = defaultSlotColor;
-
-                    Outline outline = slotImages[x, y].GetComponent<Outline>();
-                    if (outline != null) outline.enabled = false;
-                }
-            }
-        }
-
-        // 2. 안착된 각 모듈별 고대비 외곽선 및 색상 적용
+        // 1. 칸별 소유 모듈 표
+        System.Array.Clear(cellOwners, 0, cellOwners.Length);
         foreach (var placed in GridInventorySystem.Instance.placedModules)
         {
-            Color rarityColor = GetRarityColor(placed.moduleData.rarity);
-
             for (int r = 0; r < placed.currentHeight; r++)
             {
                 for (int c = 0; c < placed.currentWidth; c++)
                 {
-                    int shapeIndex = r * placed.currentWidth + c;
-                    if (placed.currentShape[shapeIndex])
+                    if (!placed.currentShape[r * placed.currentWidth + c]) continue;
+                    int gridX = placed.startX + c;
+                    int gridY = placed.startY + r;
+                    if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) cellOwners[gridX, gridY] = placed;
+                }
+            }
+        }
+
+        // 2. 칸 그리기
+        float borderWidth = theme.gridModuleBorderWidth;
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Image tile = slotImages[x, y];
+                if (tile == null) continue;
+
+                var owner = cellOwners[x, y];
+                if (owner == null)
+                {
+                    if (!theme.ApplySprite(tile, theme.gridEmptySprite, theme.gridPixelScale))
                     {
-                        int gridX = placed.startX + c;
-                        int gridY = placed.startY + r;
-
-                        if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
-                        {
-                            Image tileImg = slotImages[gridX, gridY];
-                            if (tileImg != null)
-                            {
-                                tileImg.color = rarityColor;
-
-                                // ⭐ 이 타일이 모듈의 '외곽 둘레 타일'인지 검사
-                                bool isOuterBorder = IsTileOnModuleOuterBorder(placed, c, r);
-
-                                if (isOuterBorder)
-                                {
-                                    Outline outline = tileImg.GetComponent<Outline>();
-                                    if (outline == null) outline = tileImg.gameObject.AddComponent<Outline>();
-
-                                    // ⭐ [고대비 핵심] 쨍하고 선명한 밝은 흰색/골드 테두리선 부여!
-                                    outline.enabled = true;
-                                    outline.effectColor = new Color(1f, 1f, 1f, 0.95f); // 100% 쨍한 흰색 선
-                                    outline.effectDistance = new Vector2(3f, -3f);     // 3px 선명한 두께
-                                }
-                            }
-                        }
+                        tile.sprite = defaultSlotSprite;
+                        tile.type = defaultSlotType;
+                        tile.pixelsPerUnitMultiplier = defaultSlotPpuMultiplier;
+                        tile.color = defaultSlotColor;
+                    }
+                    else
+                    {
+                        tile.color = theme.gridEmptyColor;
                     }
                 }
+                else
+                {
+                    // 채움은 스프라이트 없이 단색 (칸 테두리가 생기면 모듈 모양이 다시 안 보임)
+                    tile.sprite = null;
+                    tile.type = Image.Type.Simple;
+                    Color fill = GetRarityColor(owner.moduleData.rarity) * theme.gridFillBrightness;
+                    fill.a = 1f;
+                    tile.color = fill;
+                }
+
+                // 경계선: 모듈 칸이고 이웃이 다른 모듈·빈 칸·그리드 밖이면 그 변에 선
+                // 그리드 Y는 위에서 아래로 증가 (y - 1 = 위쪽 칸)
+                SetEdge(x, y, EdgeTop, owner != null && GetOwner(x, y - 1, width, height) != owner, borderWidth, theme);
+                SetEdge(x, y, EdgeBottom, owner != null && GetOwner(x, y + 1, width, height) != owner, borderWidth, theme);
+                SetEdge(x, y, EdgeLeft, owner != null && GetOwner(x - 1, y, width, height) != owner, borderWidth, theme);
+                SetEdge(x, y, EdgeRight, owner != null && GetOwner(x + 1, y, width, height) != owner, borderWidth, theme);
             }
         }
     }
 
-    // 타일이 모듈의 외곽 둘레인지 검사하는 연산
-    private bool IsTileOnModuleOuterBorder(GridInventorySystem.PlacedModule pm, int col, int row)
+    private GridInventorySystem.PlacedModule GetOwner(int x, int y, int width, int height)
     {
-        int w = pm.currentWidth;
-        int h = pm.currentHeight;
+        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+        return cellOwners[x, y];
+    }
 
-        bool hasTop = (row > 0) && pm.currentShape[(row - 1) * w + col];
-        bool hasBottom = (row < h - 1) && pm.currentShape[(row + 1) * w + col];
-        bool hasLeft = (col > 0) && pm.currentShape[row * w + (col - 1)];
-        bool hasRight = (col < w - 1) && pm.currentShape[row * w + (col + 1)];
+    private void SetEdge(int x, int y, int edge, bool visible, float borderWidth, UITheme theme)
+    {
+        Image line = slotEdges[x, y, edge];
+        if (line == null) return;
 
-        return !(hasTop && hasBottom && hasLeft && hasRight);
+        line.enabled = visible;
+        if (!visible) return;
+
+        line.color = theme.gridModuleBorderColor;
+        RectTransform rect = line.rectTransform;
+        bool horizontal = edge == EdgeTop || edge == EdgeBottom;
+        rect.sizeDelta = horizontal ? new Vector2(0f, borderWidth) : new Vector2(borderWidth, 0f);
     }
 
     private Color GetRarityColor(RarityType rarity)
     {
-        return rarity switch
-        {
-            RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-            _ => Color.cyan
-        };
+        return UITheme.Current.GetRarityColor(rarity); // 색은 UI 테마에서 (Resources/UITheme)
     }
 }

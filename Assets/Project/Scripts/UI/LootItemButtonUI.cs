@@ -21,13 +21,18 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         ClearMiniShape();
 
+        // 장착·금고 슬롯과 같은 모습: 레어도 테두리 + 무기 실루엣 (이름은 툴팁). 테마·아이콘이 없으면 기존 색·글자
         Image btnBg = GetComponent<Image>();
-        if (btnBg != null) btnBg.color = weapon.GetRarityColor();
+        bool framed = UITheme.Current.ApplyRaritySlot(btnBg, weapon.rarity);
+        if (!framed && btnBg != null) btnBg.color = weapon.GetRarityColor();
+
+        SlotContentView view = SlotContentView.Get(btnBg);
+        bool hasIcon = view != null && view.ShowWeapon(weapon);
 
         TextMeshProUGUI btnText = GetComponentInChildren<TextMeshProUGUI>();
         if (btnText != null)
         {
-            btnText.text = $"[{weapon.weaponType}]\n{weapon.weaponName}";
+            btnText.text = hasIcon ? "" : $"[{weapon.weaponType}]\n{weapon.weaponName}";
             btnText.fontSize = 13;
             btnText.alignment = TextAlignmentOptions.Left;
         }
@@ -186,13 +191,6 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private Color GetRarityColor(RarityType rarity)
     {
-        return rarity switch
-        {
-            RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-            _ => Color.white
-        };
+        return UITheme.Current.GetRarityColor(rarity); // 색은 UI 테마에서 (Resources/UITheme)
     }
 }

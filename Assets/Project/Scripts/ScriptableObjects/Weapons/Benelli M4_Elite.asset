@@ -15,8 +15,11 @@ MonoBehaviour:
   weaponName: Benelli M4
   weaponType: 3
   rarity: 2
-  weaponIcon: {fileID: 0}
+  weaponIcon: {fileID: 21300000, guid: 38638d1e4ed20c84ab3acb330b33389b, type: 3}
   weaponPrefab: {fileID: 0}
+  iconVariants:
+  - effects: 0b000000
+    icon: {fileID: 21300000, guid: 3191049323a73c14eb6fd6ced639cfa0, type: 3}
   juItemName: Benelli M4
   baseDamage: 10
   fireRate: 0.8

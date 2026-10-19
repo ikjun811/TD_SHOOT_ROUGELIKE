@@ -105,14 +105,7 @@ public class DroppedItem : MonoBehaviour
         }
         else if (category == ItemCategory.Module && moduleData != null)
         {
-            rarityColor = moduleData.rarity switch
-            {
-                RarityType.Common => Color.white,
-                RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-                RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-                RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-                _ => Color.white
-            };
+            rarityColor = UITheme.Current.GetRarityColor(moduleData.rarity);
         }
 
         if (itemRenderer != null)

@@ -69,9 +69,28 @@ public class WeaponDragHandler : MonoBehaviour
         if (weaponGhostObject != null)
         {
             weaponGhostObject.SetActive(true);
+            weaponGhostObject.transform.SetAsLastSibling();
+
+            // 전리품 버튼과 같은 작은 카드 (레어도 테두리 + 실루엣, 반투명). 테마·아이콘이 없으면 기존 색·이름
+            UITheme theme = UITheme.Current;
             Image bg = weaponGhostObject.GetComponent<Image>();
-            if (bg != null) bg.color = weapon.GetRarityColor();
-            if (ghostNameText != null) ghostNameText.text = weapon.weaponName;
+            bool framed = theme.ApplyRaritySlot(bg, weapon.rarity);
+            if (!framed && bg != null) bg.color = weapon.GetRarityColor();
+
+            SlotContentView view = SlotContentView.Get(bg);
+            bool hasIcon = view != null && view.ShowWeapon(weapon);
+            if (ghostNameText != null) ghostNameText.text = hasIcon ? "" : weapon.weaponName;
+
+            if (hasIcon)
+            {
+                RectTransform rect = weaponGhostObject.GetComponent<RectTransform>();
+                if (rect != null) rect.sizeDelta = new Vector2(260f, 85f) * theme.weaponGhostScale;
+            }
+
+            CanvasGroup group = weaponGhostObject.GetComponent<CanvasGroup>();
+            if (group == null) group = weaponGhostObject.AddComponent<CanvasGroup>();
+            group.alpha = hasIcon ? theme.weaponGhostAlpha : 1f;
+            group.blocksRaycasts = false; // 커서 아래 슬롯이 클릭을 받도록
         }
 
         Debug.Log($"WeaponDragHandler: Selected weapon {weapon.weaponName} from {source}.");

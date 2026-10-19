@@ -233,13 +233,6 @@ public class ItemTooltipUI : MonoBehaviour
 
     private Color GetRarityColor(RarityType rarity)
     {
-        return rarity switch
-        {
-            RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-            _ => Color.white
-        };
+        return UITheme.Current.GetRarityColor(rarity); // 색은 UI 테마에서 (Resources/UITheme)
     }
 }

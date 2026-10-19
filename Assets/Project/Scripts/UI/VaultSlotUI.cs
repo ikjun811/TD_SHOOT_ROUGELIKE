@@ -21,20 +21,34 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
 
         var slotData = MaintenanceManager.Instance.vaultSlots[vaultIndex];
 
-        if (slotData.weapon != null)
+        // 테마에 레어도 테두리가 있으면 테두리 + 레어도 색 글자, 없으면 기존처럼 배경을 레어도 색으로
+        UITheme theme = UITheme.Current;
+        if (slotData.weapon != null || slotData.module != null)
         {
-            if (slotBgImage != null) slotBgImage.color = slotData.weapon.GetRarityColor();
-            if (slotText != null) slotText.text = $"[무기] {slotData.weapon.weaponName}";
-        }
-        else if (slotData.module != null)
-        {
-            if (slotBgImage != null) slotBgImage.color = GetRarityColor(slotData.module.rarity);
-            if (slotText != null) slotText.text = $"[모듈] {slotData.module.moduleName}";
+            RarityType rarity = slotData.weapon != null ? slotData.weapon.rarity : slotData.module.rarity;
+            bool framed = theme.ApplyRaritySlot(slotBgImage, rarity);
+            if (!framed && slotBgImage != null) slotBgImage.color = GetRarityColor(rarity);
+            // 그림(무기 아이콘 / 모듈 모양·계열 띠·스탯 아이콘)이 있으면 텍스트 없이 (이름은 툴팁)
+            SlotContentView view = SlotContentView.Get(slotBgImage);
+            bool hasPicture = view != null && (slotData.weapon != null ? view.ShowWeapon(slotData.weapon) : view.ShowModule(slotData.module));
+            if (slotText != null)
+            {
+                slotText.text = hasPicture ? "" : (slotData.weapon != null ? $"[무기] {slotData.weapon.weaponName}" : $"[모듈] {slotData.module.moduleName}");
+                if (framed) slotText.color = GetRarityColor(rarity);
+            }
         }
         else
         {
-            if (slotBgImage != null) slotBgImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
-            if (slotText != null) slotText.text = $"[금고 {vaultIndex + 1}] 빈 슬롯";
+            SlotContentView view = SlotContentView.Get(slotBgImage);
+            if (view != null) view.Clear();
+
+            bool framed = theme.ApplyEmptySlot(slotBgImage);
+            if (!framed && slotBgImage != null) slotBgImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
+            if (slotText != null)
+            {
+                slotText.text = $"[금고 {vaultIndex + 1}] 빈 슬롯";
+                if (framed) slotText.color = theme.emptySlotTextColor;
+            }
         }
     }
 
@@ -130,6 +144,16 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        // 무기·모듈을 들고 있으면 놓을 자리 표시
+        bool dragging = (WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging)
+            || (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging);
+        if (dragging)
+        {
+            SlotContentView view = SlotContentView.Get(slotBgImage);
+            if (view != null) view.SetDropHighlight(true);
+            return;
+        }
+
         if (ItemTooltipUI.Instance == null || MaintenanceManager.Instance == null) return;
 
         var slotData = MaintenanceManager.Instance.vaultSlots[vaultIndex];
@@ -145,6 +169,9 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        SlotContentView view = slotBgImage != null ? slotBgImage.GetComponent<SlotContentView>() : null;
+        if (view != null) view.SetDropHighlight(false);
+
         if (ItemTooltipUI.Instance != null)
         {
             ItemTooltipUI.Instance.HideTooltip();
@@ -153,13 +180,6 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
 
     private Color GetRarityColor(RarityType rarity)
     {
-        return rarity switch
-        {
-            RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-            _ => Color.white
-        };
+        return UITheme.Current.GetRarityColor(rarity); // 색은 UI 테마에서 (Resources/UITheme)
     }
 }

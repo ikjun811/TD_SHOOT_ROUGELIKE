@@ -15,8 +15,11 @@ MonoBehaviour:
   weaponName: UMP
   weaponType: 0
   rarity: 3
-  weaponIcon: {fileID: 0}
+  weaponIcon: {fileID: 21300000, guid: 08cf5f02fcdaf554fbbf90528e9f2736, type: 3}
   weaponPrefab: {fileID: 0}
+  iconVariants:
+  - effects: 03000000
+    icon: {fileID: 21300000, guid: 1f504638d8b17304696a0425cbf410a0, type: 3}
   juItemName: UMP
   baseDamage: 20
   fireRate: 0.09

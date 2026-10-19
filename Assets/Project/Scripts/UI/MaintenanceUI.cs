@@ -231,6 +231,74 @@ public class MaintenanceUI : MonoBehaviour
         warningText.gameObject.SetActive(show);
     }
 
+    // 장착 슬롯 놓을 자리 표시 (WeaponSlotUI가 무기를 든 채 마우스를 올리면 호출)
+    public void SetEquipSlotDropHighlight(int slotIndex, bool on)
+    {
+        Image slotImage = slotIndex == 0 ? weapon1SlotImage : (slotIndex == 1 ? weapon2SlotImage : null);
+        SlotContentView view = SlotContentView.Get(slotImage);
+        if (view != null) view.SetDropHighlight(on);
+    }
+
+    // 그리드에 배치된 이 무기군 대상 작동 모듈 효과
+    private static List<ModuleEffect> GetActiveMechanismEffects(WeaponType weaponType)
+    {
+        List<ModuleEffect> effects = new List<ModuleEffect>();
+        if (GridInventorySystem.Instance == null) return effects;
+
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m != null && m.category == ModuleCategory.Mechanism && m.TargetsWeapon(weaponType) && !effects.Contains(m.effect)) effects.Add(m.effect);
+        }
+        return effects;
+    }
+
+    // 모듈 배치·제거 시 장착 슬롯 아이콘(작동 모듈 변형) 갱신
+    private void OnEnable()
+    {
+        GridInventorySystem.OnModulesChanged += RefreshEquipAndVaultUI;
+    }
+
+    private void OnDisable()
+    {
+        GridInventorySystem.OnModulesChanged -= RefreshEquipAndVaultUI;
+    }
+
+    // 장착 슬롯 1개: 테마에 레어도 테두리가 있으면 테두리 + 레어도 색 글자, 없으면 기존처럼 배경을 레어도 색으로
+    private void RefreshEquipSlot(Image slotImage, TextMeshProUGUI slotText, WeaponDataSO weapon, int slotNumber)
+    {
+        UITheme theme = UITheme.Current;
+        if (weapon != null)
+        {
+            bool framed = theme.ApplyRaritySlot(slotImage, weapon.rarity);
+            if (!framed && slotImage != null) slotImage.color = weapon.GetRarityColor();
+
+            // 무기 아이콘이 있으면 그림만 (이름·수치는 툴팁). 장착된 작동 모듈에 맞는 변형 아이콘, 모양에 반영 안 된 작동 모듈은 구석 표시
+            List<ModuleEffect> mechanisms = GetActiveMechanismEffects(weapon.weaponType);
+            Sprite icon = weapon.GetIcon(mechanisms, out int covered);
+            SlotContentView view = SlotContentView.Get(slotImage);
+            bool hasIcon = view != null && view.ShowWeapon(weapon, icon, mechanisms.Count > covered);
+            if (slotText != null)
+            {
+                slotText.text = hasIcon ? "" : $"[{weapon.weaponType}]\n{weapon.weaponName}";
+                slotText.color = framed ? weapon.GetRarityColor() : Color.black;
+            }
+        }
+        else
+        {
+            SlotContentView view = SlotContentView.Get(slotImage);
+            if (view != null) view.Clear();
+
+            bool framed = theme.ApplyEmptySlot(slotImage);
+            if (!framed && slotImage != null) slotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
+            if (slotText != null)
+            {
+                slotText.text = $"[{slotNumber}] 빈 무기 슬롯";
+                slotText.color = framed ? theme.emptySlotTextColor : Color.gray;
+            }
+        }
+    }
+
     /// <summary>
     /// 장착 무기 슬롯 배경색 및 텍스트 시각화 갱신
     /// </summary>
@@ -238,47 +306,11 @@ public class MaintenanceUI : MonoBehaviour
     {
         if (PlayerInventory.Instance != null && PlayerInventory.Instance.equippedWeapons != null)
         {
-            // 1. 주무기 슬롯 1번 시각화
+            // 주무기 슬롯 1·2번 시각화
             var w1 = PlayerInventory.Instance.equippedWeapons.Length > 0 ? PlayerInventory.Instance.equippedWeapons[0] : null;
-            if (w1 != null)
-            {
-                if (weapon1SlotImage != null) weapon1SlotImage.color = w1.GetRarityColor();
-                if (weapon1Text != null)
-                {
-                    weapon1Text.text = $"[{w1.weaponType}]\n{w1.weaponName}";
-                    weapon1Text.color = Color.black;
-                }
-            }
-            else
-            {
-                if (weapon1SlotImage != null) weapon1SlotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
-                if (weapon1Text != null)
-                {
-                    weapon1Text.text = "[1] 빈 무기 슬롯";
-                    weapon1Text.color = Color.gray;
-                }
-            }
-
-            // 2. 주무기 슬롯 2번 시각화
             var w2 = PlayerInventory.Instance.equippedWeapons.Length > 1 ? PlayerInventory.Instance.equippedWeapons[1] : null;
-            if (w2 != null)
-            {
-                if (weapon2SlotImage != null) weapon2SlotImage.color = w2.GetRarityColor();
-                if (weapon2Text != null)
-                {
-                    weapon2Text.text = $"[{w2.weaponType}]\n{w2.weaponName}";
-                    weapon2Text.color = Color.black;
-                }
-            }
-            else
-            {
-                if (weapon2SlotImage != null) weapon2SlotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
-                if (weapon2Text != null)
-                {
-                    weapon2Text.text = "[2] 빈 무기 슬롯";
-                    weapon2Text.color = Color.gray;
-                }
-            }
+            RefreshEquipSlot(weapon1SlotImage, weapon1Text, w1, 1);
+            RefreshEquipSlot(weapon2SlotImage, weapon2Text, w2, 2);
         }
 
         // 금고 슬롯 시각화
@@ -293,13 +325,6 @@ public class MaintenanceUI : MonoBehaviour
 
     private Color GetRarityColor(RarityType rarity)
     {
-        return rarity switch
-        {
-            RarityType.Common => Color.white,
-            RarityType.Rare => new Color(0.2f, 0.6f, 1f),
-            RarityType.Elite => new Color(0.7f, 0.3f, 0.9f),
-            RarityType.Legendary => new Color(1f, 0.8f, 0.1f),
-            _ => Color.white
-        };
+        return UITheme.Current.GetRarityColor(rarity); // 색은 UI 테마에서 (Resources/UITheme)
     }
 }

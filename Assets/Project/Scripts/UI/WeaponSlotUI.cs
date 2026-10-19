@@ -4,8 +4,31 @@ using UnityEngine.EventSystems;
 /// <summary>
 /// 장착 무기 슬롯 및 금고 슬롯의 클릭 이벤트를 처리하는 클래스입니다.
 /// </summary>
-public class WeaponSlotUI : MonoBehaviour, IPointerClickHandler
+public class WeaponSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    // 장착 슬롯에 마우스를 올리면 무기 툴팁 (슬롯에는 아이콘만 표시, U3d)
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        // 무기를 들고 있으면 놓을 자리 표시
+        if (slotType == SlotType.WeaponSlot && WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging)
+        {
+            if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.SetEquipSlotDropHighlight(weaponSlotIndex, true);
+            return;
+        }
+
+        if (slotType != SlotType.WeaponSlot || ItemTooltipUI.Instance == null || PlayerInventory.Instance == null) return;
+        if (weaponSlotIndex < 0 || weaponSlotIndex >= PlayerInventory.Instance.equippedWeapons.Length) return;
+
+        WeaponDataSO weapon = PlayerInventory.Instance.equippedWeapons[weaponSlotIndex];
+        if (weapon != null) ItemTooltipUI.Instance.ShowWeaponTooltip(weapon);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (slotType == SlotType.WeaponSlot && MaintenanceUI.Instance != null) MaintenanceUI.Instance.SetEquipSlotDropHighlight(weaponSlotIndex, false);
+        if (ItemTooltipUI.Instance != null) ItemTooltipUI.Instance.HideTooltip();
+    }
+
     public enum SlotType { WeaponSlot, VaultSlot }
 
     public SlotType slotType = SlotType.WeaponSlot;

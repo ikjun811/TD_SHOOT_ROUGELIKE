@@ -15,8 +15,15 @@ MonoBehaviour:
   weaponName: M82
   weaponType: 4
   rarity: 2
-  weaponIcon: {fileID: 0}
+  weaponIcon: {fileID: 21300000, guid: 53619e2ce6b383745ab36f66626dcc55, type: 3}
   weaponPrefab: {fileID: 0}
+  iconVariants:
+  - effects: 0d000000
+    icon: {fileID: 21300000, guid: dbf5222037e4d2f4f8b6fc7c421325ef, type: 3}
+  - effects: 0e000000
+    icon: {fileID: 21300000, guid: df187c09454343a419df41da4bae0b42, type: 3}
+  - effects: 0d0000000e000000
+    icon: {fileID: 21300000, guid: ff8f613b8f1cb1d439e4a5c3f29db7be, type: 3}
   juItemName: M82
   baseDamage: 60
   fireRate: 1.2

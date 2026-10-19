@@ -12,6 +12,9 @@ public class GridInventorySystem : MonoBehaviour
     private bool[,] gridMatrix; // true: 칸 차있음, false: 빈 칸
     public List<PlacedModule> placedModules = new List<PlacedModule>();
 
+    // 모듈 배치·제거 시 (장착 슬롯 무기 아이콘 변형 등 UI 갱신용)
+    public static event System.Action OnModulesChanged;
+
     [System.Serializable]
     public class PlacedModule
     {
@@ -120,6 +123,7 @@ public class GridInventorySystem : MonoBehaviour
         placedModules.Add(placed);
 
         RecalculateTotalStats();
+        OnModulesChanged?.Invoke();
         Debug.Log($"🧩 [그리드] {module.moduleName} 모듈 배치 성공! (위치: {startX}, {startY})");
         return true;
     }
@@ -143,6 +147,7 @@ public class GridInventorySystem : MonoBehaviour
 
         placedModules.Remove(module);
         RecalculateTotalStats();
+        OnModulesChanged?.Invoke();
         Debug.Log($"🧩 [그리드] {module.moduleData.moduleName} 모듈 제거됨.");
     }
 

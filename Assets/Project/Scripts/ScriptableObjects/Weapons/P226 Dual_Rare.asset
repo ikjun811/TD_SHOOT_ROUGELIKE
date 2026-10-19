@@ -15,8 +15,15 @@ MonoBehaviour:
   weaponName: P226 Dual
   weaponType: 2
   rarity: 1
-  weaponIcon: {fileID: 0}
+  weaponIcon: {fileID: 21300000, guid: 4fc782f406f8ba7448bb52aa99186cd4, type: 3}
   weaponPrefab: {fileID: 0}
+  iconVariants:
+  - effects: 07000000
+    icon: {fileID: 21300000, guid: 922ffcebaf0de4443816d3b7589bdf20, type: 3}
+  - effects: 08000000
+    icon: {fileID: 21300000, guid: f96530b95251e6440b3a53d20e9d0569, type: 3}
+  - effects: 0700000008000000
+    icon: {fileID: 21300000, guid: fb9ac5e6b57e2e6498acefe8e1777e1c, type: 3}
   juItemName: P226 Dual
   baseDamage: 20
   fireRate: 0.1

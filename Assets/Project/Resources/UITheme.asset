@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2497e8b66f789364684241e9f8a14673, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: Assembly-CSharp::UITheme
+  commonColor: {r: 1, g: 1, b: 1, a: 1}
+  rareColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  eliteColor: {r: 0.7, g: 0.3, b: 0.9, a: 1}
+  legendaryColor: {r: 1, g: 0.8, b: 0.1, a: 1}
+  statColor: {r: 0.55, g: 0.85, b: 0.55, a: 1}
+  mechanismColor: {r: 1, g: 0.6, b: 0.25, a: 1}
+  specialColor: {r: 0.35, g: 0.8, b: 1, a: 1}
+  uniqueColor: {r: 1, g: 0.35, b: 0.45, a: 1}
+  pixelScale: 3
+  panelSprite: {fileID: 21300000, guid: ee55592aae7a2548a282aa3f853b4717, type: 3}
+  insetPanelSprite: {fileID: 21300000, guid: 30f76d007b047be860b0a9a466f9551b, type: 3}
+  windowSprite: {fileID: 21300000, guid: 91c0c13fb0a785ed350d6da3e32b0303, type: 3}
+  tooltipSprite: {fileID: 21300000, guid: 86ba74509d1c9eb0c6d2405481d722f0, type: 3}
+  bracketSprite: {fileID: 21300000, guid: 1a82a306021cf19d651e589e202b30dc, type: 3}
+  buttonNormal: {fileID: 21300000, guid: 7d3a38fbea345be143485d715582f56f, type: 3}
+  buttonHover: {fileID: 21300000, guid: d26cdb22a1dcbac694a43555e62a09c8, type: 3}
+  buttonPressed: {fileID: 21300000, guid: cc8ae429f9229bc9f13c64a64595e781, type: 3}
+  buttonDisabled: {fileID: 21300000, guid: 4fd816c135e714b28a5a85b628de4652, type: 3}
+  commonSlot: {fileID: 21300000, guid: 8c2eff6d76d9cc12c0564c8c2d7839fe, type: 3}
+  rareSlot: {fileID: 21300000, guid: 978cacd7a85c971ee4f0cef638b9e5d2, type: 3}
+  eliteSlot: {fileID: 21300000, guid: 874398674e666d4271d61688fc07ee22, type: 3}
+  legendarySlot: {fileID: 21300000, guid: 5d067c213307cc571b3fd6e519cf976d, type: 3}
+  emptySlotSprite: {fileID: 21300000, guid: 30f76d007b047be860b0a9a466f9551b, type: 3}
+  emptySlotTextColor: {r: 0.55, g: 0.58, b: 0.62, a: 1}
+  slotContentPadding: 12
+  tintWeaponIconByRarity: 1
+  statIconScale: 2
+  categoryBarHeight: 6
+  showMechanismPip: 1
+  mechanismPipSize: 9
+  dropHighlightSprite: {fileID: 21300000, guid: bd34cd98ddc3c84d97638db3ac6353b0, type: 3}
+  weaponGhostScale: 0.7
+  weaponGhostAlpha: 0.8
+  attackIcon: {fileID: 21300000, guid: 92cf2a36b960f9c3ac12b0bead556c67, type: 3}
+  healthIcon: {fileID: 21300000, guid: cdbc960bd12e601591372eaf44fe33fe, type: 3}
+  armorIcon: {fileID: 21300000, guid: e1d67c2746362d8cc24b6fc4a8b8416c, type: 3}
+  moveSpeedIcon: {fileID: 21300000, guid: 31f2799b75b5a01cb7b0768244a2a970, type: 3}
+  fireRateIcon: {fileID: 21300000, guid: 76d0df8ab73c7d243d7862bcf42db019, type: 3}
+  cooldownIcon: {fileID: 21300000, guid: fc28593024f22b392da029b39a03cd50, type: 3}
+  critIcon: {fileID: 21300000, guid: 47c68ceaf0a13222bfc79d78be1e80d9, type: 3}
+  reloadIcon: {fileID: 21300000, guid: 7e4480fcdae6952522e6e1a129f8ef91, type: 3}
+  gridEmptySprite: {fileID: 21300000, guid: dec78b6395392044ca36117e3e80cb48, type: 3}
+  gridPixelScale: 3
+  gridEmptyColor: {r: 0.4811321, g: 0.4811321, b: 0.4811321, a: 1}
+  gridSpacing: 0
+  gridFillBrightness: 0.9
+  gridModuleBorderColor: {r: 1, g: 1, b: 1, a: 1}
+  gridModuleBorderWidth: 3
