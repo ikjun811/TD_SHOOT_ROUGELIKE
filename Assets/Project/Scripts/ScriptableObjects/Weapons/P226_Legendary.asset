@@ -18,7 +18,7 @@ MonoBehaviour:
   weaponIcon: {fileID: 0}
   weaponPrefab: {fileID: 0}
   juItemName: P226
-  baseDamage: 20
+  baseDamage: 32
   fireRate: 0.1
   maxAmmo: 16
   reloadTime: 1.2

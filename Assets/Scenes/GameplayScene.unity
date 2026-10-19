@@ -4059,8 +4059,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   collectedWeapons: []
-  collectedModules:
-  - {fileID: 11400000, guid: c0cf6402f4be8e8438284f2c86df7e3e, type: 2}
+  collectedModules: []
   equippedWeapons:
   - {fileID: 0}
   - {fileID: 0}

@@ -9,7 +9,7 @@ using JUTPS.WeaponSystem;
 //   빠른 장전(P226): 장전 직후 3발 피해 +30% (장전 시간 −40%는 모듈 reloadTimeOverride) → BulletWeaponLink가 탄 생성 시 배율 적용
 //   빈 탄창 급속 장전(Dual): 0발에서 시작한 장전은 시간 x0.55
 //   재장전 시 폭발(특수): 장전 시작 시 플레이어 주변 4m에 사격 1회 피해 x 배율
-// 간격은 모두 연사 스탯 적용 (fireRateFactor로 나눔). 장전 시작·완료는 PlayerStatAndWeaponSync가 감지해 호출
+// 간격은 모두 연사 스탯 적용 (fireRateFactor로 나눔) + 외부 연사 배율(탈출 집중) 적용. 장전 시작·완료는 PlayerStatAndWeaponSync가 감지해 호출
 public class WeaponModuleRuntime : MonoBehaviour
 {
     private const float BurstInterval = 0.05f;
@@ -45,6 +45,15 @@ public class WeaponModuleRuntime : MonoBehaviour
     private float spinTime;
     private float stillTime;
     private int postReloadShotsLeft;
+
+    // 외부 연사 배율 (CharacterModuleRuntime: 탈출 집중 구역 안 1.2~1.4, 1 = 없음). 모든 무기에 공통
+    public static float ExternalFireRateMultiplier = 1f;
+    private float appliedExternal = 1f; // 사격 방식 래퍼가 없는 무기에 마지막으로 적용한 값
+
+    private float Factor => fireRateFactor * ExternalFireRateMultiplier;
+
+    // 사격 1회 피해 (산탄은 산탄 합, 공격력·작동 모듈 반영). 재장전 시 폭발·위기 반격(CharacterModuleRuntime) 기준
+    public float PerShotDamage => perShotDamage;
 
     // 이번 장전의 시간 배율 (PlayerStatAndWeaponSync.ApplyReloadAnimationSpeed가 사용)
     public float CurrentReloadMultiplier { get; private set; } = 1f;
@@ -102,11 +111,11 @@ public class WeaponModuleRuntime : MonoBehaviour
             if (burstCount >= BurstShots)
             {
                 burstCount = 0;
-                weapon.Fire_Rate = BurstPause / fireRateFactor;
+                weapon.Fire_Rate = BurstPause / Factor;
             }
             else
             {
-                weapon.Fire_Rate = BurstInterval / fireRateFactor;
+                weapon.Fire_Rate = BurstInterval / Factor;
             }
         }
     }
@@ -122,14 +131,14 @@ public class WeaponModuleRuntime : MonoBehaviour
                 if (burstCount > 0 && Time.time - lastShotTime > BurstPause)
                 {
                     burstCount = 0;
-                    weapon.Fire_Rate = BurstInterval / fireRateFactor;
+                    weapon.Fire_Rate = BurstInterval / Factor;
                 }
                 break;
 
             case ModuleEffect.SpinUp:
                 if (Time.time - lastShotTime < SpinResetDelay) spinTime = Mathf.Min(SpinUpTime, spinTime + Time.deltaTime);
                 else spinTime = 0f;
-                weapon.Fire_Rate = Mathf.Lerp(SpinStartInterval, SpinMinInterval, spinTime / SpinUpTime) / fireRateFactor;
+                weapon.Fire_Rate = Mathf.Lerp(SpinStartInterval, SpinMinInterval, spinTime / SpinUpTime) / Factor;
                 break;
 
             case ModuleEffect.StationaryFire:
@@ -142,7 +151,12 @@ public class WeaponModuleRuntime : MonoBehaviour
                 }
                 stillTime = moving ? 0f : stillTime + Time.deltaTime;
                 float multiplier = moving ? MovingPenalty : (stillTime >= StationaryDelay ? StationaryBonus : 1f);
-                weapon.Fire_Rate = baseInterval / multiplier;
+                weapon.Fire_Rate = baseInterval / (multiplier * ExternalFireRateMultiplier);
+                break;
+
+            default:
+                // 사격 방식 래퍼가 없으면 외부 배율이 바뀔 때만 다시 적용
+                if (!Mathf.Approximately(appliedExternal, ExternalFireRateMultiplier)) ApplyFireRate();
                 break;
         }
     }
@@ -152,9 +166,13 @@ public class WeaponModuleRuntime : MonoBehaviour
         if (weapon == null) return;
         switch (fireModeEffect)
         {
-            case ModuleEffect.BurstFire: weapon.Fire_Rate = BurstInterval / fireRateFactor; break;
-            case ModuleEffect.SpinUp: weapon.Fire_Rate = SpinStartInterval / fireRateFactor; break;
-            // 그 외(거치 사격 포함)는 Sync가 넣은 기본 간격에서 시작
+            case ModuleEffect.BurstFire: weapon.Fire_Rate = BurstInterval / Factor; break;
+            case ModuleEffect.SpinUp: weapon.Fire_Rate = SpinStartInterval / Factor; break;
+            case ModuleEffect.StationaryFire: break; // 매 프레임 Update에서 계산
+            default:
+                weapon.Fire_Rate = baseInterval / ExternalFireRateMultiplier; // baseInterval = Sync가 계산한 기본 간격 (연사 스탯 포함)
+                appliedExternal = ExternalFireRateMultiplier;
+                break;
         }
     }
 

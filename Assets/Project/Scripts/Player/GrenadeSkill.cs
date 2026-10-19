@@ -63,6 +63,10 @@ public class GrenadeSkill : MonoBehaviour
     public int CurrentCharges => currentCharges;
     public int MaxCharges => maxCharges;
     public float CooldownProgress => currentCooldownTimer / cooldown;
+    public float ScaledCenterDamage => centerDamage * damageMultiplier; // 중심 피해 x 공격력 % (대시 폭탄 기준값)
+
+    // 충전 시간 배율 (CharacterModuleRuntime: 단일 P226을 드는 동안 0.75). 진행도 표시가 그대로 맞도록 타이머 증가 속도로 적용
+    public float ChargeTimeMultiplier { get; set; } = 1f;
 
     private void Awake()
     {
@@ -144,7 +148,7 @@ public class GrenadeSkill : MonoBehaviour
         // 쿨타임 충전 연산 (처치 시 쿨감으로 한 번에 여러 충전이 찰 수 있음)
         if (currentCharges < maxCharges)
         {
-            currentCooldownTimer += Time.deltaTime;
+            currentCooldownTimer += Time.deltaTime / Mathf.Max(0.01f, ChargeTimeMultiplier);
             while (currentCooldownTimer >= cooldown && currentCharges < maxCharges)
             {
                 currentCooldownTimer -= cooldown;

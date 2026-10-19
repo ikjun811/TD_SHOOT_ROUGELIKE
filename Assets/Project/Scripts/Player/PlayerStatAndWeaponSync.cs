@@ -31,6 +31,15 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
     // 무기별 장전 시간 (WeaponDataSO.reloadTime, 장전 애니메이션 속도 계산에 사용)
     private readonly Dictionary<Weapon, float> weaponReloadTimes = new Dictionary<Weapon, float>();
 
+    // 무기별 무기군 (ApplyWeaponData에서 기록, CharacterModuleRuntime이 단일 P226 판정에 사용)
+    private readonly Dictionary<Weapon, WeaponType> weaponTypes = new Dictionary<Weapon, WeaponType>();
+
+    public bool TryGetWeaponType(Weapon weapon, out WeaponType type)
+    {
+        type = default;
+        return weapon != null && weaponTypes.TryGetValue(weapon, out type);
+    }
+
     // 작동 모듈이 바꾸는 JU 무기 값의 원본 (모듈을 빼면 되돌림)
     private struct WeaponOriginals
     {
@@ -59,6 +68,9 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         juHealth = GetComponent<JUHealth>();
         juInventory = GetComponent<JUInventory>();
         grenadeSkill = GetComponent<GrenadeSkill>();
+
+        // 캐릭터 효과 런타임 (단일 P226 쿨타임 단축 등, A4c)
+        if (GetComponent<CharacterModuleRuntime>() == null) gameObject.AddComponent<CharacterModuleRuntime>();
 
         // 기본 스탯 값 저장
         if (juHealth != null)
@@ -430,6 +442,24 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             juHealth.Protection = defaultProtection + armorBonus;
         }
 
+        // 캐릭터 특수 모듈 (흡혈: effectValue = 처치당 회복 비율, effectCount = 라운드 상한 % / 대시 폭탄: effectValue = 수류탄 피해 비율)
+        CharacterModuleRuntime character = GetComponent<CharacterModuleRuntime>();
+        if (character != null)
+        {
+            ModuleDataSO lifesteal = FindCharacterModule(ModuleEffect.Lifesteal);
+            ModuleDataSO dashBomb = FindCharacterModule(ModuleEffect.DashBomb);
+            ModuleDataSO focus = FindCharacterModule(ModuleEffect.ExtractionFocus); // effectValue = 연사 %, effectCount = 피해 감소 %
+            ModuleDataSO lastStand = FindCharacterModule(ModuleEffect.LastStand);   // effectValue = 사격 1회 피해 배율
+            character.ApplyModules(
+                lifesteal != null ? lifesteal.effectValue : 0f,
+                lifesteal != null ? lifesteal.effectCount / 100f : 0f,
+                dashBomb != null ? dashBomb.effectValue : 0f,
+                focus != null ? focus.effectValue : 0f,
+                focus != null ? focus.effectCount / 100f : 0f,
+                lastStand != null ? lastStand.effectValue : 0f);
+            if (dashBomb != null || lastStand != null) EnsureExplosionVFX();
+        }
+
         // 이동속도 적용 (JUCharacterController의 WalkSpeed 및 RunSpeed 보정) ⭐
         if (controller != null)
         {
@@ -567,6 +597,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         // 연사·탄창: 탄창은 가득 채우고, 예비탄은 무한 (재장전은 필요)
         weapon.Fire_Rate = finalFireRate;
         weaponReloadTimes[weapon] = reloadTime;
+        weaponTypes[weapon] = data.weaponType;
         weapon.BulletsPerMagazine = Mathf.Max(1, magazine);
         weapon.BulletsAmounts = weapon.BulletsPerMagazine;
         weapon.InfiniteAmmo = true;
@@ -679,6 +710,20 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             ModuleDataSO m = pm.moduleData;
             if (m == null || m.target != ModuleTarget.Grenade || m.effect != effect) continue;
             if (m.category == ModuleCategory.Mechanism || GridInventorySystem.Instance.IsEffectActive(pm)) return m;
+        }
+        return null;
+    }
+
+    // 캐릭터 대상 특수 모듈 (중복이면 효과가 적용되는 1개만)
+    private ModuleDataSO FindCharacterModule(ModuleEffect effect)
+    {
+        if (GridInventorySystem.Instance == null) return null;
+
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m == null || m.target != ModuleTarget.Character || m.effect != effect) continue;
+            if (GridInventorySystem.Instance.IsEffectActive(pm)) return m;
         }
         return null;
     }

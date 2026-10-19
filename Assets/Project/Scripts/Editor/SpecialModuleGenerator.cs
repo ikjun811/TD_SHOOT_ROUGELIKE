@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // 특수 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Special Modules)
-// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 + A4b 수류탄 4종 x 레어도 4종 = 48개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 + A4b 수류탄 4종 + A4c 캐릭터 4종 x 레어도 4종 = 64개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
 // 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
 public static class SpecialModuleGenerator
 {
@@ -65,6 +65,19 @@ public static class SpecialModuleGenerator
         new Spec { fileKey = "KillCooldownRefund", displayName = "처치 시 쿨감", effect = ModuleEffect.KillCooldownRefund, target = ModuleTarget.Grenade,
             values = new[] { 0.5f, 0.7f, 0.9f, 1.2f },
             descriptionFormat = "적 처치 시 수류탄 충전 대기 시간 −{2:0.#}초.\n자동 투척과 함께 쓰면 효과 없음." },
+        // A4c 캐릭터 특수 (동작은 CharacterModuleRuntime)
+        new Spec { fileKey = "Lifesteal", displayName = "흡혈", effect = ModuleEffect.Lifesteal, target = ModuleTarget.Character,
+            counts = new[] { 15, 20, 25, 30 }, values = new[] { 0.005f, 0.007f, 0.0085f, 0.01f }, // count = 라운드 회복 상한 %
+            descriptionFormat = "적 처치 시 최대 체력의 {1:0.##}% 회복.\n라운드당 최대 체력의 {0}%까지." },
+        new Spec { fileKey = "DashBomb", displayName = "대시 폭탄", effect = ModuleEffect.DashBomb, target = ModuleTarget.Character,
+            values = new[] { 0.5f, 0.6f, 0.7f, 0.9f },
+            descriptionFormat = "대시를 시작한 자리에 폭탄을 남김.\n0.5초 뒤 반경 3m, 수류탄 피해의 {1:0}% (내부 쿨 4초)." },
+        new Spec { fileKey = "ExtractionFocus", displayName = "탈출 집중", effect = ModuleEffect.ExtractionFocus, target = ModuleTarget.Character,
+            counts = new[] { 15, 20, 25, 30 }, values = new[] { 0.2f, 0.25f, 0.3f, 0.4f }, // count = 받는 피해 감소 %
+            descriptionFormat = "탈출 구역 안에 있는 동안\n연사 +{1:0}%, 받는 피해 −{0}%." },
+        new Spec { fileKey = "LastStand", displayName = "위기 반격", effect = ModuleEffect.LastStand, target = ModuleTarget.Character,
+            values = new[] { 1.5f, 2f, 2.5f, 3.5f },
+            descriptionFormat = "체력 30% 이하에서 피격 시 주변 4m에 충격파.\n사격 1회 피해의 {1:0}% + 넉백 2m (내부 쿨 12초)." },
     };
 
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };

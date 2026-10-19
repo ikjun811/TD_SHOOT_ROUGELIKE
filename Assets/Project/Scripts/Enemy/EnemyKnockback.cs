@@ -16,13 +16,15 @@ public class EnemyKnockback : MonoBehaviour
     private Vector3 velocity;
     private float timer;
 
-    public static void Apply(EnemyBase enemy, Vector3 direction, float distance)
+    // duration: 밀리는 시간 (0 이하 = 기본 0.15초). 속도 상한이 있어 먼 거리는 시간을 늘려야 함 (위기 반격 2m = 0.25초)
+    public static void Apply(EnemyBase enemy, Vector3 direction, float distance, float duration = 0f)
     {
         if (enemy == null || distance <= 0f) return;
+        if (duration <= 0f) duration = Duration;
 
         EnemyKnockback knockback = enemy.GetComponent<EnemyKnockback>();
         if (knockback == null) knockback = enemy.gameObject.AddComponent<EnemyKnockback>();
-        knockback.Add(direction * (distance / Duration));
+        knockback.Add(direction * (distance / duration), duration);
     }
 
     private void Awake()
@@ -31,10 +33,10 @@ public class EnemyKnockback : MonoBehaviour
         health = GetComponent<JUHealth>();
     }
 
-    private void Add(Vector3 push)
+    private void Add(Vector3 push, float duration)
     {
         velocity = Vector3.ClampMagnitude(velocity + push, MaxSpeed);
-        timer = Duration;
+        timer = Mathf.Max(timer, duration);
     }
 
     private void Update()
