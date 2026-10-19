@@ -60,7 +60,7 @@ public class ExtractionZone : MonoBehaviour
 
         Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        BspArenaGenerator arena = FindFirstObjectByType<BspArenaGenerator>();
+        BspArenaGenerator arena = FindAnyObjectByType<BspArenaGenerator>();
         if (arena != null && arena.Leaves.Count > 0)
         {
             transform.position = PickZoneCenter(arena, player) + Vector3.up * 0.02f;
@@ -154,7 +154,7 @@ public class ExtractionZone : MonoBehaviour
             StageHUDUI.Instance.ShowNoticeBanner("EXTRACTION SUCCESSFUL", Color.green);
         }
 
-        WaveManager.DespawnAllActiveEnemies();
+        WaveManager.EndRoundAndDespawn();
 
         // 최종 라운드 탈출 = 게임 클리어 (정비 대신 결과 화면)
         bool isGameClear = WaveManager.Instance != null && WaveManager.Instance.CurrentRound >= WaveManager.Instance.MaxRound;

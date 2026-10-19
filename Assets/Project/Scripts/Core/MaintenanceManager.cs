@@ -76,7 +76,7 @@ public class MaintenanceManager : MonoBehaviour
         }
 
         MaintenanceUI ui = MaintenanceUI.Instance;
-        if (ui == null) ui = FindObjectOfType<MaintenanceUI>(true);
+        if (ui == null) ui = FindAnyObjectByType<MaintenanceUI>(FindObjectsInactive.Include);
         if (ui != null) ui.OpenUI();
 
         Debug.Log("MaintenanceManager: Enter Maintenance Stage.");
@@ -139,7 +139,7 @@ public class MaintenanceManager : MonoBehaviour
     private void ResetAndStartNextRound()
     {
         // 1. 맵 재생성 (BSP 생성기가 있으면 새 맵 + NavMesh 재베이크 + 플레이어를 새 시작 구역으로 이동)
-        BspArenaGenerator arenaGenerator = FindFirstObjectByType<BspArenaGenerator>();
+        BspArenaGenerator arenaGenerator = FindAnyObjectByType<BspArenaGenerator>();
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (arenaGenerator != null)
         {
@@ -157,7 +157,7 @@ public class MaintenanceManager : MonoBehaviour
         }
 
         // 2. 탈출 구역 무작위 재배치 및 타이머 리셋
-        ExtractionZone ez = FindObjectOfType<ExtractionZone>();
+        ExtractionZone ez = FindAnyObjectByType<ExtractionZone>();
         if (ez != null)
         {
             ez.RelocateAndResetZone();

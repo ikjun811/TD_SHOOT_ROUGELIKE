@@ -58,7 +58,7 @@ public static class ModuleAssetTools
     [MenuItem("Tools/TD Shoot/Register All Modules to Drop Manager")]
     public static void RegisterAllModules()
     {
-        ItemDropManager manager = Object.FindFirstObjectByType<ItemDropManager>(FindObjectsInactive.Include);
+        ItemDropManager manager = Object.FindAnyObjectByType<ItemDropManager>(FindObjectsInactive.Include);
         if (manager == null)
         {
             EditorUtility.DisplayDialog("모듈 등록", "열린 씬에 ItemDropManager가 없습니다. GameplayScene을 열고 다시 실행하세요.", "확인");

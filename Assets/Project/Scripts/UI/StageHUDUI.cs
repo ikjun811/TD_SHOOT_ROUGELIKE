@@ -34,7 +34,7 @@ public class StageHUDUI : MonoBehaviour
     {
         if (extractionZone == null)
         {
-            extractionZone = FindObjectOfType<ExtractionZone>();
+            extractionZone = FindAnyObjectByType<ExtractionZone>();
         }
 
         if (noticeBannerText != null)

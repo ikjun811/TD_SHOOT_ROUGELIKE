@@ -189,7 +189,7 @@ public class WaveManager : MonoBehaviour
         if (cachedPlayerHealth == null && playerTransform != null) cachedPlayerHealth = playerTransform.GetComponent<JU.JUHealth>();
         if (cachedPlayerHealth != null && cachedPlayerHealth.IsDead) return false;
 
-        if (cachedExtractionZone == null) cachedExtractionZone = FindFirstObjectByType<ExtractionZone>();
+        if (cachedExtractionZone == null) cachedExtractionZone = FindAnyObjectByType<ExtractionZone>();
         if (cachedExtractionZone != null && cachedExtractionZone.ProgressPercent >= 1f) return false;
 
         return true;
@@ -353,7 +353,7 @@ public class WaveManager : MonoBehaviour
     // 맵 상에 활성화되어 있는 모든 적 개체 즉시 디스폰 처리
     public static void DespawnAllActiveEnemies()
     {
-        EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        EnemyBase[] enemies = FindObjectsByType<EnemyBase>();
         foreach (var enemy in enemies)
         {
             if (enemy != null)
@@ -362,6 +362,19 @@ public class WaveManager : MonoBehaviour
             }
         }
         Debug.Log($"WaveManager: Despawned {enemies.Length} active enemies.");
+    }
+
+    // 라운드 종료(탈출 성공·사망): 스폰을 멈추고 필드 적 제거 (적만 지우면 연출 중에 스폰 루틴이 새 적을 계속 만들던 문제)
+    // 다음 라운드 시작 시 RestartWaveSpawning이 다시 켬
+    public static void EndRoundAndDespawn()
+    {
+        if (Instance != null)
+        {
+            Instance.isWaveActive = false;
+            Instance.pendingElites = 0;
+            Instance.StopAllCoroutines(); // 스폰 루틴 정지
+        }
+        DespawnAllActiveEnemies();
     }
 
     // ⭐ 다음 라운드 진입 시 적 스폰 루틴 재가동 함수

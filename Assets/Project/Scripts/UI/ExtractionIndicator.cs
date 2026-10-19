@@ -36,7 +36,7 @@ public class ExtractionIndicator : MonoBehaviour
     {
         bool hasExtraction = false;
         bool hasCrate = false;
-        foreach (ExtractionIndicator indicator in FindObjectsByType<ExtractionIndicator>(FindObjectsSortMode.None))
+        foreach (ExtractionIndicator indicator in FindObjectsByType<ExtractionIndicator>())
         {
             if (indicator.guideTarget == GuideTarget.Extraction) hasExtraction = true;
             else hasCrate = true;
@@ -166,7 +166,7 @@ public class ExtractionIndicator : MonoBehaviour
 
         if (guideTarget == GuideTarget.Extraction)
         {
-            if (extractionZone == null) extractionZone = FindFirstObjectByType<ExtractionZone>();
+            if (extractionZone == null) extractionZone = FindAnyObjectByType<ExtractionZone>();
             if (extractionZone == null || extractionZone.IsPlayerInside) return false;
 
             position = extractionZone.transform.position;

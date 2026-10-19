@@ -50,7 +50,7 @@ public class PlayerPositionGuard : MonoBehaviour
 
     private void Start()
     {
-        arena = FindFirstObjectByType<BspArenaGenerator>();
+        arena = FindAnyObjectByType<BspArenaGenerator>();
     }
 
     // WaitForFixedUpdate: 물리 계산(이동·충돌 해소)이 끝난 직후 실행

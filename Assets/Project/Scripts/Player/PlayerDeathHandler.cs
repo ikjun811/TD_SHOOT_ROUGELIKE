@@ -47,7 +47,7 @@ public class PlayerDeathHandler : MonoBehaviour
         }
 
         // 2. 맵에 남아있는 주변 적들 즉시 디스폰 소멸
-        WaveManager.DespawnAllActiveEnemies();
+        WaveManager.EndRoundAndDespawn();
 
         // 3. 2.5초 대기 연출
         yield return new WaitForSeconds(2.5f);

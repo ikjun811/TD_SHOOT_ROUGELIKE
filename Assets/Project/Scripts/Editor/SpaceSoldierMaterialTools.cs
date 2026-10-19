@@ -6,7 +6,7 @@ using UnityEngine;
 //   원본 셰이더(Sci-Fi Space Station/PBR Basic)는 Built-in 전용이라 URP에서 분홍색 → 원본은 두고 URP/Lit 사본을 만듦
 //   변형 A = 흰색 슈트 (색 마스크 없이 원래 텍스처 그대로, B 파랑·C 빨강은 마스크로 칠한 것) → A의 텍스처를 그대로 연결
 //   결과: Assets/Project/Characters/SpaceSoldier/Materials/M_Player_Head·Torso·Legs.mat (다시 실행하면 덮어씀)
-public static class SpaceSoldierMaterialConverter
+public static class SpaceSoldierMaterialTools
 {
     private const string SourceFolder = "Assets/SciFi_Space_Soldier/Resources/Space_Soldier/Materials";
     private const string OutputFolder = "Assets/Project/Characters/SpaceSoldier/Materials";

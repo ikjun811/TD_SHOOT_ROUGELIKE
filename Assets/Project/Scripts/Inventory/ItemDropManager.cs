@@ -329,7 +329,7 @@ public class ItemDropManager : MonoBehaviour
 
     public void CollectAllRemainingDropsOnField()
     {
-        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>(FindObjectsSortMode.None);
+        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>();
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
 
         if (playerObj == null || remainingItems.Length == 0) return;
@@ -342,7 +342,7 @@ public class ItemDropManager : MonoBehaviour
 
     public void EnsureAllItemsCollected()
     {
-        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>(FindObjectsSortMode.None);
+        DroppedItem[] remainingItems = FindObjectsByType<DroppedItem>();
         foreach (var item in remainingItems)
         {
             item.ForceInstantCollect();

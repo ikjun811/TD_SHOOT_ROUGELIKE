@@ -35,7 +35,7 @@ public class SupplyCrateManager : MonoBehaviour
     // GameplayBootstrap이 전투 씬 로드마다 호출
     public static void EnsureCreated()
     {
-        if (FindFirstObjectByType<SupplyCrateManager>() == null)
+        if (FindAnyObjectByType<SupplyCrateManager>() == null)
         {
             new GameObject("SupplyCrateManager").AddComponent<SupplyCrateManager>();
         }
@@ -60,11 +60,11 @@ public class SupplyCrateManager : MonoBehaviour
         ClearCrates();
 
         Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
-        ExtractionZone zone = FindFirstObjectByType<ExtractionZone>();
+        ExtractionZone zone = FindAnyObjectByType<ExtractionZone>();
 
         int count = Random.Range(crateCountRange.x, crateCountRange.y + 1);
 
-        BspArenaGenerator arena = FindFirstObjectByType<BspArenaGenerator>();
+        BspArenaGenerator arena = FindAnyObjectByType<BspArenaGenerator>();
         if (arena != null && arena.Leaves.Count > 0)
         {
             SpawnCratesInZones(arena, count, player, zone);

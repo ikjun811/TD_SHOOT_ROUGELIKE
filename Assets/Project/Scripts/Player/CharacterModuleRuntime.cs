@@ -121,7 +121,7 @@ public class CharacterModuleRuntime : MonoBehaviour
         {
             if (extractionZone == null && !zoneSearched)
             {
-                extractionZone = FindFirstObjectByType<ExtractionZone>();
+                extractionZone = FindAnyObjectByType<ExtractionZone>();
                 zoneSearched = extractionZone != null; // 없으면 다음 프레임에 다시 찾음
             }
             inside = extractionZone != null && extractionZone.IsPlayerInside;

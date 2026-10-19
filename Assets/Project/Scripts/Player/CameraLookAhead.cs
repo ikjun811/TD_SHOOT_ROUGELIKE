@@ -32,7 +32,7 @@ public class CameraLookAhead : MonoBehaviour
         // JU 카메라가 Start에서 기본 대상(척추 뼈)을 정한 뒤에 교체
         yield return null;
 
-        cameraController = FindFirstObjectByType<TDCameraController>();
+        cameraController = FindAnyObjectByType<TDCameraController>();
         if (cameraController == null || cameraController.TargetToFollow == null)
         {
             Debug.LogWarning("CameraLookAhead: TDCameraController 또는 추적 대상을 찾지 못했습니다.");

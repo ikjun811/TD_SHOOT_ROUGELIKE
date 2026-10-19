@@ -17,7 +17,7 @@ public static class GameplayBootstrap
         // 씬 전환 시 시간 정지가 남아 있지 않도록 복구 (GDD 8-6 #10)
         Time.timeScale = 1f;
 
-        if (Object.FindFirstObjectByType<WaveManager>() == null) return;
+        if (Object.FindAnyObjectByType<WaveManager>() == null) return;
 
         DamageNumberManager.EnsureCreated();
         ExtractionIndicator.EnsureCreated();
