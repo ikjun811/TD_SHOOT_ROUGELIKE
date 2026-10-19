@@ -125,16 +125,31 @@ public class MaintenanceUI : MonoBehaviour
 
         if (PlayerInventory.Instance == null) return;
 
-        foreach (var weapon in PlayerInventory.Instance.collectedWeapons)
+        // 표시 순서: 레어도 높은 순 → 계열(모듈: 스탯·작동·특수·유니크 / 무기: 무기군) → 이름 (인벤토리 목록 자체는 그대로)
+        List<WeaponDataSO> weapons = PlayerInventory.Instance.collectedWeapons.FindAll(w => w != null);
+        weapons.Sort((a, b) =>
         {
-            if (weapon != null)
-                CreateWeaponBannerButton(weapon, weaponSection);
+            int c = b.rarity.CompareTo(a.rarity);
+            if (c == 0) c = a.weaponType.CompareTo(b.weaponType);
+            if (c == 0) c = string.CompareOrdinal(a.weaponName, b.weaponName);
+            return c;
+        });
+        foreach (var weapon in weapons)
+        {
+            CreateWeaponBannerButton(weapon, weaponSection);
         }
 
-        foreach (var module in PlayerInventory.Instance.collectedModules)
+        List<ModuleDataSO> modules = PlayerInventory.Instance.collectedModules.FindAll(m => m != null);
+        modules.Sort((a, b) =>
         {
-            if (module != null)
-                CreateModuleSquareButton(module, moduleSection);
+            int c = b.rarity.CompareTo(a.rarity);
+            if (c == 0) c = a.category.CompareTo(b.category);
+            if (c == 0) c = string.CompareOrdinal(a.moduleName, b.moduleName);
+            return c;
+        });
+        foreach (var module in modules)
+        {
+            CreateModuleSquareButton(module, moduleSection);
         }
 
         Canvas.ForceUpdateCanvases();
