@@ -3,8 +3,8 @@ using UnityEditor;
 using UnityEngine;
 
 // 특수 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Special Modules)
-// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 + A4b 수류탄 4종 + A4c 캐릭터 4종 x 레어도 4종 = 64개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
-// 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
+// A3a 도탄·관통 + A3b 넉백·착탄 폭발·처형 + A3c 마지막 탄·탄환 환수 + A4a 재장전 시 폭발 + A4b 수류탄 4종 + A4c 캐릭터 4종 = 16종 x 희귀·레전더리 2종 = 32개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// 칸 수 7/6/5/4 (일반/희귀/엘리트/레전더리 — 현재 희귀 6·레전더리 4만 사용), 레어도별 횟수는 effectCount, 효과 수치는 effectValue
 public static class SpecialModuleGenerator
 {
     private const string ParentFolder = "Assets/Project/Scripts/ScriptableObjects/Modules";
@@ -80,6 +80,9 @@ public static class SpecialModuleGenerator
             descriptionFormat = "체력 30% 이하에서 피격 시 주변 4m에 충격파.\n사격 1회 피해의 {1:0}% + 넉백 2m (내부 쿨 12초)." },
     };
 
+    // 생성·운영하는 레어도: 희귀(6칸)·레전더리(4칸) 2종 (A5a, 2026-10-19). 일반·희귀가 뽑히면 희귀판, 엘리트·레전더리면 레전더리판
+    public static readonly RarityType[] Rarities = { RarityType.Rare, RarityType.Legendary };
+
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };
     private static readonly int[] CellCounts = { 7, 6, 5, 4 }; // 일반/희귀/엘리트/레전더리
 
@@ -133,7 +136,7 @@ public static class SpecialModuleGenerator
         for (int i = 0; i < Specs.Length; i++)
         {
             Spec spec = Specs[i];
-            foreach (RarityType rarity in System.Enum.GetValues(typeof(RarityType)))
+            foreach (RarityType rarity in Rarities)
             {
                 string path = $"{OutputFolder}/Module_Special_{spec.fileKey}_{rarity}.asset";
                 if (File.Exists(path))

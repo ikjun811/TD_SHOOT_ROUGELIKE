@@ -44,6 +44,19 @@ public class ItemDropManager : MonoBehaviour
     [Tooltip("장착 슬롯·금고에 이미 있는 무기군이 뽑힐 가중치 (1 = 억제 없음)")]
     [Range(0f, 1f)][SerializeField] private float ownedWeaponTypeWeight = 0.3f;
 
+    [Header("Module Drop Weights (GDD 8-6 #17 A5, 계열 합계 기준 스탯:기능 = 2:1)")]
+    [SerializeField] private float statCategoryWeight = 67f;
+    [SerializeField] private float mechanismCategoryWeight = 13f;
+    [SerializeField] private float specialCategoryWeight = 20f;
+    [Tooltip("무기군 전용 모듈 가중치: 장착 중인 무기군")]
+    [SerializeField] private float equippedWeaponTypeWeight = 3f;
+    [Tooltip("무기군 전용 모듈 가중치: 금고에만 있는 무기군")]
+    [SerializeField] private float vaultWeaponTypeWeight = 1f;
+    [Tooltip("무기군 전용 모듈 가중치: 장착·금고 모두 없는 무기군")]
+    [SerializeField] private float unownedWeaponTypeWeight = 0.3f;
+    [Tooltip("레전더리 드랍 시 유니크로 바뀔 확률 (유니크 에셋이 없으면 무시)")]
+    [Range(0f, 1f)][SerializeField] private float uniqueChanceOnLegendary = 0.15f;
+
     [Header("Elite Drop Bonus (GDD 8-6 #14, 임시값)")]
     [Range(0f, 1f)][SerializeField] private float eliteUpgradeChance = 0.5f;       // 레어도 +1단계 확률
     [Range(0f, 1f)][SerializeField] private float eliteDoubleUpgradeChance = 0.3f; // +1단계 성공 시 추가 +1단계 확률
@@ -191,11 +204,113 @@ public class ItemDropManager : MonoBehaviour
         return owned;
     }
 
+    // 모듈 선택 (GDD 8-6 #17 A5): 레전더리면 일부 유니크 → 계열 비율로 계열 선택 → 계열에 있는 판본 중 뽑힌 레어도에 가장 가까운 것 → 무기군 가중치로 1개
     private ModuleDataSO GetRandomModuleOfRarity(RarityType rarity)
     {
-        List<ModuleDataSO> filtered = allModules.FindAll(m => m.rarity == rarity);
-        if (filtered.Count == 0) filtered = allModules;
-        return filtered.Count > 0 ? filtered[Random.Range(0, filtered.Count)] : null;
+        HashSet<WeaponType> equippedTypes = GetEquippedWeaponTypes();
+        HashSet<WeaponType> ownedTypes = GetOwnedWeaponTypes();
+
+        if (rarity == RarityType.Legendary && Random.value < uniqueChanceOnLegendary)
+        {
+            ModuleDataSO unique = PickWeighted(GetCategoryCandidates(ModuleCategory.Unique, rarity), equippedTypes, ownedTypes);
+            if (unique != null)
+            {
+                Debug.Log($"ItemDropManager: Module drop -> {unique.moduleName} [Unique]");
+                return unique;
+            }
+        }
+
+        // 계열 선택 (후보가 없는 계열은 제외)
+        ModuleCategory[] categories = { ModuleCategory.Stat, ModuleCategory.Mechanism, ModuleCategory.Special };
+        float[] weights = { statCategoryWeight, mechanismCategoryWeight, specialCategoryWeight };
+        List<ModuleDataSO>[] candidates = new List<ModuleDataSO>[categories.Length];
+        float total = 0f;
+        for (int i = 0; i < categories.Length; i++)
+        {
+            candidates[i] = GetCategoryCandidates(categories[i], rarity);
+            if (candidates[i].Count == 0) weights[i] = 0f;
+            total += Mathf.Max(0f, weights[i]);
+        }
+        if (total <= 0f) return null;
+
+        float rand = Random.value * total;
+        int picked = categories.Length - 1;
+        for (int i = 0; i < categories.Length; i++)
+        {
+            rand -= Mathf.Max(0f, weights[i]);
+            if (rand <= 0f && weights[i] > 0f) { picked = i; break; }
+        }
+
+        ModuleDataSO module = PickWeighted(candidates[picked], equippedTypes, ownedTypes);
+        if (module != null) Debug.Log($"ItemDropManager: Module drop -> {module.moduleName} [{categories[picked]}, roll {rarity} -> {module.rarity}]");
+        return module;
+    }
+
+    // 계열의 판본 중 뽑힌 레어도에 가장 가까운 레어도의 모듈들 (같은 거리면 높은 쪽)
+    // 작동은 엘리트판만 → 항상 엘리트 / 특수는 희귀·레전더리 → 일반·희귀는 희귀판, 엘리트·레전더리는 레전더리판
+    private List<ModuleDataSO> GetCategoryCandidates(ModuleCategory category, RarityType rarity)
+    {
+        List<ModuleDataSO> inCategory = allModules.FindAll(m => m != null && m.category == category);
+        if (inCategory.Count == 0) return inCategory;
+
+        int best = -1;
+        int bestDistance = int.MaxValue;
+        foreach (ModuleDataSO m in inCategory)
+        {
+            int value = (int)m.rarity;
+            int distance = Mathf.Abs(value - (int)rarity);
+            if (distance < bestDistance || (distance == bestDistance && value > best))
+            {
+                best = value;
+                bestDistance = distance;
+            }
+        }
+        return inCategory.FindAll(m => (int)m.rarity == best);
+    }
+
+    // 무기군 전용 모듈은 장착 x3 / 금고에만 있음 x1 / 없음 x0.3, 그 외 대상(공용·수류탄·캐릭터)은 x1
+    private ModuleDataSO PickWeighted(List<ModuleDataSO> list, HashSet<WeaponType> equippedTypes, HashSet<WeaponType> ownedTypes)
+    {
+        if (list == null || list.Count == 0) return null;
+
+        float total = 0f;
+        foreach (ModuleDataSO m in list) total += GetModuleWeight(m, equippedTypes, ownedTypes);
+        if (total <= 0f) return list[Random.Range(0, list.Count)];
+
+        float rand = Random.value * total;
+        foreach (ModuleDataSO m in list)
+        {
+            rand -= GetModuleWeight(m, equippedTypes, ownedTypes);
+            if (rand <= 0f) return m;
+        }
+        return list[list.Count - 1];
+    }
+
+    private float GetModuleWeight(ModuleDataSO module, HashSet<WeaponType> equippedTypes, HashSet<WeaponType> ownedTypes)
+    {
+        bool weaponSpecific = false;
+        foreach (WeaponType type in System.Enum.GetValues(typeof(WeaponType)))
+        {
+            if (!module.TargetsWeapon(type)) continue;
+            weaponSpecific = true;
+            if (equippedTypes.Contains(type)) return equippedWeaponTypeWeight;
+            if (ownedTypes.Contains(type)) return vaultWeaponTypeWeight;
+        }
+        return weaponSpecific ? unownedWeaponTypeWeight : 1f;
+    }
+
+    // 장착 슬롯에 있는 무기군
+    private HashSet<WeaponType> GetEquippedWeaponTypes()
+    {
+        HashSet<WeaponType> equipped = new HashSet<WeaponType>();
+        if (PlayerInventory.Instance != null)
+        {
+            foreach (WeaponDataSO w in PlayerInventory.Instance.equippedWeapons)
+            {
+                if (w != null) equipped.Add(w.weaponType);
+            }
+        }
+        return equipped;
     }
 
     private void SpawnDrop(Vector3 pos, WeaponDataSO weapon, ModuleDataSO module)

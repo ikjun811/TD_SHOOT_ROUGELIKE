@@ -20,6 +20,7 @@ public class BulletChain : MonoBehaviour
     public int remaining = 1;             // 남은 관통·도탄 횟수
     public float damageFactor = 0.7f;     // 이어갈 때마다 피해 배율
     public float searchRadius = 12f;      // 도탄 대상 탐색 반경
+    public int targetPoolSize = 1;        // 도탄 대상: 가까운 N명 중 무작위 (1 = 가장 가까운 적, 유니크 산탄총 도탄은 3 — 산탄이 한 적에게 몰리지 않게)
     public float castRadius = 0.15f;      // 경로 검사 반지름 (탄 반지름 0.05보다 약간 크게)
     public float homingTimeout = 0.5f;    // 이 시간 안에 대상을 못 맞히면 유도 중지
     public float pierceTracerLength = 15f; // 관통 궤적 선 길이 (벽에 막히면 그 앞까지)
@@ -200,29 +201,47 @@ public class BulletChain : MonoBehaviour
         });
     }
 
-    // 도탄: 반경 안, 살아 있고, 아직 안 맞았고, 벽에 가리지 않은 가장 가까운 적 (방금 맞은 적 제외)
+    // 도탄: 반경 안, 살아 있고, 아직 안 맞았고, 벽에 가리지 않은 적 중 가까운 targetPoolSize명에서 무작위 (방금 맞은 적 제외)
+    private const int MaxTargetPool = 8;
+    private static readonly EnemyBase[] poolEnemies = new EnemyBase[MaxTargetPool];
+    private static readonly float[] poolSqr = new float[MaxTargetPool];
+
     private EnemyBase FindRicochetTarget(Vector3 from, EnemyBase exclude)
     {
         int count = Physics.OverlapSphereNonAlloc(from, searchRadius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
-        EnemyBase best = null;
-        float bestSqr = searchRadius * searchRadius;
+        int poolSize = Mathf.Clamp(targetPoolSize, 1, MaxTargetPool);
+        int filled = 0;
+        float maxSqr = searchRadius * searchRadius;
 
         for (int i = 0; i < count; i++)
         {
             EnemyBase candidate = overlapBuffer[i].GetComponentInParent<EnemyBase>();
             if (candidate == null || candidate == exclude || hitEnemies.Contains(candidate) || !IsAlive(candidate)) continue;
+            if (System.Array.IndexOf(poolEnemies, candidate, 0, filled) >= 0) continue; // 콜라이더 여러 개인 적
 
             Vector3 point = GetTargetPoint(candidate, from.y);
             Vector3 offset = point - from;
             offset.y = 0f;
             float sqr = offset.sqrMagnitude;
-            if (sqr >= bestSqr) continue;
+            if (sqr >= maxSqr) continue;
+            if (filled == poolSize && sqr >= poolSqr[filled - 1]) continue; // 이미 가까운 N명이 찼고 더 멂
             if (wallMask != 0 && Physics.Linecast(from, point, wallMask, QueryTriggerInteraction.Ignore)) continue;
 
-            bestSqr = sqr;
-            best = candidate;
+            // 거리순 삽입 (가득 차면 가장 먼 후보를 밀어냄)
+            int index = filled < poolSize ? filled++ : poolSize - 1;
+            while (index > 0 && poolSqr[index - 1] > sqr)
+            {
+                poolEnemies[index] = poolEnemies[index - 1];
+                poolSqr[index] = poolSqr[index - 1];
+                index--;
+            }
+            poolEnemies[index] = candidate;
+            poolSqr[index] = sqr;
         }
-        return best;
+
+        EnemyBase picked = filled > 0 ? poolEnemies[Random.Range(0, filled)] : null;
+        System.Array.Clear(poolEnemies, 0, MaxTargetPool); // 정적 배열에 적 참조를 남기지 않음
+        return picked;
     }
 
     private Vector3 GetPierceTracerEnd(Vector3 from)

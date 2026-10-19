@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86fdd4010375953458212be8e6647630, type: 3}
+  m_Name: Module_Unique_ShotgunRicochet_Legendary
+  m_EditorClassIdentifier: Assembly-CSharp::ModuleDataSO
+  moduleName: "\uC0B0\uD0C4\uCD1D \uB3C4\uD0C4 (\uC720\uB2C8\uD06C)"
+  rarity: 3
+  moduleIcon: {fileID: 0}
+  isUniqueModule: 0
+  category: 3
+  target: 4
+  mechanismSlot: 5
+  effect: 32
+  effectValue: 0.5
+  effectCount: 1
+  description: "\uC0B0\uD0C4 \uD558\uB098\uD558\uB098\uAC00 \uC801\uC911 \uD6C4 12m
+    \uC548\uC758 \uB2E4\uB978 \uC801\uC5D0\uAC8C 1\uD68C \uD295\uAE40 (\uD53C\uD574
+    50%).\n\uAC00\uAE4C\uC6B4 \uC801 3\uBA85 \uC911 \uBB34\uC791\uC704\uB85C \uD295\uACA8
+    \uC5EC\uB7EC \uC801\uC5D0\uAC8C \uB098\uB268. \uC2AC\uB7EC\uADF8\uD0C4\uC5D0\uB3C4
+    \uC801\uC6A9.\n\uAD00\uD1B5\xB7\uB3C4\uD0C4\uACFC \uD568\uAED8 \uBC30\uCE58 \uBD88\uAC00."
+  magazineOverride: 0
+  reloadTimeOverride: 0
+  fireIntervalOverride: 0
+  damageMultiplier: 1
+  pelletCountOverride: 0
+  spreadOverride: 0
+  fireModeOverride: 0
+  width: 3
+  height: 3
+  shapeGrid: 010100000101000101
+  statType: 0
+  statValue: 0

@@ -678,11 +678,15 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 EnsureExplosionVFX();
             }
 
-            // 탄 궤적 특수 (관통·도탄은 충돌 칸이 같아 둘 중 하나만 배치됨). 공용 도탄은 산탄총에 효과 없음 (유니크가 담당)
+            // 탄 궤적 특수 (관통·도탄·산탄총 도탄은 충돌 칸이 같아 하나만 배치됨). 공용 도탄은 산탄총에 효과 없음 (유니크가 담당)
             ModuleDataSO pathModule = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Pierce);
             if (pathModule == null && data.weaponType != WeaponType.Shotgun)
             {
                 pathModule = FindActiveWeaponSpecial(data.weaponType, ModuleEffect.Ricochet);
+            }
+            if (pathModule == null && data.weaponType == WeaponType.Shotgun)
+            {
+                pathModule = FindActiveWeaponUnique(data.weaponType, ModuleEffect.ShotgunRicochet);
             }
             if (pathModule != null)
             {
@@ -690,6 +694,7 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 chain.mode = pathModule.effect == ModuleEffect.Pierce ? BulletChain.ChainMode.Pierce : BulletChain.ChainMode.Ricochet;
                 chain.remaining = Mathf.Max(1, pathModule.effectCount);
                 if (pathModule.effectValue > 0f) chain.damageFactor = pathModule.effectValue;
+                if (pathModule.effect == ModuleEffect.ShotgunRicochet) chain.targetPoolSize = ShotgunRicochetTargetPool;
                 mechanismNames += $" [{pathModule.moduleName}]";
             }
         }
@@ -710,6 +715,24 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             ModuleDataSO m = pm.moduleData;
             if (m == null || m.target != ModuleTarget.Grenade || m.effect != effect) continue;
             if (m.category == ModuleCategory.Mechanism || GridInventorySystem.Instance.IsEffectActive(pm)) return m;
+        }
+        return null;
+    }
+
+    // 유니크 산탄총 도탄: 산탄마다 가까운 적 3명 중 무작위로 튕김 (12발이 한 적에게 몰리지 않게)
+    private const int ShotgunRicochetTargetPool = 3;
+
+    // 이 무기 대상 유니크 모듈 (중복이면 효과가 적용되는 1개만)
+    private ModuleDataSO FindActiveWeaponUnique(WeaponType weaponType, ModuleEffect effect)
+    {
+        if (GridInventorySystem.Instance == null) return null;
+
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m == null || m.category != ModuleCategory.Unique || m.effect != effect) continue;
+            if (m.target != ModuleTarget.All && !m.TargetsWeapon(weaponType)) continue;
+            if (GridInventorySystem.Instance.IsEffectActive(pm)) return m;
         }
         return null;
     }

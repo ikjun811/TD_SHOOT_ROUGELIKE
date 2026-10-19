@@ -3,8 +3,8 @@ using UnityEditor;
 using UnityEngine;
 
 // 작동 모듈 에셋 일괄 생성 (메뉴: Tools > TD Shoot > Generate Mechanism Modules)
-// A2 JU 무기 값만 바꾸는 작동 모듈 8종 + A4a 래퍼 작동 모듈 5종 + A4b 자동 투척 x 레어도 4종 = 56개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
-// 효과는 레어도와 무관하게 같고, 레어도가 높을수록 칸 수만 줄어듦 (5/5/4/3)
+// A2 JU 무기 값만 바꾸는 작동 모듈 8종 + A4a 래퍼 작동 모듈 5종 + A4b 자동 투척 = 14종 x 엘리트 1종 = 14개 (GDD 8-6 #17). 같은 이름의 에셋이 이미 있으면 건너뜀
+// 효과는 레어도와 무관하게 같으므로 엘리트(4칸) 1종만 운영 (A5a, 2026-10-19). 다른 레어도가 뽑혀도 이 판본이 드랍됨
 // 수치는 생성 후 에셋에서 직접 조정 가능 (PlayerStatAndWeaponSync.ApplyWeaponData가 적용)
 public static class MechanismModuleGenerator
 {
@@ -76,6 +76,9 @@ public static class MechanismModuleGenerator
             description = "탄창이 0발일 때 시작한 장전은 시간 −45% (1.8→1.0초).\nR키로 미리 하는 장전은 원래 속도." },
     };
 
+    // 생성·운영하는 레어도 (Tools > TD Shoot > Remove Unused Module Rarities가 나머지를 정리)
+    public static readonly RarityType[] Rarities = { RarityType.Elite };
+
     private static readonly string[] RarityNames = { "일반", "희귀", "엘리트", "레전더리" };
     private static readonly int[] CellCounts = { 5, 5, 4, 3 }; // 일반/희귀/엘리트/레전더리
 
@@ -125,7 +128,7 @@ public static class MechanismModuleGenerator
         for (int i = 0; i < Specs.Length; i++)
         {
             Spec spec = Specs[i];
-            foreach (RarityType rarity in System.Enum.GetValues(typeof(RarityType)))
+            foreach (RarityType rarity in Rarities)
             {
                 string path = $"{OutputFolder}/Module_Mech_{spec.fileKey}_{rarity}.asset";
                 if (File.Exists(path))
