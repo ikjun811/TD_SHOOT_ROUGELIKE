@@ -251,7 +251,7 @@ public static class MainMenuSceneBuilder
         if (content is RectTransform contentRect) contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, 48f);
     }
 
-    private static Button CreateButton(string name, RectTransform parent, string label)
+    internal static Button CreateButton(string name, RectTransform parent, string label)
     {
         GameObject obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button), typeof(UIThemeSkin));
         obj.transform.SetParent(parent, false);
@@ -300,7 +300,7 @@ public static class MainMenuSceneBuilder
         return panel;
     }
 
-    private static TextMeshProUGUI CreateText(string name, RectTransform parent, string content, float size, FontStyles style, TextAlignmentOptions alignment)
+    internal static TextMeshProUGUI CreateText(string name, RectTransform parent, string content, float size, FontStyles style, TextAlignmentOptions alignment)
     {
         GameObject obj = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
         obj.transform.SetParent(parent, false);
@@ -314,7 +314,7 @@ public static class MainMenuSceneBuilder
         return text;
     }
 
-    private static void SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size, Vector2 pivot)
+    internal static void SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size, Vector2 pivot)
     {
         rect.anchorMin = anchorMin;
         rect.anchorMax = anchorMax;
@@ -323,7 +323,7 @@ public static class MainMenuSceneBuilder
         rect.sizeDelta = size;
     }
 
-    private static void Stretch(RectTransform rect, float inset)
+    internal static void Stretch(RectTransform rect, float inset)
     {
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;

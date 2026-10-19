@@ -13,6 +13,7 @@ public static class GameSession
 {
     public const string GameplaySceneName = "GameplayScene";
     public const string MainMenuSceneName = "MainMenu";
+    public const string ResultSceneName = "ResultScene";
 
     public static GameMode Mode { get; private set; } = GameMode.Normal;
     public static bool IsTutorial => Mode == GameMode.Tutorial;
@@ -26,6 +27,12 @@ public static class GameSession
     public static void LoadMainMenu()
     {
         LoadScene(MainMenuSceneName);
+    }
+
+    // RunResultManager가 RunResultData를 채운 뒤 호출
+    public static void LoadResultScene()
+    {
+        LoadScene(ResultSceneName);
     }
 
     // 정비·결과 화면에서 timeScale 0인 채로 넘어오는 경우가 있어 항상 1로 복구 (GDD 8-6 #10)

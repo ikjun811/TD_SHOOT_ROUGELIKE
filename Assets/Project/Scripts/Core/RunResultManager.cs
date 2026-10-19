@@ -17,6 +17,10 @@ public class RunResultManager : MonoBehaviour
     [SerializeField] private float combatTime;   // 정비·결과 화면(시간 정지) 제외
     [SerializeField] private int normalKills;
     [SerializeField] private int eliteKills;
+    [SerializeField] private float totalDamage;   // 적에게 준 피해 합계 (실제 깎인 체력)
+    [SerializeField] private float maxHit;        // 한 번에 준 최대 피해 (방어 적용 전 값 — 마지막 일격이 남은 체력으로 잘리지 않게)
+    [SerializeField] private int deaths;
+    [SerializeField] private int modulesCollected;
 
     private bool isShowing;
 
@@ -43,6 +47,39 @@ public class RunResultManager : MonoBehaviour
         else normalKills++;
     }
 
+    // PlayerInventory.AddModule이 모듈 획득 시 호출
+    public void RecordModulePickup()
+    {
+        modulesCollected++;
+    }
+
+    private void OnEnable()
+    {
+        JU.IHealth.OnAnyDamaged += OnAnyDamaged;
+    }
+
+    private void OnDisable()
+    {
+        JU.IHealth.OnAnyDamaged -= OnAnyDamaged;
+    }
+
+    // 플레이어가 맞으면 사망 횟수만, 그 외(적)는 피해 기록 (적끼리는 서로 공격하지 않음)
+    private void OnAnyDamaged(JU.IHealth.DamageResultInfo result)
+    {
+        if (isShowing) return;
+        Component target = result.DamagedObject as Component;
+        if (target == null) return;
+
+        if (target.CompareTag("Player"))
+        {
+            if (result.WasKilled) deaths++;
+            return;
+        }
+        if (result.RealDamage <= 0f) return;
+        totalDamage += result.RealDamage;
+        maxHit = Mathf.Max(maxHit, result.SuggestiveDamage);
+    }
+
     // 최종 라운드 탈출(cleared = true) 또는 목숨 소진(false) 시 호출
     public void ShowResult(bool cleared)
     {
@@ -60,8 +97,63 @@ public class RunResultManager : MonoBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        BuildResultScreen(cleared);
+        FillResultData(cleared);
+
+        // 결과 씬이 빌드 설정에 있으면 그 씬으로, 없으면(전투 씬 단독 시험) 코드 결과 화면
+        if (Application.CanStreamedLevelBeLoaded(GameSession.ResultSceneName)) GameSession.LoadResultScene();
+        else BuildResultScreen(cleared);
         Debug.Log($"RunResultManager: {(cleared ? "GAME CLEAR" : "GAME OVER")} — time {FormatTime(combatTime)}, kills {normalKills}/{eliteKills}");
+    }
+
+    // 결과 씬으로 넘길 기록: 수치 + 최종 빌드(장착 무기·작동 모듈·그리드 배치) + 최고 기록 갱신
+    private void FillResultData(bool cleared)
+    {
+        RunResultData.Cleared = cleared;
+        RunResultData.Round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
+        RunResultData.MaxRound = WaveManager.Instance != null ? WaveManager.Instance.MaxRound : 15;
+        RunResultData.CombatTime = combatTime;
+        RunResultData.NormalKills = normalKills;
+        RunResultData.EliteKills = eliteKills;
+        RunResultData.TotalDamage = totalDamage;
+        RunResultData.MaxHit = maxHit;
+        RunResultData.Deaths = deaths;
+        RunResultData.ModulesCollected = modulesCollected;
+
+        GridInventorySystem grid = GridInventorySystem.Instance;
+        RunResultData.Modules.Clear();
+        if (grid != null)
+        {
+            RunResultData.GridWidth = grid.gridWidth;
+            RunResultData.GridHeight = grid.gridHeight;
+            foreach (var pm in grid.placedModules)
+            {
+                if (pm == null || pm.moduleData == null) continue;
+                RunResultData.Modules.Add(new RunResultData.ModuleSnapshot
+                {
+                    module = pm.moduleData, x = pm.startX, y = pm.startY,
+                    width = pm.currentWidth, height = pm.currentHeight, shape = (bool[])pm.currentShape.Clone()
+                });
+            }
+        }
+
+        WeaponDataSO[] equipped = PlayerInventory.Instance != null ? PlayerInventory.Instance.equippedWeapons : new WeaponDataSO[0];
+        RunResultData.Weapons = (WeaponDataSO[])equipped.Clone();
+        RunResultData.WeaponMechanisms = new System.Collections.Generic.List<ModuleEffect>[equipped.Length];
+        for (int i = 0; i < equipped.Length; i++)
+        {
+            var effects = new System.Collections.Generic.List<ModuleEffect>();
+            if (equipped[i] != null)
+            {
+                foreach (var snapshot in RunResultData.Modules)
+                {
+                    ModuleDataSO m = snapshot.module;
+                    if (m.category == ModuleCategory.Mechanism && m.TargetsWeapon(equipped[i].weaponType) && !effects.Contains(m.effect)) effects.Add(m.effect);
+                }
+            }
+            RunResultData.WeaponMechanisms[i] = effects;
+        }
+
+        RunResultData.MarkFilled();
     }
 
     #region UI
@@ -114,9 +206,11 @@ public class RunResultManager : MonoBehaviour
         int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
         int maxRound = WaveManager.Instance != null ? WaveManager.Instance.MaxRound : 15;
 
-        string text = $"도달 라운드   {round} / {maxRound}\n" +
-                      $"전투 시간     {FormatTime(combatTime)}\n" +
-                      $"처치 수       일반 {normalKills}  /  엘리트 {eliteKills}\n\n" +
+        string text = $"도달 라운드   {round} / {maxRound}{(RunResultData.NewBestRound ? "  <color=#FFD040>NEW</color>" : "")}\n" +
+                      $"전투 시간     {FormatTime(combatTime)}{(RunResultData.NewBestClearTime ? "  <color=#FFD040>NEW</color>" : "")}\n" +
+                      $"처치 수       일반 {normalKills}  /  엘리트 {eliteKills}\n" +
+                      $"총 피해량     {totalDamage:N0}   최고 한 방 {maxHit:N0}\n" +
+                      $"사망 {deaths}회   획득 모듈 {modulesCollected}개\n\n" +
                       "<b>최종 빌드</b>\n";
 
         // 장착 무기 (레어도 색)

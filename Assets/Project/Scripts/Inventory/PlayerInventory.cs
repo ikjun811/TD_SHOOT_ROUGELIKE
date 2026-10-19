@@ -42,6 +42,7 @@ public class PlayerInventory : MonoBehaviour
     public void AddModule(ModuleDataSO module)
     {
         collectedModules.Add(module);
+        if (RunResultManager.Instance != null) RunResultManager.Instance.RecordModulePickup();
         Debug.Log($" [인벤토리] 강화모듈 획득: {module.moduleName} ({module.rarity})");
     }
 
