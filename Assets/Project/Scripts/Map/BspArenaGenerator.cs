@@ -79,6 +79,14 @@ public class BspArenaGenerator : MonoBehaviour
     [Tooltip("칸마다 밝기 차이 (단조로움 완화)")]
     [Range(0f, 0.2f)] [SerializeField] private float gridCellVariation = 0.04f;
     [Range(0f, 1f)] [SerializeField] private float gridSmoothness = 0.25f;
+    [Tooltip("바닥 텍스처 (비우면 위 코드 격자). 우주정거장 짙은 육각 — Tools > TD Shoot > Apply SpaceStation Floor가 연결 (사용자 선택)")]
+    [SerializeField] private Texture2D floorTexture;
+    [SerializeField] private Texture2D floorNormalMap;
+    [Tooltip("바닥 텍스처 한 장이 덮는 크기 (m). 우주정거장 에셋 원래 값 = 월드 UV 0.2 → 5m")]
+    [SerializeField] private float floorTextureWorldSize = 5f;
+    [SerializeField] private float floorNormalScale = 0.5f;
+    [Range(0f, 1f)] [SerializeField] private float floorMetallic = 0.2f;
+    [Range(0f, 1f)] [SerializeField] private float floorSmoothness = 0.4f;
 
     private Material gridMaterial;
     private Texture2D gridAlbedo;
@@ -113,6 +121,14 @@ public class BspArenaGenerator : MonoBehaviour
     [Tooltip("대형 장애물 소품 (컨테이너·덤프스터·발전기 등). 소품 크기만큼 칸을 차지하는 별도 장애물 종류")]
     [SerializeField] private GameObject[] largePropPrefabs;
     [Range(0f, 1f)][SerializeField] private float largeObstacleChance = 0.25f;
+    [Tooltip("소품 최대 높이 (넘으면 세로로만 줄임, 0 = 제한 없음). 우주정거장 벽·기둥 4m → 2.5m (사용자 결정: 탑다운 가림 줄이기)")]
+    [SerializeField] private float propMaxHeight = 0f;
+    [Tooltip("상자 더미 (대형 장애물 자리에 쓰는 소품, 있으면 largePropPrefabs 대신). 상자를 격자로 1~2단 무작위로 쌓음 (사용자 결정)")]
+    [SerializeField] private GameObject[] largePilePrefabs;
+    [Tooltip("더미 가로·세로 상자 수 (최소, 최대)")]
+    [SerializeField] private Vector2Int pileCountX = new Vector2Int(2, 3);
+    [SerializeField] private Vector2Int pileCountZ = new Vector2Int(2, 2);
+    [Range(0f, 1f)][SerializeField] private float pileTallChance = 0.5f; // 2단으로 쌓을 확률
 
     [Header("Player Start")]
     [Tooltip("플레이어를 구역 중앙에 놓을 때 바닥 위 높이")]
@@ -314,13 +330,20 @@ public class BspArenaGenerator : MonoBehaviour
         {
             for (int attempt = 0; attempt < placementAttemptsPerObstacle; attempt++)
             {
-                List<RectInt> parts = CreateObstacleShape(rng, out GameObject largePrefab);
+                List<RectInt> parts = CreateObstacleShape(rng, out GameObject largePrefab, out bool pile);
                 if (!TryPlaceShape(leaf, parts, rng, out List<RectInt> placed)) continue;
 
                 for (int p = 0; p < placed.Count; p++)
                 {
                     RectInt part = placed[p];
                     MarkOccupied(part);
+
+                    if (pile)
+                    {
+                        GameObject pileBlock = CreateBlock(part, obstacleHeight, "Pile", null);
+                        FillPile(pileBlock, part, largePrefab);
+                        continue;
+                    }
 
                     if (largePrefab != null)
                     {
@@ -342,13 +365,34 @@ public class BspArenaGenerator : MonoBehaviour
     }
 
     // 원점 기준 모양: 기둥 / 직선 벽 / ㄱ자 벽
-    private List<RectInt> CreateObstacleShape(System.Random rng, out GameObject largePrefab)
+    private List<RectInt> CreateObstacleShape(System.Random rng, out GameObject largePrefab, out bool pile)
     {
         List<RectInt> parts = new List<RectInt>();
+        pile = false;
 
-        // 대형 장애물: 소품 크기(올림)만큼 칸 차지, 방향 무작위
+        // 상자 더미: 상자 수 x 간격(소품 긴 변, 90도 돌려도 안 겹침)만큼 칸 차지
         largePrefab = null;
-        if (largePropPrefabs != null && largePropPrefabs.Length > 0 && rng.NextDouble() < largeObstacleChance)
+        if (largePilePrefabs != null && largePilePrefabs.Length > 0 && rng.NextDouble() < largeObstacleChance)
+        {
+            GameObject candidate = largePilePrefabs[rng.Next(largePilePrefabs.Length)];
+            if (candidate != null && TryGetPropBounds(candidate, out Bounds pb))
+            {
+                float spacing = PileSpacing(pb);
+                int nx = rng.Next(pileCountX.x, Mathf.Max(pileCountX.x, pileCountX.y) + 1);
+                int nz = rng.Next(pileCountZ.x, Mathf.Max(pileCountZ.x, pileCountZ.y) + 1);
+                int w = Mathf.Max(1, Mathf.CeilToInt(nx * spacing - 0.05f));
+                int d = Mathf.Max(1, Mathf.CeilToInt(nz * spacing - 0.05f));
+                bool turn = rng.NextDouble() < 0.5;
+                parts.Add(turn ? new RectInt(0, 0, d, w) : new RectInt(0, 0, w, d));
+                largePrefab = candidate;
+                pile = true;
+                return parts;
+            }
+        }
+
+        // 대형 장애물 (상자 더미가 없을 때): 소품 크기(올림)만큼 칸 차지, 방향 무작위
+        bool usePile = largePilePrefabs != null && largePilePrefabs.Length > 0;
+        if (!usePile && largePropPrefabs != null && largePropPrefabs.Length > 0 && rng.NextDouble() < largeObstacleChance)
         {
             GameObject candidate = largePropPrefabs[rng.Next(largePropPrefabs.Length)];
             if (candidate != null && TryGetPropBounds(candidate, out Bounds lb))
@@ -549,7 +593,7 @@ public class BspArenaGenerator : MonoBehaviour
         if (Application.isPlaying) StaticBatchingUtility.Combine(floorRoot.gameObject);
     }
 
-    // 격자 바닥: 큐브 바닥 겉모습을 끄고 맵 + 바깥 여백을 덮는 판 한 장 (판정·NavMesh는 큐브 그대로)
+    // 격자 바닥 (floorTexture가 있으면 텍스처 바닥): 큐브 바닥 겉모습을 끄고 맵 + 바깥 여백을 덮는 판 한 장 (판정·NavMesh는 큐브 그대로)
     // 격자는 맵 모서리(Origin) 기준 정렬, 판 크기는 텍스처 한 장(4칸) 단위로 늘려 이음매 없이
     private void BuildGridFloor()
     {
@@ -577,15 +621,33 @@ public class BspArenaGenerator : MonoBehaviour
         renderer.sharedMaterial = GetGridMaterial();
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = true;
-        float tiles = size / period;
+        float tiles = size / (floorTexture != null ? Mathf.Max(0.5f, floorTextureWorldSize) : period);
         renderer.sharedMaterial.SetTextureScale("_BaseMap", new Vector2(tiles, tiles));
     }
 
     private Material GetGridMaterial()
     {
         if (gridMaterial != null) return gridMaterial;
-        BuildGridTextures();
         Shader lit = Shader.Find("Universal Render Pipeline/Lit");
+
+        // 바닥 텍스처가 있으면 그것 (알베도 + 노멀, 발광 없음)
+        if (floorTexture != null)
+        {
+            gridMaterial = new Material(lit) { name = "TextureFloor", hideFlags = HideFlags.DontSave };
+            gridMaterial.SetTexture("_BaseMap", floorTexture);
+            gridMaterial.SetColor("_BaseColor", Color.white);
+            gridMaterial.SetFloat("_Metallic", floorMetallic);
+            gridMaterial.SetFloat("_Smoothness", floorSmoothness);
+            if (floorNormalMap != null)
+            {
+                gridMaterial.SetTexture("_BumpMap", floorNormalMap);
+                gridMaterial.SetFloat("_BumpScale", floorNormalScale);
+                gridMaterial.EnableKeyword("_NORMALMAP");
+            }
+            return gridMaterial;
+        }
+
+        BuildGridTextures();
         gridMaterial = new Material(lit) { name = "GridFloor", hideFlags = HideFlags.DontSave };
         gridMaterial.SetTexture("_BaseMap", gridAlbedo);
         gridMaterial.SetColor("_BaseColor", Color.white);
@@ -784,9 +846,11 @@ public class BspArenaGenerator : MonoBehaviour
         int nz = Mathf.Max(1, Mathf.RoundToInt(depth / footZ));
         float kx = Mathf.Clamp(width / (nx * footX), 1f / propMaxStretch, propMaxStretch);
         float kz = Mathf.Clamp(depth / (nz * footZ), 1f / propMaxStretch, propMaxStretch);
-        Vector3 localScale = rotate ? new Vector3(kz, 1f, kx) : new Vector3(kx, 1f, kz);
+        float ky = HeightScale(b);
+        Vector3 localScale = rotate ? new Vector3(kz, ky, kx) : new Vector3(kx, ky, kz);
         float stepX = footX * kx, stepZ = footZ * kz;
-        int layers = Mathf.Clamp(Mathf.CeilToInt(propTargetHeight / Mathf.Max(0.05f, b.size.y) - 0.15f), 1, 4);
+        float propHeight = b.size.y * ky;
+        int layers = Mathf.Clamp(Mathf.CeilToInt(propTargetHeight / Mathf.Max(0.05f, propHeight) - 0.15f), 1, 4);
 
         // 소품은 늘린 큐브 아래가 아니라 스케일 없는 묶음에 둠 (늘린 부모 아래에서 회전하면 모양이 비틀림)
         Transform propRoot = new GameObject(block.name + "_Props").transform;
@@ -804,10 +868,61 @@ public class BspArenaGenerator : MonoBehaviour
                 {
                     float yaw = (rotate ? 90f : 0f) + (jitter ? (float)(propRng.NextDouble() * 2.0 - 1.0) * propYawJitter : 0f);
                     Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
-                    Vector3 center = new Vector3(x0 + ix * stepX, transform.position.y + b.size.y * (layer + 0.5f), z0 + iz * stepZ);
+                    Vector3 center = new Vector3(x0 + ix * stepX, transform.position.y + propHeight * (layer + 0.5f), z0 + iz * stepZ);
                     Vector3 pos = center - rot * Vector3.Scale(localScale, b.center); // 소품 바운드 중심을 목표 위치에
 
                     GameObject prop = Instantiate(prefab, pos, rot, propRoot);
+                    prop.transform.localScale = localScale;
+                    foreach (Collider col in prop.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+                }
+            }
+        }
+
+        if (fitColliderToProps) FitBlockToProps(block, blockCells, propRoot);
+        if (Application.isPlaying) StaticBatchingUtility.Combine(propRoot.gameObject);
+    }
+
+    // propMaxHeight를 넘는 소품은 세로로만 줄임
+    private float HeightScale(Bounds b)
+    {
+        return propMaxHeight > 0.01f && b.size.y > propMaxHeight ? propMaxHeight / b.size.y : 1f;
+    }
+
+    // 더미 간격: 소품 긴 변 (90도 돌려 놓아도 이웃과 겹치지 않게)
+    private static float PileSpacing(Bounds b) => Mathf.Max(b.size.x, b.size.z) + 0.05f;
+
+    // 상자 더미: 칸 영역에 상자를 격자로, 칸마다 1~2단 무작위·90도 단위 회전 + 살짝 비틀기 (쌓아 둔 느낌)
+    private void FillPile(GameObject block, RectInt blockCells, GameObject prefab)
+    {
+        if (prefab == null || !TryGetPropBounds(prefab, out Bounds b)) return;
+        block.GetComponent<Renderer>().enabled = false;
+        foreach (Transform visual in block.transform) visual.gameObject.SetActive(false);
+
+        float spacing = PileSpacing(b);
+        Rect cells = ToRect(blockCells);
+        int nx = Mathf.Max(1, Mathf.FloorToInt((cells.width + 0.05f) / spacing));
+        int nz = Mathf.Max(1, Mathf.FloorToInt((cells.height + 0.05f) / spacing));
+        float ky = HeightScale(b);
+        Vector3 localScale = new Vector3(1f, ky, 1f);
+        float propHeight = b.size.y * ky;
+
+        Transform propRoot = new GameObject(block.name + "_Props").transform;
+        propRoot.SetParent(generatedRoot, false);
+        Vector3 rectCenter = CellCenterToWorld(cells.center);
+        float x0 = rectCenter.x - spacing * nx / 2f + spacing / 2f;
+        float z0 = rectCenter.z - spacing * nz / 2f + spacing / 2f;
+
+        for (int ix = 0; ix < nx; ix++)
+        {
+            for (int iz = 0; iz < nz; iz++)
+            {
+                int layers = propRng.NextDouble() < pileTallChance ? 2 : 1;
+                for (int layer = 0; layer < layers; layer++)
+                {
+                    float yaw = propRng.Next(4) * 90f + (float)(propRng.NextDouble() * 2.0 - 1.0) * (layer > 0 ? 8f : 4f);
+                    Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
+                    Vector3 center = new Vector3(x0 + ix * spacing, transform.position.y + propHeight * (layer + 0.5f), z0 + iz * spacing);
+                    GameObject prop = Instantiate(prefab, center - rot * Vector3.Scale(localScale, b.center), rot, propRoot);
                     prop.transform.localScale = localScale;
                     foreach (Collider col in prop.GetComponentsInChildren<Collider>(true)) col.enabled = false;
                 }

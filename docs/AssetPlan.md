@@ -1,110 +1,96 @@
-# 에셋·이펙트 적용 계획 (2026-10-28 점검)
+# 에셋·이펙트 적용 계획 (2026-10-29 갱신)
 
 에셋을 구해 왔을 때 어디에 넣는지, 지금 무엇이 임시인지 정리한 문서.
 원칙: **코드로 먼저 동작하게 만들고, 에셋은 칸에 끼우기만** 하면 되도록 한다. JU 코드는 수정하지 않는다 (JU 프리팹의 값 교체는 에디터에서).
 
-표기 — 칸 있음: 에셋만 넣으면 됨 / 칸 필요: 코드 작업 필요 / JU: JU 프리팹·에셋 값 교체(에디터)
+표기 — 칸 있음: 에셋만 넣으면 됨 / 칸 필요: 코드 작업 필요 / 보유: 이미 있는 에셋으로 가능 / JU: JU 프리팹 값 교체(에디터)
 
 ---
 
-## 1. 사운드
+## 0. 완료된 것
 
-| 항목 | 현재 | 넣을 곳 | 상태 |
-|---|---|---|---|
-| 배경음 6종 (메인·전투·최종 라운드·정비·클리어·실패) | 없음 | `Resources/SoundLibrary` 배경음 칸 | 칸 있음, 재생 연결은 S2 |
-| 효과음 약 33종 (플레이어·적·진행·UI) | 없음 | `SoundLibrary` 효과음 칸 | 칸 있음, 재생 연결은 S3 |
-| 총소리·장전·빈 탄창 | JU 기본 | JU 무기 프리팹(Guns)의 오디오 칸 | JU |
-| 발소리 | JU 기본 | JU 발소리 설정 (Audio/Footstep) | JU |
-| 탄착음 (표면별) | JU 기본 | JU 탄 프리팹 `HitParticlesList`의 AudioClips | JU |
+| 항목 | 사용 에셋 |
+|---|---|
+| 플레이어 | Horrors(pack) 군인 (꼭두각시 방식) |
+| 적 5종 | 러너 Crazy·브루트 Fat·봄버 Prisoner·차저 Mechanic (Horrors(pack)), 슈터 SciFi 우주 군인 — 애니메이션 연결 완료 |
+| 맵 바닥·장애물·외곽 벽 | SciFi_TopDown_SpaceStation (짙은 육각 바닥, 내부 벽·기둥·상자·통, 상자 더미) |
+| UI 스프라이트 | PixelUISciFiFree |
+| 코드 연출 | 후처리·톤매핑, 피격 번쩍임, 히트 스톱, 카메라 흔들림, 빛기둥, 획득 알림, 상자 열림, 경고 띠, 탈출 슬로모션, 위기 화면, 연속 처치, 대시 잔상, 분위기·목표물 조명 |
 
-임시 후보: SciFi Warehouse Kit `Demo/Audio/Music` — upbeatfuture(전투), synthtrack(메인). siren.wav는 엘리트 등장 경고음 후보.
+## 1. 꼭 구해야 하는 것 (우선순위 순)
 
-규격 권장
-- 배경음: wav 또는 ogg (mp3는 반복할 때 앞뒤에 무음 틈이 생김), 반복 지점이 자연스러운 곡
-- 효과음: wav, 앞쪽 무음 없이 바로 소리 시작 (반응이 늦게 느껴짐), 0.1~1초
-- 3D로 재생할 소리(적 피격·사망·폭발)는 모노 권장
-- 같은 칸에 비슷한 파일 2~4개 → 무작위 재생으로 반복감 감소
+| 순위 | 항목 | 이유 | 넣을 곳 | 상태 |
+|---|---|---|---|---|
+| 1 | **배경음 6곡** (메인·전투·최종 라운드·정비·클리어·실패) | 지금 게임 전체가 무음(총소리 등 JU 기본음만) | `Resources/SoundLibrary` 배경음 칸 | 칸 있음, 재생 연결(S2)은 에셋 오면 바로 |
+| 2 | **핵심 효과음** (아래 표 ★) | 타격감의 절반이 소리 | `SoundLibrary` 효과음 칸 | 칸 있음, 연결(S3) |
+| 3 | **한·영 통일 폰트** (한글 지원, 숫자·영문이 게임스러운 것) | 지금 맑은 고딕 + 영문 픽셀 폰트 혼용 → 완성도 | TMP 폰트 에셋 생성 후 교체 | 결정 필요 |
+| 4 | **드랍 아이템 모델** (모듈 = 칩·카트리지류, 무기 = 무기 상자 또는 총 모델) | 지금 레어도 색 도형 — 빛기둥(C1)도 이것에 맞춰 다시 손보기로 함 | ItemDropManager `Dropped Item Prefab` | 칸 있음 |
+| 5 | **VFX 팩 1개** (URP, 위에서 봐도 잘 보이는 것) | 폭발·적 사망·총구 화염 품질 | 아래 2장 칸들 | 칸 있음 / 일부 칸 필요 |
 
-## 2. VFX (파티클)
+### 효과음 목록 (SoundLibrary 칸 이름)
 
-| 항목 | 현재 | 넣을 곳 | 상태 |
-|---|---|---|---|
-| 폭발 공용 (수류탄·착탄 폭발·재장전 폭발·대시 폭탄·위기 반격) | JU Explosion Particle | 씬 GrenadeSkill `Explosion VFX` 한 칸 — 모든 폭발이 크기만 바꿔 재사용 | 칸 있음 |
-| 적 사망 | 없음 (0.1초 뒤 사라짐) | 적 프리팹 EnemyBase `Death VFX` | 칸 있음 (B4에서 코드 기본 연출 → 에셋 있으면 교체) |
-| 엘리트 사망 | 없음 | 일반 사망과 분리 필요 | 칸 필요 (B4에서 추가) |
-| 총구 화염 | JU MuzzleFlash | JU 무기 프리팹 `MuzzleFlashParticlePrefab` | JU |
-| 탄착 (벽·바닥·적) | JU Default/Small/Human Skin Bullet Hit | JU 탄 프리팹 `HitParticlesList` (표면 태그별) | JU |
-| 탄피 | JU Bullet Shell Particle | JU 무기 프리팹 | JU |
-| 치명타 적중 | 없음 (피해 숫자만) | — | 칸 필요 (선택) |
-| 드랍 빛기둥 (C1) | — | 코드로 생성, 텍스처·재질 칸 둘 예정 | C1에서 |
-| 상자 열림 (C4) | — | 코드로 생성, 이펙트 칸 둘 예정 | C4에서 |
-| 엘리트 등장 예고 (D1) | — | 바닥 원 코드 생성, 데칼 텍스처 칸 둘 예정 | D1에서 |
-| 흡혈 회복·수류탄 충전 완료 | 없음 | — | 칸 필요 (선택) |
-
-규격 권장
-- **URP용**일 것. Built-in 전용 파티클 재질은 분홍색이 됨 → Edit > Rendering > Materials > Convert 또는 URP Particles/Unlit로 교체
-- 파티클 프리팹 하나 = 효과 하나. 삭제는 우리 코드가 처리 (폭발은 일정 시간 뒤 Destroy) → 반복(Looping) 꺼져 있을 것
-- 탑다운 직교 카메라라 **위에서 봤을 때** 잘 보이는 것 (옆에서 보는 불기둥형보다 퍼지는 원형)
-- 블룸(A1)이 켜져 있어 밝은 색(HDR) 파티클이 잘 빛남
-
-## 3. 3D 모델
-
-| 항목 | 현재 | 넣을 곳 | 상태 |
-|---|---|---|---|
-| 플레이어 | SciFi Space Soldier (완료) | — | 완료 |
-| 적 | 캡슐 (Enemy_Dummy 프리팹 5개) | 적 프리팹 외형 교체 | 칸 필요 — 아래 참고 |
-| 엘리트 | 일반 적 x1.3 + 보라색 | 같은 모델 사용 또는 별도 모델 | 결정 필요 |
-| 보급 상자 | 노란 큐브 | SupplyCrateManager `Crate Model` | 칸 있음 |
-| 수류탄 | 구체 | GrenadeSkill `Grenade Model` | 칸 있음 |
-| 드랍 아이템 | 레어도 색 도형 + 조명 | ItemDropManager `Dropped Item Prefab` (DroppedItem의 Item Renderer·Item Light) | 칸 있음 |
-| 탈출 구역 | 구체·링 | ExtractionZone 외형 | 칸 필요 (꾸밈은 맵 외형 작업 때) |
-| 맵 (바닥·외곽 벽·장애물) | Warehouse·산업 에셋 적용 중 | BspArenaGenerator 프리팹 칸 | 칸 있음, W3c~e 확인 대기 |
-| 메인 화면 배경 | 단색 | MainMenu 씬 | 씬 배치 (사용자) |
-
-적 모델 주의
-- 지금 적은 애니메이터 없이 NavMeshAgent로만 움직임 → 모델을 넣으면 **걷기·공격·사망 애니메이션 연결 코드**가 필요 (적 종류 확정 후 작업)
-- 실루엣(SilhouetteRenderer)·피격 번쩍임(EnemyHitFlash)·엘리트 색은 SkinnedMeshRenderer도 자동 대응 → 모델만 바꿔도 동작
-- 엘리트 보라색은 `_BaseColor`·`_Color` 색 곱 방식 → 텍스처가 밝은 모델일수록 잘 보임
-- URP Lit 재질이어야 함 (Built-in이면 플레이어 때처럼 변환)
-
-## 4. UI
-
-| 항목 | 현재 | 상태 |
+| 분류 | ★ 핵심 | 나머지 |
 |---|---|---|
-| 한·영 통일 폰트 | 맑은 고딕 SDF + 영문 픽셀 폰트 혼용 | 결정 필요 (TMP 폰트 에셋 생성) |
-| HUD 아이콘 (수류탄·대시 등) | 없음 (막대·링) | 선택 |
-| "ELITE INCOMING" 배너 | 공용 알림 배너 | 나중에 수정 목록에 있음 |
-| 피격·체력 낮음 화면 효과 (A2) | — | 코드 (에셋 불필요, 비네트 사용) |
+| 플레이어 | playerHurt, grenadeExplosion | playerDeath, playerLowHealth, dash, grenadeThrow, grenadeReady, lifesteal |
+| 적 | enemyHit, enemyDeath | enemyCritHit, eliteDeath, enemyAttack, eliteIncoming, execute, (적 발소리 — EnemyAnimationEvents.FootStep 자리 있음) |
+| 진행 | itemPickup, roundStart | crateOpening, crateOpened, itemDrop, itemDropLegendary, extractionEnter, extractionSuccess, gameClear, gameOver |
+| UI | uiClick | uiHover, uiModulePickUp, uiModulePlace, uiModuleRotate, uiInvalid, uiEquipWeapon, uiPanelOpen |
+| JU 기본 (교체 선택) | — | 총소리·장전·빈 탄창(JU 무기 프리팹), 탄착음(JU 탄 HitParticlesList) |
 
-## 5. 코드 연출 (에셋 불필요) — CLAUDE.md 15번
+임시 후보: SciFi Warehouse Kit `Demo/Audio/Music` — upbeatfuture(전투), synthtrack(메인), siren.wav(엘리트 경고)
 
-A1 후처리(완료) → **B1 피격 번쩍임(구현)** → B2 히트 스톱(치명타·엘리트 처치) → B5 카메라 흔들림 → C1 드랍 빛기둥 + C3 획득 알림 → D1 엘리트 예고 → D2 라운드 배너 · D3 탈출 슬로모션 → A2 · B4 · C4 · D4 · D5
+규격: 배경음 wav/ogg(mp3는 반복 시 무음 틈), 효과음 wav·앞 무음 없이·0.1~1초, 3D 소리(적 피격·사망·폭발)는 모노, 같은 칸에 비슷한 파일 2~4개면 무작위 재생
 
----
+## 2. VFX — 넣을 곳과 추천
 
-## 구할 때 우선순위
+| 항목 | 현재 | 넣을 곳 | 추천 |
+|---|---|---|---|
+| 폭발 공용 (수류탄·착탄·재장전·대시 폭탄·위기 반격·봄버) | JU Explosion Particle | GrenadeSkill `Explosion VFX` 한 칸 | 위에서 보기 좋은 원형 충격파 + 불꽃 |
+| **적 사망** | 없음 (피 연출 B4는 잔인해 꺼 둠) | EnemyBase `Death VFX` 칸 | 연기·먼지·검은 입자 (비잔혹) — 아래 3장 디졸브와 함께 |
+| 총구 화염 (플레이어) | JU MuzzleFlash | JU 무기 프리팹 | 그대로 가능 |
+| **슈터 총구 화염** | 없음 (탄만 나감) | 칸 필요 | 짧은 섬광 |
+| 탄착 (벽·바닥·적) | JU 기본 | JU 탄 프리팹 | 금속 스파크 계열 (우주정거장 바닥과 어울림) |
+| 차저 돌진 | 바닥 경로 선만 | 칸 필요 | 먼지 꼬리 + 벽 충돌 충격파 |
+| 흡혈 회복·수류탄 충전 완료 | 없음 | 칸 필요 | 작은 초록 입자 / 반짝임 |
+| 탈출 구역 | 구체·링 + 초록 빛 | 칸 필요 | 아래 3장 |
 
-1. **적 모델 + 애니메이션** — 화면에서 가장 많이 보이는데 아직 캡슐. 애니메이션(걷기·공격·사망) 포함된 것
-2. **전투 배경음 + 효과음 핵심 6개** (enemyHit·enemyDeath·grenadeExplosion·itemPickup·playerHurt·uiClick)
-3. **폭발 VFX 1개** — 칸 하나로 폭발 5종 전부 바뀜
-4. 적 사망 VFX, 탄착 VFX
-5. 보급 상자·수류탄 모델
-6. 나머지 효과음, 폰트
+규격: **URP용**(Built-in 파티클 재질은 분홍 → 변환), 프리팹 하나 = 효과 하나·반복 꺼짐(삭제는 우리 코드), 탑다운 직교 카메라에서 잘 보이는 퍼지는 원형, HDR 색이면 블룸으로 빛남
 
-## 구할 곳 (무료, 라이선스 확인 후 졸업작품 크레딧에 표기)
+## 3. 에셋 없이 코드로 추천하는 연출 (다음 후보)
+
+| 연출 | 내용 | 가치 |
+|---|---|---|
+| **적 사망 디졸브** | 쓰러진 시체가 가라앉는 대신 가장자리부터 타들어 가듯 사라짐 (셰이더) + 검은 연기 조금 — B4 피 대신 비잔혹 처치 연출 | 높음 (처치마다 보임) |
+| **탈출 구역 연출** | 바닥에 큰 링 + 진행률만큼 차오르는 호, 위로 오르는 입자, 성공 순간 빛기둥 | 높음 (라운드 목표) |
+| 슈터 총구 섬광 | 발사 순간 짧은 빛 + 작은 섬광 (코드 파티클) | 중간 |
+| 차저 돌진 먼지·충돌 충격파 | 돌진 중 발밑 먼지, 벽 충돌 시 고리 + 카메라 흔들림 | 중간 |
+| 아이템 흡수 궤적 | 빨려 오는 아이템에 레어도 색 꼬리 | 낮음 |
+| 엘리트 바닥 오라 | 엘리트 발밑에 천천히 도는 보라 고리 | 낮음 (보라 빛이 이미 있음) |
+
+## 4. 지금 보유 에셋으로 바로 가능한 것
+
+| 항목 | 현재 | 보유 에셋 |
+|---|---|---|
+| 수류탄 모델 | 구체 | Horrors(pack) `Character_Soldier/Prefab/Granade` → GrenadeSkill `Grenade Model` |
+| 보급 상자 모델 | 노란 큐브 | 우주정거장 상자는 장애물로 쓰므로 구분 필요 — Warehouse Kit 상자 또는 우주정거장 상자 + 노란 발광 |
+| 메인 화면 3D 배경 | 단색 | 우주정거장 바닥·벽 + 플레이어 군인 모델(대기 동작) + 조명 |
+| 탈출 구역 꾸밈 | 구체·링 | 우주정거장 FloorVent·Light 소품 + 3장 코드 연출 |
+
+## 구할 곳 (라이선스 확인 후 크레딧 기록)
 
 - Kenney (kenney.nl) — CC0, UI 효과음·파티클 텍스처
-- Unity Asset Store 무료 에셋 — 이펙트·사운드 팩 (URP 지원 여부 확인)
+- Unity Asset Store 무료 — 사운드·이펙트 팩 (URP 지원 확인)
 - Sonniss GDC Game Audio Bundle — 대용량 무료 효과음 (상업 이용 가능)
 - freesound.org — 파일마다 라이선스 다름 (CC0 / CC-BY는 출처 표기)
-- 사용한 에셋은 이 문서 아래 "크레딧" 표에 바로 기록해 두면 마감 때 편함
+- 폰트: 눈누(noonnu.cc)에서 상업 이용 가능 한글 폰트 → TMP 폰트 에셋 생성
 
 ## 크레딧 (사용 중인 외부 에셋)
 
 | 에셋 | 용도 |
 |---|---|
 | Julhiecio TPS Controller | 이동·사격·체력 기반 |
-| SciFi_Space_Soldier | 플레이어 모델 |
-| SciFi Warehouse Kit | 맵 바닥·외곽 벽 |
-| RPG_FPS_game_assets_industrial | 맵 장애물 |
+| Horrors(pack) | 플레이어 모델, 적 4종(러너·브루트·봄버·차저) |
+| SciFi_Space_Soldier | 슈터 적 모델 |
+| SciFi_TopDown_SpaceStation | 맵 바닥·장애물·외곽 벽 |
 | PixelUISciFiFree | UI 스프라이트 |
+| (검토 후 미사용) SciFi Warehouse Kit, RPG_FPS_game_assets_industrial, Free LowPoly SciFi Pack | 이전 맵 외형 — 쓰지 않으면 빌드 전 정리 |
