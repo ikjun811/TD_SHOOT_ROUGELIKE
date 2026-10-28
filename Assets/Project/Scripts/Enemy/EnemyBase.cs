@@ -51,6 +51,7 @@ public class EnemyBase : MonoBehaviour
 
     private float nextRepathTime;
     private Vector3 lastPathTarget;
+    private EnemyHitFlash hitFlash;
 
     private void Awake()
     {
@@ -108,6 +109,9 @@ public class EnemyBase : MonoBehaviour
             juHealth.OnDeath += OnEnemyDeath;
             juHealth.OnDamaged += OnEnemyDamaged;
         }
+
+        // 피격 번쩍임 — 렌더러 목록을 지금 기록하므로 체력바·실루엣보다 먼저 부착 (엘리트 외형 적용 뒤)
+        hitFlash = EnemyHitFlash.Attach(gameObject);
 
         // 머리 위 체력바 자동 부착 (일반: 피격 후에만 빨강 / 엘리트: 항상 보라, 프리팹에 이미 있으면 그 설정 사용)
         if (GetComponent<WorldHealthBar>() == null)
@@ -191,6 +195,7 @@ public class EnemyBase : MonoBehaviour
     private void OnEnemyDamaged(IHealth.DamageResultInfo resultInfo)
     {
         // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
+        if (hitFlash != null) hitFlash.Flash();
     }
 
     private void OnEnemyDeath()
