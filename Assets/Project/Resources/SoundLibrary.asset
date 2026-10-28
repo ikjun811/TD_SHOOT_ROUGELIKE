@@ -1,0 +1,201 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a310296829dc0c4b8e652c0419bfccb, type: 3}
+  m_Name: SoundLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::SoundLibrary
+  spatialBlend3D: 0.6
+  minDistance3D: 15
+  maxDistance3D: 60
+  musicFadeTime: 1.5
+  mainMenu:
+    clip: {fileID: 0}
+    volume: 0.7
+  combat:
+    clip: {fileID: 0}
+    volume: 0.7
+  finalRound:
+    clip: {fileID: 0}
+    volume: 0.7
+  maintenance:
+    clip: {fileID: 0}
+    volume: 0.7
+  resultClear:
+    clip: {fileID: 0}
+    volume: 0.7
+  resultFail:
+    clip: {fileID: 0}
+    volume: 0.7
+  playerHurt:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  playerDeath:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  playerLowHealth:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  dash:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  grenadeThrow:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  grenadeExplosion:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  grenadeReady:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  lifesteal:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  enemyHit:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  enemyCritHit:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  enemyDeath:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  eliteDeath:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  enemyAttack:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  eliteIncoming:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  execute:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  roundStart:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  crateOpening:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  crateOpened:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  itemDrop:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  itemDropLegendary:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  itemPickup:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  extractionEnter:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  extractionSuccess:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  gameClear:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  gameOver:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiClick:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiHover:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiModulePickUp:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiModulePlace:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiModuleRotate:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiInvalid:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiEquipWeapon:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05
+  uiPanelOpen:
+    clips: []
+    volume: 1
+    pitchRandom: 0.05
+    minInterval: 0.05

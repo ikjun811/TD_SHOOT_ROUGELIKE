@@ -23,6 +23,7 @@ public static class GameplayBootstrap
         ExtractionIndicator.EnsureCreated();
         SupplyCrateManager.EnsureCreated();
         RunResultManager.EnsureCreated();
+        GameplayPostProcess.EnsureCreated();
         PlayerPositionGuard.EnsureOnPlayer();
         SilhouetteRenderer.Attach(GameObject.FindGameObjectWithTag("Player"), new Color(0.3f, 0.85f, 1f, 0.6f));
     }
