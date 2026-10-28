@@ -117,7 +117,10 @@ public class EnemyBomber : MonoBehaviour
         if (ring != null) ring.enabled = false;
 
         Vector3 center = transform.position;
-        BulletHitEffects.SpawnExplosionVFX(center, explosionRadius / 4f);
+        // 봄버 전용 폭발 칸(불꽃)이 있으면 그것, 없으면 폭발 공용
+        float vfxScale = explosionRadius / 4f;
+        if (VfxSpawner.Play(VfxLibrary.Current.bomberExplosion, center, vfxScale / 0.5f)) CameraShake.AddExplosion(center, vfxScale);
+        else BulletHitEffects.SpawnExplosionVFX(center, vfxScale);
 
         // 플레이어 (수평 거리)
         if (playerHealth != null && !playerHealth.IsDead)

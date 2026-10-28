@@ -41,7 +41,9 @@ public class GrenadeProjectile : MonoBehaviour
         Vector3 center = transform.position;
         CameraShake.AddExplosion(center, vfxScale);
 
-        if (explosionVFX != null)
+        // VfxLibrary 폭발 칸이 있으면 그것 (수류탄 vfxScale 0.5 = 칸 배율 그대로), 없으면 JU 폭발
+        bool libraryVfx = VfxSpawner.Play(VfxLibrary.Current.explosion, center, vfxScale / 0.5f);
+        if (!libraryVfx && explosionVFX != null)
         {
             GameObject vfx = Instantiate(explosionVFX, center, Quaternion.identity);
 

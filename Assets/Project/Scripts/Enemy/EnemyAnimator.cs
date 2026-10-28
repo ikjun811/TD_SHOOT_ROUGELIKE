@@ -7,7 +7,8 @@ using UnityEngine.AI;
 //     directional(슈터)이면 Locomotion = 2D(MoveX·MoveZ = 루트 기준 이동 방향) — 플레이어를 보며 뒷걸음·옆걸음
 //   전환은 트리거 대신 CrossFade로 직접 (트리거가 남아 나중에 엉뚱하게 재생되는 문제 없음)
 //   EnemyBase가 공격·피격·사망 순간 호출, 종류별 행동(슈터 사격·봄버 예고)은 PlayAction으로
-//   사망: 쓰러지는 동작 → deathLingerTime 뒤 바닥으로 가라앉음 → 제거 (EnemyBase가 판정·이동을 먼저 끔)
+//   사망: 쓰러지는 동작 → deathLingerTime 뒤 디졸브(EnemyDissolve: 타들어 가듯 사라짐 + 검은 연기, 경계 일반 주황·엘리트 보라) → 제거
+//     (이전: 바닥으로 가라앉음 → 비잔혹 처치 연출로 교체, 사용자 2026-10-29) EnemyBase가 판정·이동을 먼저 끔
 public class EnemyAnimator : MonoBehaviour
 {
     public Animator animator;
@@ -22,8 +23,9 @@ public class EnemyAnimator : MonoBehaviour
     public bool keepCorpse = true;
     [Tooltip("쓰러진 뒤 남아 있는 시간")]
     public float deathLingerTime = 2f;
-    public float sinkTime = 0.8f;
-    public float sinkDepth = 1.2f;
+    public float dissolveTime = 1f;
+    [ColorUsage(false, true)] public Color dissolveEdgeColor = new Color(3f, 0.9f, 0.25f);       // 불씨 (HDR → 블룸)
+    [ColorUsage(false, true)] public Color eliteDissolveEdgeColor = new Color(2f, 0.7f, 3.2f);   // 엘리트 보라
     [Tooltip("피격 동작 최소 간격 (연사에 계속 끊기지 않게)")]
     public float hitInterval = 0.6f;
 
@@ -118,21 +120,15 @@ public class EnemyAnimator : MonoBehaviour
             return 0.1f;
         }
         animator.CrossFadeInFixedTime("Death", 0.1f);
-        StartCoroutine(SinkAfterDelay());
-        return deathLingerTime + sinkTime + 0.05f;
+        StartCoroutine(DissolveAfterDelay());
+        return deathLingerTime + dissolveTime + 0.05f;
     }
 
-    private IEnumerator SinkAfterDelay()
+    private IEnumerator DissolveAfterDelay()
     {
         yield return new WaitForSeconds(deathLingerTime);
-        Transform model = animator.transform;
-        Vector3 start = model.position;
-        float elapsed = 0f;
-        while (elapsed < sinkTime)
-        {
-            elapsed += Time.deltaTime;
-            model.position = start + Vector3.down * (sinkDepth * Mathf.Clamp01(elapsed / sinkTime));
-            yield return null;
-        }
+        EnemyBase enemy = GetComponent<EnemyBase>();
+        bool elite = enemy != null && enemy.IsElite;
+        EnemyDissolve.Begin(animator.gameObject, elite ? eliteDissolveEdgeColor : dissolveEdgeColor, dissolveTime);
     }
 }

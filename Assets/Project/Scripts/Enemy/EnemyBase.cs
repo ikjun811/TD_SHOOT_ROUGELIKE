@@ -283,8 +283,19 @@ public class EnemyBase : MonoBehaviour
         Destroy(gameObject);
     }
 
+    private float nextHitVfxTime;
+    private const float HitVfxInterval = 0.06f; // 연사·산탄에 이펙트가 몰리지 않게 (적마다)
+
     private void OnEnemyDamaged(IHealth.DamageResultInfo resultInfo)
     {
+        // 피격 이펙트 (VfxLibrary 적 피격 칸, 맞은 위치 — 없으면 몸통 높이)
+        if (resultInfo.RealDamage > 0f && Time.time >= nextHitVfxTime)
+        {
+            nextHitVfxTime = Time.time + HitVfxInterval;
+            Vector3 hitPos = resultInfo.HitPosition != Vector3.zero ? resultInfo.HitPosition : transform.position + Vector3.up;
+            VfxSpawner.Play(VfxLibrary.Current.enemyHit, hitPos);
+        }
+
         // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
         if (hitFlash != null) hitFlash.Flash();
         if (enemyAnimator != null && !isDead) enemyAnimator.PlayHit();

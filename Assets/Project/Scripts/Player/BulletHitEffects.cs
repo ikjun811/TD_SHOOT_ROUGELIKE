@@ -163,6 +163,8 @@ public class BulletHitEffects : MonoBehaviour
     public static void SpawnExplosionVFX(Vector3 center, float scale)
     {
         CameraShake.AddExplosion(center, scale);
+        // VfxLibrary 폭발 칸이 있으면 그것 (배율 0.5 = 수류탄 기준 → 칸 배율 그대로), 없으면 아래 JU 폭발
+        if (VfxSpawner.Play(VfxLibrary.Current.explosion, center, scale / 0.5f)) return;
         if (ExplosionVFX == null)
         {
             GrenadeSkill grenade = FindAnyObjectByType<GrenadeSkill>();
