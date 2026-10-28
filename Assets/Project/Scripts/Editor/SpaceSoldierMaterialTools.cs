@@ -11,6 +11,8 @@ public static class SpaceSoldierMaterialTools
     private const string SourceFolder = "Assets/SciFi_Space_Soldier/Resources/Space_Soldier/Materials";
     private const string OutputFolder = "Assets/Project/Characters/SpaceSoldier/Materials";
     private static readonly string[] Parts = { "Head", "Torso", "Legs" };
+    private const string RifleSourcePath = "Assets/SciFi_Space_Soldier/Resources/Weapons/Rifle/Materials/M_Weapon_Rifle_A.mat";
+    public const string RifleOutputPath = OutputFolder + "/M_Enemy_Rifle.mat";
 
     [MenuItem("Tools/TD Shoot/Convert Space Soldier Materials")]
     public static void Convert()
@@ -24,17 +26,21 @@ public static class SpaceSoldierMaterialTools
 
         EnsureFolder(OutputFolder);
 
+        // 몸 3부위 + 소총 (슈터 적용, P3 — 같은 원본 셰이더라 같은 방식으로 변환)
+        System.Collections.Generic.List<(string source, string output)> jobs = new System.Collections.Generic.List<(string, string)>();
+        foreach (string part in Parts) jobs.Add(($"{SourceFolder}/M_Soldier_A_{part}.mat", $"{OutputFolder}/M_Player_{part}.mat"));
+        jobs.Add((RifleSourcePath, RifleOutputPath));
+
         int done = 0;
-        foreach (string part in Parts)
+        foreach ((string sourcePath, string matPath) in jobs)
         {
-            Material source = AssetDatabase.LoadAssetAtPath<Material>($"{SourceFolder}/M_Soldier_A_{part}.mat");
+            Material source = AssetDatabase.LoadAssetAtPath<Material>(sourcePath);
             if (source == null)
             {
-                Debug.LogWarning($"[SpaceSoldier] M_Soldier_A_{part}.mat 없음 — 건너뜀");
+                Debug.LogWarning($"[SpaceSoldier] {sourcePath} 없음 — 건너뜀");
                 continue;
             }
 
-            string matPath = $"{OutputFolder}/M_Player_{part}.mat";
             Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
             if (mat == null)
             {

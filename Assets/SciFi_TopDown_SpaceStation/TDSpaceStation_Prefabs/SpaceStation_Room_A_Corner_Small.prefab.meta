@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6900a0d8e7bdc634789481e0c7fb242d
+timeCreated: 1465073548
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs/SpaceStation_Room_A_Corner_Small.prefab
+  uploadId: 364232

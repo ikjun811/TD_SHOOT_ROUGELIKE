@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: f002ea8f2a51e6a4d91879939243f1e8
+timeCreated: 1520354216
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Prisoner/Mesh/Materials/Prisoner__Albedo.mat
+  uploadId: 322202

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 47f340e8eb4bd8446ab23c6216c00361
+timeCreated: 1485091208
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Crazy/Animation/Materials/Crazy_Albedo.mat
+  uploadId: 322202

@@ -67,6 +67,23 @@ public class BspArenaGenerator : MonoBehaviour
     [Tooltip("바깥 바닥 띠 밖으로 더 까는 타일 폭 (겉모습만). 바닥 끝 너머로 바닥 아래(묻힌 벽)가 보이지 않게")]
     [SerializeField] private float kitFloorExtraMargin = 18f;
 
+    [Header("Grid Floor (가독성 — 사용자 채택 2026-10-29: 바닥·인물·장애물 구분)")]
+    [Tooltip("켜면 타일 대신 코드로 만든 전술형 격자 바닥 한 장 (짙은 숯색 + 칸 선·굵은 선, 선은 약하게 발광). 끄면 위 키트 타일")]
+    [SerializeField] private bool useGridFloor = true;
+    [Tooltip("격자 한 칸 (m). 굵은 선은 2칸마다, 텍스처 한 장 = 4x4칸")]
+    [SerializeField] private float gridCellSize = 3f;
+    [SerializeField] private Color gridBaseColor = new Color(0.16f, 0.17f, 0.18f);
+    [SerializeField] private Color gridLineColor = new Color(0.3f, 0.42f, 0.45f);
+    [Tooltip("선 발광 (어두운 곳에서도 격자가 은은하게 보이게)")]
+    [SerializeField] private Color gridLineEmission = new Color(0.03f, 0.09f, 0.1f);
+    [Tooltip("칸마다 밝기 차이 (단조로움 완화)")]
+    [Range(0f, 0.2f)] [SerializeField] private float gridCellVariation = 0.04f;
+    [Range(0f, 1f)] [SerializeField] private float gridSmoothness = 0.25f;
+
+    private Material gridMaterial;
+    private Texture2D gridAlbedo;
+    private Texture2D gridEmissionMask;
+
     [Header("Kit Boundary Walls (W3b, 비우면 큐브·Boundary Prefab 표시)")]
     [Tooltip("기본 벽 (메시 바운드 기준: 긴 축 = 길이, 짧은 축 = 두께). 첫 번째 벽 길이로 한 변 개수를 정하고 길이 방향만 늘리거나 줄여 맞춤")]
     [SerializeField] private GameObject[] boundaryWallPrefabs;
@@ -119,6 +136,9 @@ public class BspArenaGenerator : MonoBehaviour
     private Vector3 playerStartPosition;
 
     public IReadOnlyList<Leaf> Leaves => leaves;
+
+    // 실행 중 맵 생성 완료 알림 (구역 조명 재배치 등, AtmosphereLighting)
+    public static event System.Action<BspArenaGenerator> OnGenerated;
     public int UsedSeed => usedSeed;
     public Vector3 PlayerStartPosition => playerStartPosition; // 플레이어 시작 지점 (구역 중앙, M3에서 탈출·상자 배치 시 거리 기준)
 
@@ -140,6 +160,14 @@ public class BspArenaGenerator : MonoBehaviour
             if (leaves[i].rect.Contains(cell)) return i;
         }
         return -1;
+    }
+
+    // 격자 바닥 재질·텍스처는 코드로 만든 것이라 직접 정리
+    private void OnDestroy()
+    {
+        if (gridMaterial != null) DestroyImmediate(gridMaterial);
+        if (gridAlbedo != null) DestroyImmediate(gridAlbedo);
+        if (gridEmissionMask != null) DestroyImmediate(gridEmissionMask);
     }
 
     private void Awake()
@@ -195,6 +223,7 @@ public class BspArenaGenerator : MonoBehaviour
 
         totalWatch.Stop();
         Debug.Log($"BspArenaGenerator: seed {usedSeed}, zones {leaves.Count}, build {totalWatch.ElapsedMilliseconds}ms (navmesh {navMeshWatch.ElapsedMilliseconds}ms)");
+        if (Application.isPlaying) OnGenerated?.Invoke(this);
     }
 
     [ContextMenu("Clear")]
@@ -480,6 +509,11 @@ public class BspArenaGenerator : MonoBehaviour
     // 기준점 위치와 무관하게 메시 바운드 기준으로 배치 (Warehouse = 모서리 기준점, 산업 에셋 = 가운데 기준점 모두 대응)
     private void BuildKitFloor(System.Random rng)
     {
+        if (useGridFloor)
+        {
+            BuildGridFloor();
+            return;
+        }
         if (floorTilePrefabs == null || floorTilePrefabs.Length == 0 || floorTileSize <= 0.01f) return;
 
         foreach (Transform child in generatedRoot)
@@ -513,6 +547,98 @@ public class BspArenaGenerator : MonoBehaviour
 
         // 움직이지 않는 타일 수백 개 → 정적 배칭으로 그리기 호출 줄임 (실행 중에만)
         if (Application.isPlaying) StaticBatchingUtility.Combine(floorRoot.gameObject);
+    }
+
+    // 격자 바닥: 큐브 바닥 겉모습을 끄고 맵 + 바깥 여백을 덮는 판 한 장 (판정·NavMesh는 큐브 그대로)
+    // 격자는 맵 모서리(Origin) 기준 정렬, 판 크기는 텍스처 한 장(4칸) 단위로 늘려 이음매 없이
+    private void BuildGridFloor()
+    {
+        foreach (Transform child in generatedRoot)
+        {
+            if (child.name == "Floor" || child.name.StartsWith("OuterFloor")) child.GetComponent<Renderer>().enabled = false;
+        }
+
+        float period = Mathf.Max(0.5f, gridCellSize) * 4f;
+        float extra = boundaryThickness + outerFloorMargin + Mathf.Max(0f, kitFloorExtraMargin);
+        int k = Mathf.CeilToInt(extra / period);
+        float size = arenaSize + 2f * k * period;
+        Vector3 corner = Origin - new Vector3(k * period, 0f, k * period);
+
+        GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "GridFloor";
+        quad.transform.SetParent(generatedRoot, true);
+        quad.transform.position = corner + new Vector3(size / 2f, 0.002f, size / 2f);
+        quad.transform.rotation = Quaternion.Euler(90f, 0f, 0f); // 앞면 위, u = +X·v = +Z, 원점 = 모서리
+        quad.transform.localScale = new Vector3(size, size, 1f);
+        Collider quadCollider = quad.GetComponent<Collider>();
+        if (quadCollider != null) quadCollider.enabled = false;
+
+        MeshRenderer renderer = quad.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = GetGridMaterial();
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = true;
+        float tiles = size / period;
+        renderer.sharedMaterial.SetTextureScale("_BaseMap", new Vector2(tiles, tiles));
+    }
+
+    private Material GetGridMaterial()
+    {
+        if (gridMaterial != null) return gridMaterial;
+        BuildGridTextures();
+        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
+        gridMaterial = new Material(lit) { name = "GridFloor", hideFlags = HideFlags.DontSave };
+        gridMaterial.SetTexture("_BaseMap", gridAlbedo);
+        gridMaterial.SetColor("_BaseColor", Color.white);
+        gridMaterial.SetFloat("_Smoothness", gridSmoothness);
+        gridMaterial.SetFloat("_Metallic", 0f);
+        gridMaterial.SetTexture("_EmissionMap", gridEmissionMask);
+        gridMaterial.SetColor("_EmissionColor", gridLineEmission);
+        gridMaterial.EnableKeyword("_EMISSION");
+        gridMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+        return gridMaterial;
+    }
+
+    // 4x4칸 텍스처: 칸마다 밝기 살짝 다르게 + 칸 경계 가는 선(양쪽 1px) + 2칸마다 굵은 선(양쪽 2px), 발광 마스크는 선만
+    private void BuildGridTextures()
+    {
+        const int cellPx = 64;
+        const int cells = 4;
+        const int texSize = cellPx * cells;
+        gridAlbedo = new Texture2D(texSize, texSize, TextureFormat.RGBA32, true) { name = "GridFloorAlbedo", hideFlags = HideFlags.DontSave, wrapMode = TextureWrapMode.Repeat, anisoLevel = 4 };
+        gridEmissionMask = new Texture2D(texSize, texSize, TextureFormat.RGBA32, true) { name = "GridFloorEmission", hideFlags = HideFlags.DontSave, wrapMode = TextureWrapMode.Repeat, anisoLevel = 4 };
+        Color32[] albedo = new Color32[texSize * texSize];
+        Color32[] emission = new Color32[texSize * texSize];
+        System.Random variation = new System.Random(11);
+        float[] cellShade = new float[cells * cells];
+        for (int i = 0; i < cellShade.Length; i++) cellShade[i] = 1f + ((float)variation.NextDouble() * 2f - 1f) * gridCellVariation;
+
+        for (int y = 0; y < texSize; y++)
+        {
+            for (int x = 0; x < texSize; x++)
+            {
+                float line = Mathf.Max(LineStrength(x, cellPx), LineStrength(y, cellPx));
+                Color baseColor = gridBaseColor * cellShade[(y / cellPx) * cells + x / cellPx];
+                baseColor.a = 1f;
+                albedo[y * texSize + x] = Color.Lerp(baseColor, gridLineColor, line);
+                byte e = (byte)(line * 255f);
+                emission[y * texSize + x] = new Color32(e, e, e, 255);
+            }
+        }
+        gridAlbedo.SetPixels32(albedo);
+        gridAlbedo.Apply(true);
+        gridEmissionMask.SetPixels32(emission);
+        gridEmissionMask.Apply(true);
+    }
+
+    // 칸 경계까지 거리로 선 세기: 2칸마다 굵은 선 1.0 (양쪽 2px), 나머지 가는 선 0.6 (양쪽 1px)
+    private static float LineStrength(int p, int cellPx)
+    {
+        int inCell = p % cellPx;
+        int toEdge = Mathf.Min(inCell, cellPx - 1 - inCell);
+        bool nearMajor = (inCell < cellPx / 2) ? (p / cellPx) % 2 == 0 : (p / cellPx) % 2 == 1;
+        if (nearMajor && toEdge < 2) return 1f;
+        if (toEdge < 1) return 0.6f;
+        return 0f;
     }
 
     // 키트 외곽 벽 (W3b): 외곽 큐브 겉모습을 끄고, 안쪽 면을 맵 경계에 맞춰 벽을 이어 붙임

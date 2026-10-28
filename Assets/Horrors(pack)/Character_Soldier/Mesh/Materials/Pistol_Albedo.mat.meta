@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a998325f5e2e1cf49a0c58a7153588ff
+timeCreated: 1463478002
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Soldier/Mesh/Materials/Pistol_Albedo.mat
+  uploadId: 322202

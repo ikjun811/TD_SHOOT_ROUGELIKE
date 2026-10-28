@@ -95,6 +95,7 @@ public class EnemyBomber : MonoBehaviour
         baseScale = transform.localScale;
         if (agent != null && agent.enabled && agent.isOnNavMesh) agent.isStopped = true;
         CreateRing();
+        if (enemy.ModelAnimator != null) enemy.ModelAnimator.PlayAction("Fuse"); // 모델 자폭 예고 동작 (포효)
     }
 
     private void SelfDestruct()

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f9addcb59c4d19846b443bb640fdf166
+timeCreated: 1465071105
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/M_Door_A_Door_Glass.mat
+  uploadId: 364232

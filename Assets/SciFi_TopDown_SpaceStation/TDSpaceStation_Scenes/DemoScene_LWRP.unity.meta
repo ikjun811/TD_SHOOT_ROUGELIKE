@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2005c28ec60d4b842b1cf429b9e4e3f1
+timeCreated: 1466197063
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Scenes/DemoScene_LWRP.unity
+  uploadId: 364232

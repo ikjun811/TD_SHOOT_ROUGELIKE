@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 13dbe0962193ebf43aca0b82fde61210
+timeCreated: 1485091305
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Mechanic/Mesh/Materials/Mechanic_Albedo.mat
+  uploadId: 322202

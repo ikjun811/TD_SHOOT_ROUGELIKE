@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6b48e69b0f2d9f04c88e74bac7da260e
+timeCreated: 1465073548
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs/SpaceStation_Room_A_Wall_Internal.prefab
+  uploadId: 364232

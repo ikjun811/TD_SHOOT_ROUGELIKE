@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 2a7877d60de408f42a668fa18274baa9
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Shaders/PR_LWRP_Env_PBR_WorldUV_Floor.shadergraph
+  uploadId: 364232

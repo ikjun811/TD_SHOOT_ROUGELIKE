@@ -6,6 +6,7 @@ using UnityEngine.UI;
 // 획득 알림 (C3) — DroppedItem이 아이템을 획득할 때 호출, 첫 호출 시 자동 생성 (씬 연결 불필요)
 //   화면 왼쪽 아래에 "[레어도] 이름"을 레어도 색으로 표시, 새 알림이 아래에 쌓이고 최대 maxEntries줄
 //   표시 시간·사라짐은 실제 시간 기준 (탈출 시 한꺼번에 흡수돼도 정상 표시), 정비·결과 화면(timeScale 0)에서는 숨김
+//   픽셀 스킨 (HUD와 통일, 사용자 채택): 줄 배경 = 테마 레어도 슬롯 테두리(정비 카드와 같은 그림), 없으면 어두운 상자 + 왼쪽 색 막대
 public class PickupNoticeUI : MonoBehaviour
 {
     private static PickupNoticeUI instance;
@@ -15,6 +16,8 @@ public class PickupNoticeUI : MonoBehaviour
     public float fadeTime = 0.4f;
     public float fontSize = 26f;
     public Vector2 anchoredPosition = new Vector2(40f, 300f); // 화면 왼쪽 아래 기준 (1920x1080)
+    public float framePixelScale = 2f;                        // 레어도 테두리 픽셀 배율
+    [Range(0f, 1f)] public float frameAlpha = 0.92f;
 
     private Canvas canvas;
     private RectTransform container;
@@ -33,7 +36,7 @@ public class PickupNoticeUI : MonoBehaviour
         if (module == null) return;
         bool unique = module.category == ModuleCategory.Unique;
         string label = unique ? "유니크" : ItemTooltipUI.GetRarityName(module.rarity);
-        Show($"[{label}] {StripRaritySuffix(module.moduleName)}", UITheme.Current.GetRarityColor(module.rarity), module.rarity >= RarityType.Legendary || unique);
+        Show($"[{label}] {StripRaritySuffix(module.moduleName)}", UITheme.Current.GetRarityColor(module.rarity), module.rarity, module.rarity >= RarityType.Legendary || unique);
     }
 
     // 모듈 이름 끝의 "(희귀)" 등 레어도 괄호 제거 — 앞의 [레어도]와 두 번 겹쳐 보이던 문제 (에셋 이름은 그대로)
@@ -54,17 +57,17 @@ public class PickupNoticeUI : MonoBehaviour
     public static void ShowWeapon(WeaponDataSO weapon)
     {
         if (weapon == null) return;
-        Show($"[{ItemTooltipUI.GetRarityName(weapon.rarity)}] {weapon.weaponName} (무기)", weapon.GetRarityColor(), weapon.rarity >= RarityType.Legendary);
+        Show($"[{ItemTooltipUI.GetRarityName(weapon.rarity)}] {weapon.weaponName} (무기)", weapon.GetRarityColor(), weapon.rarity, weapon.rarity >= RarityType.Legendary);
     }
 
-    private static void Show(string text, Color color, bool emphasize)
+    private static void Show(string text, Color color, RarityType rarity, bool emphasize)
     {
         if (instance == null)
         {
             GameObject go = new GameObject("PickupNoticeUI");
             instance = go.AddComponent<PickupNoticeUI>();
         }
-        instance.AddEntry(text, color, emphasize);
+        instance.AddEntry(text, color, rarity, emphasize);
     }
 
     private void Awake()
@@ -99,7 +102,7 @@ public class PickupNoticeUI : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    private void AddEntry(string text, Color color, bool emphasize)
+    private void AddEntry(string text, Color color, RarityType rarity, bool emphasize)
     {
         while (entries.Count >= maxEntries)
         {
@@ -108,7 +111,7 @@ public class PickupNoticeUI : MonoBehaviour
         }
 
         float size = emphasize ? fontSize * 1.15f : fontSize;
-        float height = size + 14f;
+        float height = size + 22f; // 테두리(픽셀 3 x 배율 2) 안에 글자가 들어가도록
 
         // 배경 (어두운 반투명) + 왼쪽 레어도 색 막대 + 글자
         GameObject root = new GameObject("Notice", typeof(RectTransform), typeof(Image), typeof(CanvasGroup), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
@@ -118,9 +121,11 @@ public class PickupNoticeUI : MonoBehaviour
         Image bg = root.GetComponent<Image>();
         bg.color = new Color(0.03f, 0.05f, 0.08f, emphasize ? 0.8f : 0.6f);
         bg.raycastTarget = false;
+        bool framed = UITheme.Current.ApplySprite(bg, UITheme.Current.GetRaritySlotSprite(rarity), framePixelScale);
+        if (framed) bg.color = new Color(1f, 1f, 1f, frameAlpha);
 
         HorizontalLayoutGroup row = root.GetComponent<HorizontalLayoutGroup>();
-        row.padding = new RectOffset(0, 14, 0, 0);
+        row.padding = framed ? new RectOffset(14, 16, 0, 0) : new RectOffset(0, 14, 0, 0);
         row.spacing = 10f;
         row.childAlignment = TextAnchor.MiddleLeft;
         row.childControlWidth = true;
@@ -140,6 +145,7 @@ public class PickupNoticeUI : MonoBehaviour
         barImage.raycastTarget = false;
         LayoutElement barLayout = bar.GetComponent<LayoutElement>();
         barLayout.preferredWidth = emphasize ? 8f : 5f;
+        if (framed) bar.SetActive(false); // 테두리 색이 레어도를 보여 줌
 
         GameObject label = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         label.transform.SetParent(root.transform, false);

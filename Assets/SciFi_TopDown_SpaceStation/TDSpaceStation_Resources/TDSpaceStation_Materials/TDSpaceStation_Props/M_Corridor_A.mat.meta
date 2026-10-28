@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a963e20616836ff48acbdb0447480087
+timeCreated: 1462130531
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/TDSpaceStation_Props/M_Corridor_A.mat
+  uploadId: 364232

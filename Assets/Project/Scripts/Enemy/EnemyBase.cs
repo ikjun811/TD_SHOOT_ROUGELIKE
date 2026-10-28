@@ -23,6 +23,12 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] private bool useMeleeAttack = true;
     [Tooltip("기본 추적 이동 사용 (슈터처럼 이동을 별도 컴포넌트가 하는 종류는 끔)")]
     [SerializeField] private bool useDefaultChase = true;
+    [Tooltip("공격 시작 → 피해 판정까지 (공격 동작에서 휘두르는 시점, 생성기가 모델 공격 동작 길이로 설정). 그 사이 사거리를 벗어나면 빗나감")]
+    [SerializeField] private float attackHitDelay = 0.35f;
+    [Tooltip("피해 판정 뒤 멈춰 있는 시간")]
+    [SerializeField] private float attackRecoverTime = 0.25f;
+    [Tooltip("피해 판정 때 사거리에 더하는 여유 (판정 순간 살짝 벗어난 정도는 맞음)")]
+    [SerializeField] private float attackHitTolerance = 0.4f;
 
     [Header("Pathfinding")]
     [SerializeField] private float repathInterval = 0.2f;      // 경로 재계산 간격 (초)
@@ -71,12 +77,22 @@ public class EnemyBase : MonoBehaviour
 
     private float nextRepathTime;
     private Vector3 lastPathTarget;
+
+    // 근접 공격 진행 (시작 → hitDelay 뒤 판정 → recover 뒤 추적 재개)
+    private bool isAttacking;
+    private bool attackResolved;
+    private float attackHitTime;
+    private float attackEndTime;
     private EnemyHitFlash hitFlash;
+    private EnemyAnimator enemyAnimator; // 모델이 있는 적만 (생성기가 부착)
+
+    public EnemyAnimator ModelAnimator => enemyAnimator;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         juHealth = GetComponent<JUHealth>();
+        enemyAnimator = GetComponent<EnemyAnimator>();
     }
 
     private void Start()
@@ -146,6 +162,9 @@ public class EnemyBase : MonoBehaviour
         Color silhouetteColor = IsElite ? eliteColor : new Color(1f, 0.25f, 0.2f);
         silhouetteColor.a = 0.6f;
         SilhouetteRenderer.Attach(gameObject, silhouetteColor);
+
+        // 엘리트 보라 빛 (렌더링 ③, 분위기 조명이 있을 때만) — 실루엣 복제 대상이 아닌 Light라 순서 무관
+        if (IsElite) AtmosphereLighting.AttachEliteLight(transform);
     }
 
     // 엘리트 외형: 크기 확대 + 보라색 (MaterialPropertyBlock이라 머티리얼 복사본이 생기지 않음)
@@ -177,6 +196,12 @@ public class EnemyBase : MonoBehaviour
     {
         if (isDead || playerTransform == null) return;
 
+        if (isAttacking)
+        {
+            UpdateAttack();
+            return;
+        }
+
         // 경로 재계산은 일정 간격마다, 또는 플레이어가 크게 움직였을 때만 (매 프레임 재계산 비용 절감)
         Vector3 playerPos = playerTransform.position;
         if (useDefaultChase && (Time.time >= nextRepathTime || (playerPos - lastPathTarget).sqrMagnitude > repathMoveThreshold * repathMoveThreshold))
@@ -197,7 +222,7 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    // ⭐ 플레이어 근접 사거리 진입 시 데미지 전달 연산
+    // 플레이어 근접 사거리 진입 → 공격 시작 (피해는 휘두르는 시점에 판정, UpdateAttack)
     private void AttackPlayer()
     {
         if (Time.time < lastAttackTime + attackCooldown) return;
@@ -210,7 +235,41 @@ public class EnemyBase : MonoBehaviour
         if (playerHealth != null && !playerHealth.IsDead)
         {
             lastAttackTime = Time.time;
-            playerHealth.DoDamage(baseAttackDamage);
+            isAttacking = true;
+            attackResolved = false;
+            attackHitTime = Time.time + attackHitDelay;
+            attackEndTime = attackHitTime + attackRecoverTime;
+            if (agent.enabled && agent.isOnNavMesh) agent.isStopped = true; // 멈춰 서서 휘두름 (피할 틈)
+            if (enemyAnimator != null) enemyAnimator.PlayAttack();
+        }
+    }
+
+    private void UpdateAttack()
+    {
+        Vector3 toPlayer = playerTransform.position - transform.position;
+        toPlayer.y = 0f;
+
+        // 휘두르기 전까지 플레이어 쪽으로 돌기
+        if (!attackResolved && toPlayer.sqrMagnitude > 0.0001f)
+        {
+            Quaternion target = Quaternion.LookRotation(toPlayer.normalized, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, target, 540f * Time.deltaTime);
+        }
+
+        if (!attackResolved && Time.time >= attackHitTime)
+        {
+            attackResolved = true;
+            float reach = attackRange + attackHitTolerance;
+            if (toPlayer.sqrMagnitude <= reach * reach && playerHealth != null && !playerHealth.IsDead)
+            {
+                playerHealth.DoDamage(baseAttackDamage);
+            }
+        }
+
+        if (Time.time >= attackEndTime)
+        {
+            isAttacking = false;
+            if (agent.enabled && agent.isOnNavMesh) agent.isStopped = false;
         }
     }
 
@@ -228,6 +287,7 @@ public class EnemyBase : MonoBehaviour
     {
         // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
         if (hitFlash != null) hitFlash.Flash();
+        if (enemyAnimator != null && !isDead) enemyAnimator.PlayHit();
     }
 
     private void OnEnemyDeath()
@@ -236,6 +296,7 @@ public class EnemyBase : MonoBehaviour
         isDead = true;
         activeElites.Remove(this);
         DeathFrame = Time.frameCount;
+        foreach (Light l in GetComponentsInChildren<Light>()) l.enabled = false; // 엘리트 빛 끔 (시체가 남아 있는 동안)
         OnAnyEnemyDeath?.Invoke(this);
 
         if (ItemDropManager.Instance != null)
@@ -257,6 +318,19 @@ public class EnemyBase : MonoBehaviour
         if (deathVFX != null)
         {
             Instantiate(deathVFX, transform.position, Quaternion.identity);
+        }
+
+        // 모델이 있으면 쓰러지는 동작을 보여 준 뒤 제거 — 그동안 탄·폭발·밀어내기 판정과 이동을 끔
+        if (enemyAnimator != null && enemyAnimator.HasModel)
+        {
+            foreach (Collider col in GetComponentsInChildren<Collider>()) col.enabled = false;
+            if (agent.enabled) agent.enabled = false;
+            WorldHealthBar bar = GetComponent<WorldHealthBar>();
+            if (bar != null) bar.enabled = false;
+            SilhouetteRenderer silhouette = GetComponent<SilhouetteRenderer>();
+            if (silhouette != null) silhouette.enabled = false; // 가라앉는 시체가 바닥 너머로 실루엣에 비치지 않게
+            Destroy(gameObject, enemyAnimator.PlayDeath());
+            return;
         }
 
         Destroy(gameObject, 0.1f);

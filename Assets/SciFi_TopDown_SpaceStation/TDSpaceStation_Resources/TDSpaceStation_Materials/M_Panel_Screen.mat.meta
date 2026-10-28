@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 06d9043171ad39d4ea32f041523996f6
+timeCreated: 1456707366
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/M_Panel_Screen.mat
+  uploadId: 364232

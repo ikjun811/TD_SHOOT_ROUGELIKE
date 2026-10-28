@@ -107,7 +107,8 @@ public class EnemyShooter : MonoBehaviour
     {
         if (distance > preferredMaxRange || !canSee)
         {
-            // 접근
+            // 접근 (진행 방향을 봄)
+            agent.updateRotation = true;
             agent.isStopped = false;
             if (Time.time >= nextRepathTime)
             {
@@ -117,7 +118,9 @@ public class EnemyShooter : MonoBehaviour
         }
         else if (distance < retreatRange)
         {
-            // 후퇴
+            // 후퇴 — 플레이어를 바라본 채 뒷걸음 (모델은 방향별 걷기 애니메이션)
+            agent.updateRotation = false;
+            FacePlayer(toPlayer);
             if (Time.time >= nextRepathTime)
             {
                 Vector3 away = distance > 0.01f ? -toPlayer / distance : -transform.forward;
@@ -186,6 +189,7 @@ public class EnemyShooter : MonoBehaviour
         Vector3 dir = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : transform.forward;
         EnemyProjectile.Spawn(MuzzlePosition() + dir * 0.6f, dir, projectileSpeed, enemy.AttackDamage, projectileLifetime,
                               projectileHitRadius, projectileSize, player, playerHealth);
+        if (enemy.ModelAnimator != null) enemy.ModelAnimator.PlayAction("Shoot"); // 모델 사격 동작 (없으면 무시)
     }
 
     private Vector3 MuzzlePosition()

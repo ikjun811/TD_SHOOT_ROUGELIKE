@@ -74,6 +74,15 @@ public class SilhouetteRenderer : MonoBehaviour
         }
     }
 
+    // 컴포넌트를 끄면 실루엣 전체 숨김 (적 시체 등), 다시 켜면 LateUpdate가 원본 상태로 맞춤
+    private void OnDisable()
+    {
+        foreach ((Renderer _, Renderer proxy) in pairs)
+        {
+            if (proxy != null) proxy.enabled = false;
+        }
+    }
+
     private void OnDestroy()
     {
         if (maskMaterial != null) Destroy(maskMaterial);

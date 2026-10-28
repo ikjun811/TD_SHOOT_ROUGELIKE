@@ -152,13 +152,14 @@ public class ItemDropManager : MonoBehaviour
     }
 
     // 보급 상자 무기 드랍: 레어도 표 기준, 장착·금고에 있는 무기군은 낮은 가중치 (중복 억제)
-    public void DropCrateWeapon(Vector3 position, int currentRound)
+    // 드랍한 무기 반환 (상자 열림 연출 색, 없으면 null)
+    public WeaponDataSO DropCrateWeapon(Vector3 position, int currentRound)
     {
         RarityType rarity = DetermineRarityByRound(currentRound);
 
         List<WeaponDataSO> candidates = allWeapons.FindAll(w => w != null && w.rarity == rarity);
         if (candidates.Count == 0) candidates = allWeapons.FindAll(w => w != null);
-        if (candidates.Count == 0) return;
+        if (candidates.Count == 0) return null;
 
         HashSet<WeaponType> ownedTypes = GetOwnedWeaponTypes();
 
@@ -178,6 +179,7 @@ public class ItemDropManager : MonoBehaviour
 
         SpawnDrop(position, picked, null);
         Debug.Log($"ItemDropManager: Supply crate -> {picked.weaponName} [{picked.rarity}]");
+        return picked;
     }
 
     // 장착 슬롯과 금고에 있는 무기군

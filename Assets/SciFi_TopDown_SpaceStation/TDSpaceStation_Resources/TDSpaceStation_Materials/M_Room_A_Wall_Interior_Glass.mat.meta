@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b839402c72266044a81866ce41cb0384
+timeCreated: 1465068488
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/M_Room_A_Wall_Interior_Glass.mat
+  uploadId: 364232

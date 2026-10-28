@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 61e46933f24816241890e016c8e5e2e0
+timeCreated: 1520354899
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Soldier/Prefab/Granade.prefab
+  uploadId: 322202

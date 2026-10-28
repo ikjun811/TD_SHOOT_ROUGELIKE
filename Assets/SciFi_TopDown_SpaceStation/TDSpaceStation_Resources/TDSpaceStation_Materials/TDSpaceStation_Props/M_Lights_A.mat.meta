@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: baedb6dcc9b28264bbfb8a9482ed9f3a
+timeCreated: 1462655898
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/TDSpaceStation_Props/M_Lights_A.mat
+  uploadId: 364232

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6a5aa2f7ec45ad34a86380e64c144d97
+timeCreated: 1485091912
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Prisoner/Prisoner.controller
+  uploadId: 322202

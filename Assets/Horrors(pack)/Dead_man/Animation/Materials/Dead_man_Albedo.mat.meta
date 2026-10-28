@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4530b2e65a5c3ba47976de54bcb2f0d9
+timeCreated: 1485091020
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Dead_man/Animation/Materials/Dead_man_Albedo.mat
+  uploadId: 322202

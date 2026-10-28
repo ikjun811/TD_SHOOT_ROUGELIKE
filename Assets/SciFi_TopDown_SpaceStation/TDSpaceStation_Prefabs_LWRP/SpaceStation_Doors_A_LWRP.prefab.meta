@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 05eb9fd24ae68d447b3f029c4f78ca95
+timeCreated: 1465073548
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs_LWRP/SpaceStation_Doors_A_LWRP.prefab
+  uploadId: 364232

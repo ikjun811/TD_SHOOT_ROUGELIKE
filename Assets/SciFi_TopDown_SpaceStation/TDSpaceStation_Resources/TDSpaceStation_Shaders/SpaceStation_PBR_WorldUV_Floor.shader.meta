@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 0bfb08cb7e6c3d0419506e217607f438
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Shaders/SpaceStation_PBR_WorldUV_Floor.shader
+  uploadId: 364232

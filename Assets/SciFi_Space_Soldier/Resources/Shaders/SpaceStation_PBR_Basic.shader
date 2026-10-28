@@ -77,7 +77,7 @@
 		
 			half occ = tex2D(_MetallicGlossMap, RescaledUV).b;
 			o.Occlusion = LerpOneTo(occ , _OcclusionStrength );
-			o.Occlusion = 1.0;
+					
 			o.Alpha = c.a;
 
 			o.Emission = tex2D(_EmissionMap, RescaledUV) * _EmissionColor * _EmissionFactor;

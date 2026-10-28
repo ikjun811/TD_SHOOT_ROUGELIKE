@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: de1efecbf61249e4ea5427e6258aa204
+timeCreated: 1463477555
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 63024
+  packageName: PBR Horror (Pack)
+  packageVersion: 1.1
+  assetPath: Assets/Horrors(pack)/Character_Fat/animation/Materials/Fat_Diffuse(legacy).mat
+  uploadId: 322202

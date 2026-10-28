@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e71cdeae384a1bf4a837f491d60762a9
+timeCreated: 1463186022
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/TDSpaceStation_B&Y_Bars/M_Room_A_DoorModule_B&Y.mat
+  uploadId: 364232

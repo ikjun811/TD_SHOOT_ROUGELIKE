@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8169d1971fce999409cd77f5b8f122b4
+timeCreated: 1465073548
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs/SpaceStation_Corridor_I_TwoDoors.prefab
+  uploadId: 364232

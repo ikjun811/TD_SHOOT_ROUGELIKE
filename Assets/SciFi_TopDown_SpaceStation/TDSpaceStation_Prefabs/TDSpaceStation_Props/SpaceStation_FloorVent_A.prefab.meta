@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a23b553290a215d4d96f8ca4f4e42d7a
+timeCreated: 1465090572
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs/TDSpaceStation_Props/SpaceStation_FloorVent_A.prefab
+  uploadId: 364232

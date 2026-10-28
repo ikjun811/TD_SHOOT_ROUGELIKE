@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2c6b19cf07efd944d9d05ed9df06859f
+timeCreated: 1462137006
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials_LWRP/M_Dark_Background_LWRP.mat
+  uploadId: 364232

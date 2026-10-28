@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b43081f800c67db4b876ffb2a1f958f5
+timeCreated: 1465088714
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 65449
+  packageName: Sci Fi Top Down Space Station PolygonR
+  packageVersion: 1.1
+  assetPath: Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Materials/M_Floor_Vent_A.mat
+  uploadId: 364232
