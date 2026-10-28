@@ -7,7 +7,10 @@ using UnityEngine.AI;
 public class ExtractionZone : MonoBehaviour
 {
     [Header("Extraction Settings")]
-    [SerializeField] private float requiredExtractionTime = 60f;
+    [Tooltip("일반 라운드 탈출 시간 (GDD 40초)")]
+    [SerializeField] private float requiredExtractionTime = 40f;
+    [Tooltip("최종 라운드 탈출 시간 배율 (보스 대신 버티기 연장, GDD 8-6 #18)")]
+    [SerializeField] private float finalRoundTimeMultiplier = 1.5f;
     [SerializeField] private float currentExtractionProgress = 0f;
 
     [Header("Placement")]
@@ -15,12 +18,33 @@ public class ExtractionZone : MonoBehaviour
     [SerializeField] private float minDistanceFromPlayer = 25f;
     [SerializeField] private int maxPlacementAttempts = 20;
 
+    [Header("Success Effect (D3: 슬로모션 → 암전, 실제 시간 기준)")]
+    [Tooltip("탈출 성공 순간 게임 속도 배율 (0보다 커야 함 — 0은 정비 정지로 취급됨)")]
+    [Range(0.05f, 1f)] [SerializeField] private float successSlowScale = 0.3f;
+    [SerializeField] private float successSlowTime = 1.6f;
+    [SerializeField] private float successFadeTime = 0.6f;
+    [Tooltip("정비·결과 화면이 열린 뒤 다시 밝아지는 시간")]
+    [SerializeField] private float successFadeInTime = 0.4f;
+
     private bool isPlayerInsideZone = false;
     private bool isExtractionComplete = false;
+    private bool isSlowMotionActive = false;
+    private float defaultFixedDeltaTime = 0.02f;
 
-    public float RemainingTime => Mathf.Max(0f, requiredExtractionTime - currentExtractionProgress);
+    // 슬로모션 도중 씬이 바뀌면 물리 간격 복구 (timeScale은 GameSession이 씬 전환 시 1로)
+    private void OnDestroy()
+    {
+        if (isSlowMotionActive) Time.fixedDeltaTime = defaultFixedDeltaTime;
+    }
+
+    // 이번 라운드 탈출 시간 (최종 라운드면 배율 적용)
+    public float RequiredTime => requiredExtractionTime * (IsFinalRound ? finalRoundTimeMultiplier : 1f);
+    private static bool IsFinalRound => WaveManager.Instance != null && WaveManager.Instance.CurrentRound >= WaveManager.Instance.MaxRound;
+
+    // 탈출 완료 후에는 가득 고정 (성공 순간 라운드가 올라 최종 라운드 배율이 바뀌어도 게이지가 줄지 않게)
+    public float RemainingTime => isExtractionComplete ? 0f : Mathf.Max(0f, RequiredTime - currentExtractionProgress);
     public bool IsPlayerInside => isPlayerInsideZone;
-    public float ProgressPercent => Mathf.Clamp01(currentExtractionProgress / requiredExtractionTime);
+    public float ProgressPercent => isExtractionComplete ? 1f : Mathf.Clamp01(currentExtractionProgress / RequiredTime);
 
     // 트리거가 JU 바닥·계단 검사(WhatIsGround = Default, Queries Hit Triggers 켜짐)에 잡혀 가장자리에서 걸리지 않도록 Ignore Raycast 레이어로
     // 트리거 진입·이탈 판정은 그대로 동작
@@ -43,7 +67,7 @@ public class ExtractionZone : MonoBehaviour
         {
             currentExtractionProgress += Time.deltaTime;
 
-            if (currentExtractionProgress >= requiredExtractionTime)
+            if (currentExtractionProgress >= RequiredTime)
             {
                 isExtractionComplete = true;
                 StartCoroutine(ExtractionSuccessSequence());
@@ -149,15 +173,14 @@ public class ExtractionZone : MonoBehaviour
 
     private IEnumerator ExtractionSuccessSequence()
     {
-        if (StageHUDUI.Instance != null)
-        {
-            StageHUDUI.Instance.ShowNoticeBanner("EXTRACTION SUCCESSFUL", Color.green);
-        }
-
         WaveManager.EndRoundAndDespawn();
 
         // 최종 라운드 탈출 = 게임 클리어 (정비 대신 결과 화면)
         bool isGameClear = WaveManager.Instance != null && WaveManager.Instance.CurrentRound >= WaveManager.Instance.MaxRound;
+
+        // 경고 띠 배너 (슬로모션·암전 동안 유지, 라운드 증가 전 번호)
+        int clearedRound = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 0;
+        AlertBanner.ShowExtractionSuccess(clearedRound, isGameClear, successSlowTime + successFadeTime);
 
         // 탈출 성공 시에만 라운드 +1
         if (WaveManager.Instance != null && !isGameClear)
@@ -165,12 +188,28 @@ public class ExtractionZone : MonoBehaviour
             WaveManager.Instance.AdvanceRound();
         }
 
+        // 필드 아이템 흡수 — 비행은 실제 시간 기준(DroppedItem)이라 슬로모션 중에도 평소 속도로 빨려옴
         if (ItemDropManager.Instance != null)
         {
             ItemDropManager.Instance.CollectAllRemainingDropsOnField();
         }
 
-        yield return new WaitForSeconds(2.5f);
+        AudioManager.PlaySfx(AudioManager.Library.extractionSuccess);
+
+        // D3 슬로모션 → 암전 (물리 간격도 같은 비율로 줄여 움직임이 끊기지 않게)
+        defaultFixedDeltaTime = Time.fixedDeltaTime;
+        isSlowMotionActive = true;
+        Time.timeScale = successSlowScale;
+        Time.fixedDeltaTime = defaultFixedDeltaTime * successSlowScale;
+
+        yield return new WaitForSecondsRealtime(successSlowTime);
+        ScreenFader.FadeTo(1f, successFadeTime);
+        yield return new WaitForSecondsRealtime(successFadeTime);
+
+        // 정비·결과 진입 전 원래 속도로 복구 (정비는 이어서 0으로 정지)
+        Time.timeScale = 1f;
+        Time.fixedDeltaTime = defaultFixedDeltaTime;
+        isSlowMotionActive = false;
 
         if (StageHUDUI.Instance != null)
         {
@@ -180,6 +219,7 @@ public class ExtractionZone : MonoBehaviour
         if (isGameClear && RunResultManager.Instance != null)
         {
             RunResultManager.Instance.ShowResult(true);
+            ScreenFader.FadeTo(0f, successFadeInTime); // 결과 씬으로 넘어가면 함께 사라짐, 코드 결과 화면이면 밝아짐
             yield break;
         }
 
@@ -187,5 +227,6 @@ public class ExtractionZone : MonoBehaviour
         {
             MaintenanceManager.Instance.EnterMaintenanceStage();
         }
+        ScreenFader.FadeTo(0f, successFadeInTime);
     }
 }

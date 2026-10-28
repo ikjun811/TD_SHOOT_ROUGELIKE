@@ -24,6 +24,9 @@ public static class GameplayBootstrap
         SupplyCrateManager.EnsureCreated();
         RunResultManager.EnsureCreated();
         GameplayPostProcess.EnsureCreated();
+        HitStop.EnsureCreated();
+        CameraShake.EnsureCreated();
+        EliteOffscreenIndicator.EnsureCreated();
         PlayerPositionGuard.EnsureOnPlayer();
         SilhouetteRenderer.Attach(GameObject.FindGameObjectWithTag("Player"), new Color(0.3f, 0.85f, 1f, 0.6f));
     }

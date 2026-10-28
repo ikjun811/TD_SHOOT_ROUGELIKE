@@ -1,0 +1,182 @@
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+// 획득 알림 (C3) — DroppedItem이 아이템을 획득할 때 호출, 첫 호출 시 자동 생성 (씬 연결 불필요)
+//   화면 왼쪽 아래에 "[레어도] 이름"을 레어도 색으로 표시, 새 알림이 아래에 쌓이고 최대 maxEntries줄
+//   표시 시간·사라짐은 실제 시간 기준 (탈출 시 한꺼번에 흡수돼도 정상 표시), 정비·결과 화면(timeScale 0)에서는 숨김
+public class PickupNoticeUI : MonoBehaviour
+{
+    private static PickupNoticeUI instance;
+
+    public int maxEntries = 6;
+    public float showTime = 2.5f;
+    public float fadeTime = 0.4f;
+    public float fontSize = 26f;
+    public Vector2 anchoredPosition = new Vector2(40f, 300f); // 화면 왼쪽 아래 기준 (1920x1080)
+
+    private Canvas canvas;
+    private RectTransform container;
+
+    private class Entry
+    {
+        public GameObject root;
+        public CanvasGroup group;
+        public float endTime;
+    }
+
+    private readonly List<Entry> entries = new List<Entry>();
+
+    public static void ShowModule(ModuleDataSO module)
+    {
+        if (module == null) return;
+        bool unique = module.category == ModuleCategory.Unique;
+        string label = unique ? "유니크" : ItemTooltipUI.GetRarityName(module.rarity);
+        Show($"[{label}] {StripRaritySuffix(module.moduleName)}", UITheme.Current.GetRarityColor(module.rarity), module.rarity >= RarityType.Legendary || unique);
+    }
+
+    // 모듈 이름 끝의 "(희귀)" 등 레어도 괄호 제거 — 앞의 [레어도]와 두 번 겹쳐 보이던 문제 (에셋 이름은 그대로)
+    private static string StripRaritySuffix(string name)
+    {
+        if (string.IsNullOrEmpty(name) || !name.EndsWith(")")) return name;
+        int open = name.LastIndexOf('(');
+        if (open <= 0) return name;
+        string inner = name.Substring(open + 1, name.Length - open - 2).Trim();
+        bool isRarity = inner == "유니크";
+        foreach (RarityType rarity in System.Enum.GetValues(typeof(RarityType)))
+        {
+            if (inner == ItemTooltipUI.GetRarityName(rarity)) isRarity = true;
+        }
+        return isRarity ? name.Substring(0, open).TrimEnd() : name;
+    }
+
+    public static void ShowWeapon(WeaponDataSO weapon)
+    {
+        if (weapon == null) return;
+        Show($"[{ItemTooltipUI.GetRarityName(weapon.rarity)}] {weapon.weaponName} (무기)", weapon.GetRarityColor(), weapon.rarity >= RarityType.Legendary);
+    }
+
+    private static void Show(string text, Color color, bool emphasize)
+    {
+        if (instance == null)
+        {
+            GameObject go = new GameObject("PickupNoticeUI");
+            instance = go.AddComponent<PickupNoticeUI>();
+        }
+        instance.AddEntry(text, color, emphasize);
+    }
+
+    private void Awake()
+    {
+        canvas = gameObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 40;
+        CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        GameObject containerObj = new GameObject("Entries", typeof(RectTransform));
+        container = containerObj.GetComponent<RectTransform>();
+        container.SetParent(transform, false);
+        container.anchorMin = container.anchorMax = Vector2.zero;
+        container.pivot = Vector2.zero;
+        container.anchoredPosition = anchoredPosition;
+        container.sizeDelta = new Vector2(700f, 400f);
+
+        VerticalLayoutGroup layout = containerObj.AddComponent<VerticalLayoutGroup>();
+        layout.childAlignment = TextAnchor.LowerLeft;
+        layout.spacing = 6f;
+        layout.childControlWidth = false;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
+    private void AddEntry(string text, Color color, bool emphasize)
+    {
+        while (entries.Count >= maxEntries)
+        {
+            Destroy(entries[0].root);
+            entries.RemoveAt(0);
+        }
+
+        float size = emphasize ? fontSize * 1.15f : fontSize;
+        float height = size + 14f;
+
+        // 배경 (어두운 반투명) + 왼쪽 레어도 색 막대 + 글자
+        GameObject root = new GameObject("Notice", typeof(RectTransform), typeof(Image), typeof(CanvasGroup), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+        RectTransform rect = root.GetComponent<RectTransform>();
+        rect.SetParent(container, false);
+        rect.pivot = new Vector2(0f, 0.5f);
+        Image bg = root.GetComponent<Image>();
+        bg.color = new Color(0.03f, 0.05f, 0.08f, emphasize ? 0.8f : 0.6f);
+        bg.raycastTarget = false;
+
+        HorizontalLayoutGroup row = root.GetComponent<HorizontalLayoutGroup>();
+        row.padding = new RectOffset(0, 14, 0, 0);
+        row.spacing = 10f;
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childControlWidth = true;
+        row.childControlHeight = true;
+        row.childForceExpandWidth = false;
+        row.childForceExpandHeight = true;
+
+        ContentSizeFitter fitter = root.GetComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+        rect.sizeDelta = new Vector2(0f, height);
+
+        GameObject bar = new GameObject("Bar", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        bar.transform.SetParent(root.transform, false);
+        Image barImage = bar.GetComponent<Image>();
+        barImage.color = color;
+        barImage.raycastTarget = false;
+        LayoutElement barLayout = bar.GetComponent<LayoutElement>();
+        barLayout.preferredWidth = emphasize ? 8f : 5f;
+
+        GameObject label = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        label.transform.SetParent(root.transform, false);
+        TextMeshProUGUI tmp = label.GetComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        tmp.color = color;
+        tmp.fontSize = size;
+        tmp.fontStyle = emphasize ? FontStyles.Bold : FontStyles.Normal;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+        tmp.alignment = TextAlignmentOptions.MidlineLeft;
+        tmp.raycastTarget = false;
+
+        entries.Add(new Entry
+        {
+            root = root,
+            group = root.GetComponent<CanvasGroup>(),
+            endTime = Time.unscaledTime + showTime
+        });
+    }
+
+    private void Update()
+    {
+        bool visible = Time.timeScale > 0f;
+        if (canvas.enabled != visible) canvas.enabled = visible;
+
+        float now = Time.unscaledTime;
+        for (int i = entries.Count - 1; i >= 0; i--)
+        {
+            Entry entry = entries[i];
+            float remaining = entry.endTime - now;
+            if (remaining <= -fadeTime)
+            {
+                Destroy(entry.root);
+                entries.RemoveAt(i);
+                continue;
+            }
+            entry.group.alpha = remaining >= 0f ? 1f : 1f + remaining / fadeTime;
+        }
+    }
+}

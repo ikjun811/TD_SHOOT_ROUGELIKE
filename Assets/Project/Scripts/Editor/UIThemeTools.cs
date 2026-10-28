@@ -47,6 +47,15 @@ public static class UIThemeTools
         theme.emptySlotSprite = Load("panel_inset", ref missing);
         theme.dropHighlightSprite = Load("focus", ref missing);
 
+        // 전투 HUD (사용자 채택 A안: 배치 그대로 부품만 픽셀 스프라이트)
+        theme.hudTrackSprite = Load("progress_bg", ref missing);
+        theme.hudFillSprite = Load("progress_fill", ref missing);
+        theme.hudActiveFillSprite = LoadBar("bar_green", ref missing);
+        theme.hudFinalFillSprite = LoadBar("bar_red", ref missing);
+        theme.hudMarkerSprite = Load("arrow", ref missing);
+        theme.hudLifeIcon = LoadIcon("heart", ref missing);
+        theme.hudBannerFrameSprite = Load("focus", ref missing);
+
         // 스탯 아이콘 (사용자 채택 매핑)
         theme.attackIcon = LoadIcon("crosshair", ref missing);
         theme.healthIcon = LoadIcon("heart", ref missing);
@@ -150,6 +159,19 @@ public static class UIThemeTools
         {
             missing++;
             Debug.LogWarning($"[UIThemeTools] 아이콘 없음: {fileName}");
+        }
+        return sprite;
+    }
+
+    private const string PixelBarFolder = "Assets/PixelUISciFiFree/Sprites/bars";
+
+    private static Sprite LoadBar(string fileName, ref int missing)
+    {
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{PixelBarFolder}/{fileName}.png");
+        if (sprite == null)
+        {
+            missing++;
+            Debug.LogWarning($"[UIThemeTools] 막대 스프라이트 없음: {fileName}");
         }
         return sprite;
     }

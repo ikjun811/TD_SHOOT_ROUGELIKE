@@ -92,6 +92,17 @@ public class UITheme : ScriptableObject
     public Color gridModuleBorderColor = new Color(5f / 255f, 11f / 255f, 18f / 255f);
     [Min(1f)] public float gridModuleBorderWidth = 3f;
 
+    [Header("Combat HUD (전투 화면 — 비우면 단색 선 모양, StageHUDUI)")]
+    [Tooltip("HUD 스프라이트 픽셀 배율 (눈금·탈출 막대·▼). 배너 괄호는 pixelScale")]
+    [Min(1f)] public float hudPixelScale = 2f;
+    public Sprite hudTrackSprite;        // 눈금·탈출 막대 빈 칸 (progress_bg)
+    public Sprite hudFillSprite;         // 채움 (progress_fill, 청록)
+    public Sprite hudActiveFillSprite;   // 탈출 구역 안 채움 (bar_green)
+    public Sprite hudFinalFillSprite;    // 최종 라운드 눈금 (bar_red)
+    public Sprite hudMarkerSprite;       // 현재 라운드 ▼ (arrow)
+    public Sprite hudLifeIcon;           // 목숨 (heart)
+    public Sprite hudBannerFrameSprite;  // 알림 배너 모서리 괄호 (focus)
+
     [Header("Active Effects Panel (적용 효과 목록)")]
     [Tooltip("효과 줄에 마우스를 올렸을 때 해당 모듈 경계선 색")]
     public Color gridHighlightBorderColor = new Color(64f / 255f, 208f / 255f, 236f / 255f);

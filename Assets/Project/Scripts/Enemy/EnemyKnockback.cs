@@ -20,6 +20,8 @@ public class EnemyKnockback : MonoBehaviour
     public static void Apply(EnemyBase enemy, Vector3 direction, float distance, float duration = 0f)
     {
         if (enemy == null || distance <= 0f) return;
+        distance *= 1f - enemy.KnockbackResistance; // 종류별 넉백 저항 (브루트 등)
+        if (distance <= 0f) return;
         if (duration <= 0f) duration = Duration;
 
         EnemyKnockback knockback = enemy.GetComponent<EnemyKnockback>();

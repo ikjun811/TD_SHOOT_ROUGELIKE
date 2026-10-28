@@ -298,7 +298,7 @@ public class ItemTooltipUI : MonoBehaviour
         };
     }
 
-    private static string GetRarityName(RarityType rarity)
+    public static string GetRarityName(RarityType rarity)
     {
         return rarity switch
         {

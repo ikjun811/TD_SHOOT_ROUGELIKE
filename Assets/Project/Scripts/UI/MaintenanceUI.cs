@@ -301,16 +301,13 @@ public class MaintenanceUI : MonoBehaviour
         }
         else
         {
+            // 빈 슬롯: 글자 없이 왼쪽 위 작은 번호만 (사용자 결정)
             SlotContentView view = SlotContentView.Get(slotImage);
-            if (view != null) view.Clear();
+            if (view != null) view.ShowEmpty(slotNumber.ToString());
 
             bool framed = theme.ApplyEmptySlot(slotImage);
             if (!framed && slotImage != null) slotImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
-            if (slotText != null)
-            {
-                slotText.text = $"[{slotNumber}] 빈 무기 슬롯";
-                slotText.color = framed ? theme.emptySlotTextColor : Color.gray;
-            }
+            if (slotText != null) slotText.text = view != null ? "" : $"[{slotNumber}]";
         }
     }
 

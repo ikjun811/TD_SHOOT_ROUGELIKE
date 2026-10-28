@@ -39,6 +39,7 @@ public class GrenadeProjectile : MonoBehaviour
     {
         exploded = true;
         Vector3 center = transform.position;
+        CameraShake.AddExplosion(center, vfxScale);
 
         if (explosionVFX != null)
         {

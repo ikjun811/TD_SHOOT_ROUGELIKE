@@ -2413,9 +2413,37 @@ MonoBehaviour:
   - {fileID: 4547278137632484263, guid: 9f113dac4ebce7749b0fbfc371bfe2b6, type: 3}
   - {fileID: 4547278137632484263, guid: 68a8d42798a8ce144b4ce995ad8968a6, type: 3}
   - {fileID: 4547278137632484263, guid: ed6d20fe31a8a6241a3e9c635fde0451, type: 3}
+  - {fileID: 7623682714147200201, guid: e12a421981336d34bba09d465c310e1f, type: 3}
   eliteEnemyPrefabs:
   - {fileID: 4547278137632484263, guid: 1f680e6f2fe74114f90856440cb7ecdf, type: 3}
   - {fileID: 4547278137632484263, guid: 2a71425bdf7328941ba7517cdc23b6f9, type: 3}
+  enemyTypeWeights:
+  - type: 0
+    unlockRound: 1
+    startWeight: 10
+    weightPerRound: 0
+    maxWeight: 10
+  - type: 1
+    unlockRound: 3
+    startWeight: 2
+    weightPerRound: 0.3
+    maxWeight: 4
+  - type: 2
+    unlockRound: 5
+    startWeight: 1.5
+    weightPerRound: 0.3
+    maxWeight: 3.5
+  - type: 3
+    unlockRound: 7
+    startWeight: 1.5
+    weightPerRound: 0.3
+    maxWeight: 3
+  - type: 4
+    unlockRound: 10
+    startWeight: 1.5
+    weightPerRound: 0.2
+    maxWeight: 2.5
+  elitesUseTypeWeights: 1
   minSpawnDistance: 18
   maxSpawnDistance: 25
   baseMaxConcurrentEnemies: 12

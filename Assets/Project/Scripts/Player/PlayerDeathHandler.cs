@@ -40,11 +40,9 @@ public class PlayerDeathHandler : MonoBehaviour
     {
         isProcessingDeath = true;
 
-        // 1. 화면 중앙 사망 통보 메시지 노출
-        if (StageHUDUI.Instance != null)
-        {
-            StageHUDUI.Instance.ShowNoticeBanner("MISSION FAILED - PLAYER DIED", Color.red);
-        }
+        // 1. 사망 통보 경고 띠 (이번 사망으로 목숨이 다 떨어지면 GAME OVER, 차감은 대기 후 4단계에서)
+        int livesLeft = StageDifficultyManager.Instance != null ? StageDifficultyManager.Instance.currentLives - 1 : 1;
+        AlertBanner.ShowMissionFailed(livesLeft, 2.3f);
 
         // 2. 맵에 남아있는 주변 적들 즉시 디스폰 소멸
         WaveManager.EndRoundAndDespawn();
@@ -75,7 +73,7 @@ public class PlayerDeathHandler : MonoBehaviour
             {
                 if (StageHUDUI.Instance != null)
                 {
-                    StageHUDUI.Instance.ShowNoticeBanner("GAME OVER - ALL LIVES LOST", Color.red);
+                    StageHUDUI.Instance.ShowNoticeBanner("게임 오버", new Color(1f, 0.3f, 0.3f));
                 }
                 Time.timeScale = 0f;
             }

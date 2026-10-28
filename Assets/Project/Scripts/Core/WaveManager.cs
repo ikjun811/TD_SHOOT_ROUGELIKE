@@ -19,6 +19,35 @@ public class WaveManager : MonoBehaviour
     [Tooltip("엘리트 적 프리팹 리스트 (여러 종 등록 가능)")]
     [SerializeField] private List<GameObject> eliteEnemyPrefabs = new List<GameObject>();
 
+    [Header("Enemy Types (GDD 8-6 #18, 임시값)")]
+    [Tooltip("종류별 등장 라운드·가중치. 가중치 = min(최대, 시작 + 라운드당 증가 x (r - 등장 라운드)). 같은 종류 프리팹이 여러 개면 나눠 가짐, 프리팹이 없는 종류는 제외")]
+    [SerializeField] private List<EnemyTypeWeight> enemyTypeWeights = new List<EnemyTypeWeight>
+    {
+        new EnemyTypeWeight { type = EnemyType.Runner,  unlockRound = 1,  startWeight = 10f,  weightPerRound = 0f,   maxWeight = 10f },
+        new EnemyTypeWeight { type = EnemyType.Shooter, unlockRound = 3,  startWeight = 2f,   weightPerRound = 0.3f, maxWeight = 4f },
+        new EnemyTypeWeight { type = EnemyType.Brute,   unlockRound = 5,  startWeight = 1.5f, weightPerRound = 0.3f, maxWeight = 3.5f },
+        new EnemyTypeWeight { type = EnemyType.Bomber,  unlockRound = 7,  startWeight = 1.5f, weightPerRound = 0.3f, maxWeight = 3f },
+        new EnemyTypeWeight { type = EnemyType.Charger, unlockRound = 10, startWeight = 1.5f, weightPerRound = 0.2f, maxWeight = 2.5f },
+    };
+    [Tooltip("엘리트도 일반 적 목록에서 종류 가중치로 고름 (브루트 엘리트 등). 일반 목록이 비면 엘리트 목록 사용")]
+    [SerializeField] private bool elitesUseTypeWeights = true;
+
+    [System.Serializable]
+    public class EnemyTypeWeight
+    {
+        public EnemyType type;
+        public int unlockRound = 1;
+        public float startWeight = 1f;
+        public float weightPerRound = 0f;
+        public float maxWeight = 1f;
+
+        public float GetWeight(int round)
+        {
+            if (round < unlockRound) return 0f;
+            return Mathf.Min(maxWeight, startWeight + weightPerRound * (round - unlockRound));
+        }
+    }
+
     [Header("Off-screen Spawn Settings")]
     [SerializeField] private float minSpawnDistance = 18f; // 화면 밖 최소 거리
     [SerializeField] private float maxSpawnDistance = 25f; // 화면 밖 최대 거리
@@ -55,6 +84,9 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private int eliteKillLateFromRound = 8;
     [SerializeField] private int eliteMaxCap = 4;                        // 엘리트 동시 최대 = min(상한, 1 + ⌊r / 라운드 간격⌋)
     [SerializeField] private int eliteMaxRoundStep = 3;
+    [Tooltip("엘리트 등장 예고 시간 (바닥 보라색 원, D1)")]
+    [SerializeField] private float eliteTelegraphDuration = 1.5f;
+    [SerializeField] private float eliteTelegraphRadius = 1.5f;
 
     [Header("Elite Status (Read Only)")]
     [SerializeField] private float stageTime;
@@ -138,6 +170,7 @@ public class WaveManager : MonoBehaviour
 
         // 스폰 루틴 시작
         StartCoroutine(SpawnEnemyRoutine());
+        AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2)
     }
 
     // 스테이지 시작 시 엘리트 카운터 초기화
@@ -219,8 +252,9 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        // 1. 일반 적 리스트 중 무작위 하나 선택
-        GameObject selectedPrefab = normalEnemyPrefabs[Random.Range(0, normalEnemyPrefabs.Count)];
+        // 1. 라운드별 종류 가중치로 선택
+        GameObject selectedPrefab = PickEnemyPrefab(normalEnemyPrefabs);
+        if (selectedPrefab == null) return;
 
         // 2. 화면 밖 무작위 위치 계산 (NavMesh 위 위치를 못 찾으면 이번 스폰은 건너뜀, 다음 간격에 재시도)
         if (!TryGetOffscreenSpawnPosition(out Vector3 spawnPosition)) return;
@@ -233,14 +267,18 @@ public class WaveManager : MonoBehaviour
     // 엘리트 적 무작위 스폰
     private void SpawnRandomEliteEnemy()
     {
-        if (eliteEnemyPrefabs == null || eliteEnemyPrefabs.Count == 0)
+        // 1. 일반 적 목록에서 종류 가중치로 선택 (일반 목록이 비었거나 옵션을 끄면 엘리트 목록에서 무작위)
+        GameObject selectedPrefab = null;
+        if (elitesUseTypeWeights) selectedPrefab = PickEnemyPrefab(normalEnemyPrefabs);
+        if (selectedPrefab == null && eliteEnemyPrefabs != null && eliteEnemyPrefabs.Count > 0)
         {
-            Debug.LogWarning("WaveManager: Elite Enemy Prefabs 리스트가 비어있습니다!");
+            selectedPrefab = eliteEnemyPrefabs[Random.Range(0, eliteEnemyPrefabs.Count)];
+        }
+        if (selectedPrefab == null)
+        {
+            Debug.LogWarning("WaveManager: 엘리트로 스폰할 적 프리팹이 없습니다!");
             return;
         }
-
-        // 1. 엘리트 적 리스트 중 무작위 하나 선택
-        GameObject selectedPrefab = eliteEnemyPrefabs[Random.Range(0, eliteEnemyPrefabs.Count)];
 
         // 2. 화면 밖 무작위 위치 계산 (못 찾으면 보류 수를 되돌려 다음 프레임에 재시도)
         if (!TryGetOffscreenSpawnPosition(out Vector3 spawnPosition))
@@ -249,14 +287,86 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        // 3. 엘리트 적 생성 (Start 전에 엘리트로 지정 → 배율·외형 적용). 일반 적 수와 따로 셈
-        GameObject elite = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
-        EnemyBase eliteBase = elite.GetComponent<EnemyBase>();
-        if (eliteBase != null) eliteBase.MarkAsElite();
+        // 3. 등장 예고 (D1): 자리를 먼저 차지(동시 최대 계산에 포함)하고 예고가 끝나면 생성. 일반 적 수와 따로 셈
+        //    라운드가 끝나면 EliteSpawnTelegraph.ClearAll로 예고째 취소 (eliteAlive는 다음 라운드 ResetEliteState에서 초기화)
         eliteAlive++;
+        EliteSpawnTelegraph.Create(spawnPosition, eliteTelegraphDuration, eliteTelegraphRadius, position =>
+        {
+            if (this == null || !isWaveActive) return;
+            // 엘리트 생성 (Start 전에 엘리트로 지정 → 배율·외형 적용)
+            GameObject elite = Instantiate(selectedPrefab, position, Quaternion.identity);
+            EnemyBase eliteBase = elite.GetComponent<EnemyBase>();
+            if (eliteBase != null) eliteBase.MarkAsElite();
+        });
 
-        Debug.Log($"WaveManager: ELITE spawned (alive {eliteAlive}/{EliteMaxConcurrent}, pending {pendingElites}, stage {stageTime:0}s)");
-        if (StageHUDUI.Instance != null) StageHUDUI.Instance.ShowTimedNotice(EliteBannerText, new Color(0.75f, 0.4f, 1f), 2f);
+        Debug.Log($"WaveManager: ELITE incoming (alive {eliteAlive}/{EliteMaxConcurrent}, pending {pendingElites}, stage {stageTime:0}s)");
+        AlertBanner.ShowElite(); // 경고 띠 (기존 HUD 글자 배너 대체)
+    }
+
+    // 현재 라운드의 종류 가중치로 프리팹 선택 (프리팹 가중치 = 종류 가중치 / 그 종류 프리팹 수)
+    // EnemyBase가 없는 프리팹은 러너로 취급. 이번 라운드에 나올 종류가 하나도 없으면 목록에서 무작위
+    private readonly Dictionary<EnemyType, int> typeCountBuffer = new Dictionary<EnemyType, int>();
+    private readonly List<float> prefabWeightBuffer = new List<float>();
+
+    private GameObject PickEnemyPrefab(List<GameObject> prefabs)
+    {
+        if (prefabs == null || prefabs.Count == 0) return null;
+
+        typeCountBuffer.Clear();
+        foreach (GameObject prefab in prefabs)
+        {
+            if (prefab == null) continue;
+            EnemyType type = GetPrefabType(prefab);
+            typeCountBuffer.TryGetValue(type, out int count);
+            typeCountBuffer[type] = count + 1;
+        }
+
+        prefabWeightBuffer.Clear();
+        float total = 0f;
+        foreach (GameObject prefab in prefabs)
+        {
+            float weight = 0f;
+            if (prefab != null)
+            {
+                EnemyType type = GetPrefabType(prefab);
+                weight = GetTypeWeight(type, currentRound) / typeCountBuffer[type];
+            }
+            prefabWeightBuffer.Add(weight);
+            total += weight;
+        }
+
+        if (total <= 0f)
+        {
+            GameObject fallback = prefabs[Random.Range(0, prefabs.Count)];
+            return fallback;
+        }
+
+        float roll = Random.Range(0f, total);
+        for (int i = 0; i < prefabs.Count; i++)
+        {
+            roll -= prefabWeightBuffer[i];
+            if (roll < 0f && prefabWeightBuffer[i] > 0f) return prefabs[i];
+        }
+        for (int i = prefabs.Count - 1; i >= 0; i--)
+        {
+            if (prefabWeightBuffer[i] > 0f) return prefabs[i];
+        }
+        return null;
+    }
+
+    private static EnemyType GetPrefabType(GameObject prefab)
+    {
+        EnemyBase enemy = prefab.GetComponent<EnemyBase>();
+        return enemy != null ? enemy.Type : EnemyType.Runner;
+    }
+
+    private float GetTypeWeight(EnemyType type, int round)
+    {
+        foreach (EnemyTypeWeight entry in enemyTypeWeights)
+        {
+            if (entry != null && entry.type == type) return entry.GetWeight(round);
+        }
+        return 0f;
     }
 
     // 화면 밖 무작위 좌표 계산 함수 (NavMesh 보정 포함)
@@ -303,7 +413,6 @@ public class WaveManager : MonoBehaviour
             && vp.y > -ScreenMargin && vp.y < 1f + ScreenMargin;
     }
 
-    private const string EliteBannerText = "ELITE INCOMING";
 
     // 적 사망 시 호출 (엘리트는 일반 적 수와 따로 셈, 처치 기반 엘리트 카운터는 모든 처치를 셈)
     public void OnEnemyKilled(bool isElite = false)
@@ -317,6 +426,13 @@ public class WaveManager : MonoBehaviour
         else currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
 
         if (RunResultManager.Instance != null) RunResultManager.Instance.RecordKill(isElite);
+    }
+
+    // 처치가 아닌 제거 (봄버 자폭) — 필드 적 수만 줄임
+    public void OnEnemyRemoved(bool isElite)
+    {
+        if (isElite) eliteAlive = Mathf.Max(0, eliteAlive - 1);
+        else currentEnemiesAlive = Mathf.Max(0, currentEnemiesAlive - 1);
     }
 
     private void CompleteRound()
@@ -361,6 +477,8 @@ public class WaveManager : MonoBehaviour
                 Destroy(enemy.gameObject);
             }
         }
+        EnemyProjectile.ClearAll(); // 날아가는 적 탄도 함께 (탈출·사망 연출 중 피격 방지)
+        EliteSpawnTelegraph.ClearAll(); // 엘리트 등장 예고 취소
         Debug.Log($"WaveManager: Despawned {enemies.Length} active enemies.");
     }
 
@@ -388,6 +506,7 @@ public class WaveManager : MonoBehaviour
 
         StopAllCoroutines();
         StartCoroutine(SpawnEnemyRoutine()); // 무한 적 스폰 코루틴 재가동
+        AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2, 정비 중 호출되면 전투 재개 후 표시)
         Debug.Log($"WaveManager: Restarted wave spawning. Round {currentRound}");
     }
 }

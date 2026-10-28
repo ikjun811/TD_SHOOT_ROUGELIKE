@@ -7,12 +7,22 @@ using JU;
 [RequireComponent(typeof(JUHealth))]
 public class EnemyBase : MonoBehaviour
 {
+    [Header("Type (GDD 8-6 #18)")]
+    [SerializeField] private EnemyType enemyType = EnemyType.Runner;
+    [Tooltip("넉백 거리 감소 비율 (0 = 그대로, 0.7 = 30%만 밀림). 엘리트 감소와 곱해짐")]
+    [Range(0f, 1f)]
+    [SerializeField] private float knockbackResistance = 0f;
+
     [Header("Enemy Settings")]
     [SerializeField] private float baseHealth = 50f;
     [SerializeField] private float baseMoveSpeed = 3.5f;
     [SerializeField] private float baseAttackDamage = 10f;
     [SerializeField] private float attackRange = 1.8f;
     [SerializeField] private float attackCooldown = 1.2f; // 공격 쿨타임 (1.2초)
+    [Tooltip("근접 공격 사용 (봄버처럼 공격을 별도 컴포넌트가 하는 종류는 끔)")]
+    [SerializeField] private bool useMeleeAttack = true;
+    [Tooltip("기본 추적 이동 사용 (슈터처럼 이동을 별도 컴포넌트가 하는 종류는 끔)")]
+    [SerializeField] private bool useDefaultChase = true;
 
     [Header("Pathfinding")]
     [SerializeField] private float repathInterval = 0.2f;      // 경로 재계산 간격 (초)
@@ -29,9 +39,19 @@ public class EnemyBase : MonoBehaviour
     [SerializeField] private GameObject deathVFX;
 
     public bool IsElite { get; private set; }
+    public EnemyType Type => enemyType;
+    public bool IsDead => isDead;
+    // 난이도·엘리트 배율이 적용된 공격력 (Start 이후)
+    public float AttackDamage => baseAttackDamage;
+    public float MaxHealth => juHealth != null ? juHealth.MaxHealth : baseHealth;
+    public float KnockbackResistance => knockbackResistance;
 
     // 사망한 프레임 (탄환 환수: 같은 프레임 충돌에서 JU 피해가 먼저 처리돼도 이번 적중의 처치로 판정, BulletHitEffects)
     public int DeathFrame { get; private set; } = -1;
+
+    // 살아 있는 엘리트 목록 (화면 밖 방향 표시, EliteOffscreenIndicator)
+    private static readonly System.Collections.Generic.List<EnemyBase> activeElites = new System.Collections.Generic.List<EnemyBase>();
+    public static System.Collections.Generic.IReadOnlyList<EnemyBase> ActiveElites => activeElites;
 
     // 적 사망 알림 (처치 시 쿨감 모듈 등, GrenadeSkill)
     public static event System.Action<EnemyBase> OnAnyEnemyDeath;
@@ -67,6 +87,7 @@ public class EnemyBase : MonoBehaviour
 
         if (IsElite)
         {
+            activeElites.Add(this);
             currentHp *= eliteHealthMultiplier;
             currentDmg *= eliteDamageMultiplier;
             currentSpd *= eliteSpeedMultiplier;
@@ -144,6 +165,7 @@ public class EnemyBase : MonoBehaviour
 
     private void OnDestroy()
     {
+        activeElites.Remove(this);
         if (juHealth != null)
         {
             juHealth.OnDeath -= OnEnemyDeath;
@@ -157,7 +179,7 @@ public class EnemyBase : MonoBehaviour
 
         // 경로 재계산은 일정 간격마다, 또는 플레이어가 크게 움직였을 때만 (매 프레임 재계산 비용 절감)
         Vector3 playerPos = playerTransform.position;
-        if (Time.time >= nextRepathTime || (playerPos - lastPathTarget).sqrMagnitude > repathMoveThreshold * repathMoveThreshold)
+        if (useDefaultChase && (Time.time >= nextRepathTime || (playerPos - lastPathTarget).sqrMagnitude > repathMoveThreshold * repathMoveThreshold))
         {
             agent.SetDestination(playerPos);
             lastPathTarget = playerPos;
@@ -169,7 +191,7 @@ public class EnemyBase : MonoBehaviour
         Vector3 toPlayer = playerPos - transform.position;
         toPlayer.y = 0f;
         float distanceToPlayer = toPlayer.magnitude;
-        if (distanceToPlayer <= attackRange)
+        if (useMeleeAttack && distanceToPlayer <= attackRange)
         {
             AttackPlayer();
         }
@@ -192,6 +214,16 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
+    // 처치가 아닌 제거 (봄버 자폭 등): 드랍·처치 수·처치 이벤트 없이 필드 적 수만 줄이고 제거
+    public void RemoveWithoutReward()
+    {
+        if (isDead) return;
+        isDead = true;
+        if (WaveManager.Instance != null) WaveManager.Instance.OnEnemyRemoved(IsElite);
+        if (agent != null && agent.enabled) agent.isStopped = true;
+        Destroy(gameObject);
+    }
+
     private void OnEnemyDamaged(IHealth.DamageResultInfo resultInfo)
     {
         // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
@@ -202,6 +234,7 @@ public class EnemyBase : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
+        activeElites.Remove(this);
         DeathFrame = Time.frameCount;
         OnAnyEnemyDeath?.Invoke(this);
 

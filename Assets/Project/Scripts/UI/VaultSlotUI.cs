@@ -39,16 +39,13 @@ public class VaultSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHan
         }
         else
         {
+            // 빈 슬롯: 글자 없이 왼쪽 위 작은 번호만 (사용자 결정)
             SlotContentView view = SlotContentView.Get(slotBgImage);
-            if (view != null) view.Clear();
+            if (view != null) view.ShowEmpty((vaultIndex + 1).ToString());
 
             bool framed = theme.ApplyEmptySlot(slotBgImage);
             if (!framed && slotBgImage != null) slotBgImage.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
-            if (slotText != null)
-            {
-                slotText.text = $"[금고 {vaultIndex + 1}] 빈 슬롯";
-                if (framed) slotText.color = theme.emptySlotTextColor;
-            }
+            if (slotText != null) slotText.text = view != null ? "" : $"[{vaultIndex + 1}]";
         }
     }
 

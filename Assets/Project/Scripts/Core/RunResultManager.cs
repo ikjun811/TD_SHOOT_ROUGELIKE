@@ -76,6 +76,8 @@ public class RunResultManager : MonoBehaviour
             return;
         }
         if (result.RealDamage <= 0f) return;
+        // 적이 준 피해(봄버 폭발 등)는 플레이어 기록에서 제외
+        if (result.DamageOwner != null && result.DamageOwner.GetComponentInParent<EnemyBase>() != null) return;
         totalDamage += result.RealDamage;
         maxHit = Mathf.Max(maxHit, result.SuggestiveDamage);
     }

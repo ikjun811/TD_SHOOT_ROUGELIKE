@@ -20,6 +20,8 @@ public class DroppedItem : MonoBehaviour
     private float currentFlySpeed = 10f;
     private float flyAcceleration = 40f;
 
+    public bool IsFlyingToPlayer => isFlyingToPlayer;
+
     // .material 접근 시 생성되는 머티리얼 복사본 (오브젝트 삭제 시 함께 해제)
     private Material instancedMaterial;
 
@@ -42,12 +44,15 @@ public class DroppedItem : MonoBehaviour
         {
             Vector3 targetPos = targetPlayer.position + Vector3.up * 1.0f;
 
+            // 흡수 비행은 실제 시간 기준 — 탈출 성공 슬로모션(D3)·히트 스톱 중에도 평소 속도로 빨려옴
+            float dt = Time.unscaledDeltaTime;
+
             // 플레이어를 향해 가속 비행
-            transform.position = Vector3.MoveTowards(transform.position, targetPos, currentFlySpeed * Time.deltaTime);
-            currentFlySpeed += flyAcceleration * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, currentFlySpeed * dt);
+            currentFlySpeed += flyAcceleration * dt;
 
             // 크기 축소 연출
-            transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, 4f * Time.deltaTime);
+            transform.localScale = Vector3.Lerp(transform.localScale, Vector3.zero, 4f * dt);
 
             // 도착 시 획득
             if (Vector3.Distance(transform.position, targetPos) < 0.6f)
@@ -114,6 +119,16 @@ public class DroppedItem : MonoBehaviour
             instancedMaterial.color = rarityColor;
         }
         if (itemLight != null) itemLight.color = rarityColor;
+
+        // 레어도 빛기둥 (C1)
+        if (category == ItemCategory.Weapon && weaponData != null)
+        {
+            LootBeam.Attach(this, weaponData.rarity, false, rarityColor);
+        }
+        else if (category == ItemCategory.Module && moduleData != null)
+        {
+            LootBeam.Attach(this, moduleData.rarity, moduleData.category == ModuleCategory.Unique, rarityColor);
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -131,10 +146,12 @@ public class DroppedItem : MonoBehaviour
             if (category == ItemCategory.Weapon && weaponData != null)
             {
                 PlayerInventory.Instance.AddWeapon(weaponData);
+                PickupNoticeUI.ShowWeapon(weaponData);
             }
             else if (category == ItemCategory.Module && moduleData != null)
             {
                 PlayerInventory.Instance.AddModule(moduleData);
+                PickupNoticeUI.ShowModule(moduleData);
             }
         }
 

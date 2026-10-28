@@ -60,3 +60,26 @@ MonoBehaviour:
   gridFillBrightness: 0.9
   gridModuleBorderColor: {r: 1, g: 1, b: 1, a: 1}
   gridModuleBorderWidth: 3
+  hudPixelScale: 2
+  hudTrackSprite: {fileID: 21300000, guid: 348bf67438a225d756dbb122fa97b7c8, type: 3}
+  hudFillSprite: {fileID: 21300000, guid: 54a88b0c39ff4d39854e8cfb23ad615b, type: 3}
+  hudActiveFillSprite: {fileID: 21300000, guid: b341728d1e63ba340fd5d90fe1549f99, type: 3}
+  hudFinalFillSprite: {fileID: 21300000, guid: a5bf2cd6e96840f1212b184958bb48e0, type: 3}
+  hudMarkerSprite: {fileID: 21300000, guid: 06ee637832406399685a4e5a22c57d68, type: 3}
+  hudLifeIcon: {fileID: 21300000, guid: cdbc960bd12e601591372eaf44fe33fe, type: 3}
+  hudBannerFrameSprite: {fileID: 21300000, guid: bd34cd98ddc3c84d97638db3ac6353b0, type: 3}
+  gridHighlightBorderColor: {r: 0.2509804, g: 0.8156863, b: 0.9254902, a: 1}
+  gridDimBrightness: 0.35
+  effectsFontSize: 18
+  effectsRowHeight: 28
+  effectsHeaderColor: {r: 0.55, g: 0.85, b: 0.95, a: 1}
+  effectsTextColor: {r: 0.9, g: 0.92, b: 0.95, a: 1}
+  effectsInactiveColor: {r: 0.45, g: 0.47, b: 0.5, a: 1}
+  tooltipWidth: 340
+  tooltipPadding: 14
+  tooltipSpacing: 6
+  tooltipTitleFontSize: 24
+  tooltipBodyFontSize: 18
+  tooltipDividerColor: {r: 0.2509804, g: 0.8156863, b: 0.9254902, a: 0.5}
+  tooltipSubTextColor: {r: 0.65, g: 0.7, b: 0.75, a: 1}
+  tooltipCursorOffset: {x: 18, y: 18}

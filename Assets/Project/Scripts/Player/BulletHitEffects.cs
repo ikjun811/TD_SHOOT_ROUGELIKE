@@ -159,8 +159,15 @@ public class BulletHitEffects : MonoBehaviour
     }
 
     // GrenadeProjectile 폭발 이펙트와 같은 처리 (JU Explosion 피해·물리 힘은 끄고 이펙트만, 크기 축소)
-    private static void SpawnExplosionVFX(Vector3 center, float scale)
+    // 적 폭발(봄버)도 사용 — 모듈이 없어 아직 연결 전이면 씬의 GrenadeSkill에서 가져옴
+    public static void SpawnExplosionVFX(Vector3 center, float scale)
     {
+        CameraShake.AddExplosion(center, scale);
+        if (ExplosionVFX == null)
+        {
+            GrenadeSkill grenade = FindAnyObjectByType<GrenadeSkill>();
+            if (grenade != null) ExplosionVFX = grenade.ExplosionVFX;
+        }
         if (ExplosionVFX == null) return;
 
         GameObject vfx = Instantiate(ExplosionVFX, center, Quaternion.identity);

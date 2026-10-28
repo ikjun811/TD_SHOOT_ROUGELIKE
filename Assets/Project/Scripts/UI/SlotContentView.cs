@@ -1,9 +1,11 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 // 장착·금고 슬롯 안의 그림 (텍스트 대신) — U3d
 //   무기: 실루엣 아이콘 (WeaponDataSO.weaponIcon, 레어도 색)
 //   모듈: 모양 미니 칸(레어도 색) + 아래 계열 색 띠 + 스탯 모듈이면 오른쪽 위 스탯 아이콘
+//   빈 슬롯: 글자 없이 왼쪽 위에 작은 번호만 흐리게 (ShowEmpty, 사용자 결정)
 // 슬롯 Image 오브젝트에 자동으로 붙고(Get), 자식 오브젝트는 코드가 생성. 클릭은 슬롯이 받음 (자식은 raycast 끔)
 public class SlotContentView : MonoBehaviour
 {
@@ -14,6 +16,7 @@ public class SlotContentView : MonoBehaviour
     private Image statIcon;
     private Image mechanismPip; // 아이콘에 반영 안 된 작동 모듈 표시
     private Image dropHighlight; // 들고 있는 아이템을 놓을 자리 표시 (슬롯 바깥쪽까지 약간 크게)
+    private TextMeshProUGUI emptyLabel; // 빈 슬롯 번호
 
     public static SlotContentView Get(Image slotImage)
     {
@@ -93,9 +96,23 @@ public class SlotContentView : MonoBehaviour
         if (!dragging) dropHighlight.gameObject.SetActive(false);
     }
 
+    // 빈 슬롯: 그림 없이 왼쪽 위 작은 번호 (호출 쪽은 슬롯 텍스트를 비움)
+    public void ShowEmpty(string number)
+    {
+        Clear();
+        if (string.IsNullOrEmpty(number)) return;
+        UITheme theme = UITheme.Current;
+        emptyLabel.gameObject.SetActive(true);
+        emptyLabel.text = number;
+        Color c = theme.emptySlotTextColor;
+        c.a = 0.7f;
+        emptyLabel.color = c;
+    }
+
     public void Clear()
     {
         EnsureBuilt();
+        emptyLabel.gameObject.SetActive(false);
         content.gameObject.SetActive(false);
         weaponIcon.gameObject.SetActive(false);
         categoryBar.gameObject.SetActive(false);
@@ -187,6 +204,21 @@ public class SlotContentView : MonoBehaviour
         pipRect.anchoredPosition = Vector2.zero;
 
         content.SetAsLastSibling(); // 슬롯의 기존 텍스트보다 위
+
+        // 빈 슬롯 번호: 테두리 안쪽 왼쪽 위
+        GameObject labelObj = new GameObject("EmptyNumber", typeof(RectTransform), typeof(TextMeshProUGUI));
+        labelObj.transform.SetParent(transform, false);
+        RectTransform labelRect = labelObj.GetComponent<RectTransform>();
+        labelRect.anchorMin = labelRect.anchorMax = new Vector2(0f, 1f);
+        labelRect.pivot = new Vector2(0f, 1f);
+        labelRect.anchoredPosition = new Vector2(pad + 2f, -(pad + 1f));
+        labelRect.sizeDelta = new Vector2(40f, 24f);
+        emptyLabel = labelObj.GetComponent<TextMeshProUGUI>();
+        emptyLabel.fontSize = 18f;
+        emptyLabel.alignment = TextAlignmentOptions.TopLeft;
+        emptyLabel.textWrappingMode = TextWrappingModes.NoWrap;
+        emptyLabel.raycastTarget = false;
+        labelObj.SetActive(false);
 
         // 놓을 자리 표시: content 바깥(슬롯 테두리보다 약간 크게)
         dropHighlight = CreateImage("DropHighlight", transform);
