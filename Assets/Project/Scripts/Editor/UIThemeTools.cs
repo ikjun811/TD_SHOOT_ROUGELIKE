@@ -55,6 +55,7 @@ public static class UIThemeTools
         theme.hudMarkerSprite = Load("arrow", ref missing);
         theme.hudLifeIcon = LoadIcon("heart", ref missing);
         theme.hudBannerFrameSprite = Load("focus", ref missing);
+        theme.hudExtractIcon = LoadIcon("ship", ref missing);
 
         // 스탯 아이콘 (사용자 채택 매핑)
         theme.attackIcon = LoadIcon("crosshair", ref missing);

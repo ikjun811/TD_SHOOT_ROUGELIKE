@@ -102,6 +102,7 @@ public class UITheme : ScriptableObject
     public Sprite hudMarkerSprite;       // 현재 라운드 ▼ (arrow)
     public Sprite hudLifeIcon;           // 목숨 (heart)
     public Sprite hudBannerFrameSprite;  // 알림 배너 모서리 괄호 (focus)
+    public Sprite hudExtractIcon;        // 탈출 막대 앞 아이콘 (ship)
 
     [Header("Active Effects Panel (적용 효과 목록)")]
     [Tooltip("효과 줄에 마우스를 올렸을 때 해당 모듈 경계선 색")]

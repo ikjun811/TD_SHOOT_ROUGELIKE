@@ -10,6 +10,7 @@ using TMPro;
 //   픽셀 스킨(사용자 채택 A안 — 배치 그대로, 부품만 교체): UITheme의 HUD 스프라이트가 있으면
 //     눈금·탈출 막대 = 테두리 칸(progress_bg) + 채움(progress_fill / 최종 bar_red / 구역 안 bar_green), 현재 라운드 위 ▼ 표시,
 //     목숨 = 하트 아이콘, 배너 = 모서리 괄호(focus). 스프라이트가 없으면 위 단색 모양
+//   상단 보강: 눈금 왼쪽 "ROUND 03 / 15"·현재 칸 맥박, 막대 왼쪽 [ship] "EXTRACT"·남은 초 "12s"·구역 안 초록 맥박(90%+ 빠르게), 드랍률 앞 L 블록
 //   씬 텍스트 5개는 실행 시 숨김, 외부 API(ShowNoticeBanner·HideNoticeBanner·ShowTimedNotice·SetHUDActive)는 그대로
 public class StageHUDUI : MonoBehaviour
 {
@@ -60,6 +61,17 @@ public class StageHUDUI : MonoBehaviour
     [Tooltip("채움 스프라이트 9-slice 경계 (왼, 아래, 오른, 위 픽셀) — 에셋 값이 오른쪽 1픽셀 모자라 바로잡음. 0이면 에셋 값 그대로")]
     [SerializeField] private Vector4 fillSpriteBorder = new Vector4(2f, 2f, 3f, 3f);
 
+    [Header("상단 UI 보강 (사용자 채택 2026-10-29: A 라운드 글자·현재 칸 맥박 / B 탈출 아이콘·EXTRACT·초 s / D 드랍률 아이콘 / E 탈출 중 맥박)")]
+    [SerializeField] private float hudLabelFontSize = 20f;
+    [SerializeField] private Color hudLabelColor = new Color(1f, 1f, 1f, 0.85f);
+    [SerializeField] private float hudLabelGap = 16f;            // 눈금·막대 왼쪽 끝과 글자 사이
+    [SerializeField] private float extractIconSize = 28f;        // ship 16px x 1.75
+    [SerializeField] private float currentTickPulseSpeed = 1.2f; // 현재 라운드 칸 맥박 (회/초)
+    [SerializeField] private float extractPulseSpeed = 1.6f;     // 탈출 중 초록 맥박
+    [SerializeField] private float extractPulseFastSpeed = 4.5f; // 진행 90% 이상
+    [Range(0f, 1f)] [SerializeField] private float extractFastThreshold = 0.9f;
+    [SerializeField] private float dropIconCell = 6f;            // 드랍률 앞 테트리스 L 블록 한 칸 (px)
+
     private RectTransform root;
     private RectTransform tickRow;
     private Image[] ticks = new Image[0];
@@ -70,6 +82,9 @@ public class StageHUDUI : MonoBehaviour
     private RectTransform livesRow;
     private Image[] lifeIcons = new Image[0];
     private TextMeshProUGUI dropText;
+    private TextMeshProUGUI roundText;
+    private TextMeshProUGUI extractLabel;
+    private Image extractIcon;
     private GameObject bannerRoot;
     private TextMeshProUGUI bannerText;
     private Image bannerLineLeft;
@@ -143,6 +158,7 @@ public class StageHUDUI : MonoBehaviour
     private void Update()
     {
         UpdateRound();
+        PulseCurrentTick();
         UpdateLives();
         UpdateDropChance();
         UpdateExtraction();
@@ -209,6 +225,12 @@ public class StageHUDUI : MonoBehaviour
         if (round == shownRound) return;
         shownRound = round;
 
+        if (roundText != null)
+        {
+            roundText.text = $"ROUND {round:00} / {max:00}";
+            roundText.color = round >= max ? finalRoundColor : hudLabelColor;
+        }
+
         if (pixelSkin)
         {
             UpdatePixelTicks(round);
@@ -262,6 +284,37 @@ public class StageHUDUI : MonoBehaviour
         if (roundMarker != null && (round < 1 || round > ticks.Length)) roundMarker.enabled = false;
     }
 
+    // A: 현재 라운드 칸이 천천히 맥박 (실제 시간 — 히트 스톱·슬로모션과 무관)
+    private void PulseCurrentTick()
+    {
+        int i = shownRound - 1;
+        if (i < 0 || i >= ticks.Length) return;
+        float pulse = Pulse(currentTickPulseSpeed);
+        bool isFinal = i == ticks.Length - 1;
+
+        if (pixelSkin)
+        {
+            tickFills[i].color = new Color(1f, 1f, 1f, Mathf.Lerp(0.5f, 1f, pulse));
+            if (roundMarker != null)
+            {
+                Color m = isFinal ? finalRoundColor : Color.white;
+                m.a = Mathf.Lerp(0.6f, 1f, pulse);
+                roundMarker.color = m;
+            }
+            return;
+        }
+
+        Color c = isFinal ? finalRoundColor : Color.white;
+        c.a = Mathf.Lerp(0.5f, 1f, pulse);
+        ticks[i].color = c;
+    }
+
+    // 0~1 부드러운 맥박
+    private static float Pulse(float speed)
+    {
+        return 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * speed * Mathf.PI * 2f);
+    }
+
     private void UpdateLives()
     {
         StageDifficultyManager difficulty = StageDifficultyManager.Instance;
@@ -291,9 +344,17 @@ public class StageHUDUI : MonoBehaviour
 
         bool inside = extractionZone.IsPlayerInside;
         float progress = extractionZone.ProgressPercent;
+        // E: 구역 안에서 진행 중이면 초록 맥박, 90% 이상이면 빠르게 (완료 후엔 멈춤)
+        bool pulsing = inside && progress < 1f;
+        float pulse = pulsing ? Pulse(progress >= extractFastThreshold ? extractPulseFastSpeed : extractPulseSpeed) : 1f;
+        float brightness = Mathf.Lerp(0.6f, 1f, pulse);
+
         Color color = inside ? activeColor : pausedColor;
-        extractionTimeText.text = Mathf.CeilToInt(extractionZone.RemainingTime).ToString();
-        extractionTimeText.color = color;
+        Color pulsedColor = inside ? new Color(color.r * brightness, color.g * brightness, color.b * brightness, color.a) : color;
+        extractionTimeText.text = Mathf.CeilToInt(extractionZone.RemainingTime) + "s";
+        extractionTimeText.color = pulsedColor;
+        if (extractLabel != null) extractLabel.color = inside ? pulsedColor : hudLabelColor;
+        if (extractIcon != null) extractIcon.color = inside ? pulsedColor : hudLabelColor;
 
         if (pixelSkin)
         {
@@ -303,12 +364,12 @@ public class StageHUDUI : MonoBehaviour
             extractionFill.enabled = progress > 0.005f;
             bool green = inside && activeFillSprite != null;
             SetSprite(extractionFill, green ? activeFillSprite : fillSprite);
-            extractionFill.color = inside ? Color.white : pausedFillColor;
+            extractionFill.color = inside ? new Color(brightness, brightness, brightness, 1f) : pausedFillColor;
             return;
         }
 
         extractionFill.fillAmount = progress;
-        extractionFill.color = color;
+        extractionFill.color = pulsedColor;
     }
 
     #endregion
@@ -393,6 +454,31 @@ public class StageHUDUI : MonoBehaviour
         extractionTimeText = CreateText("ExtractionTime", root, timeFontSize, TextAlignmentOptions.Left);
         extractionTimeText.fontStyle = FontStyles.Bold;
         Place(extractionTimeText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(rowWidth * 0.5f + 14f, lineY), new Vector2(90f, 36f));
+
+        // A·B: 눈금·막대 왼쪽 끝에 오른쪽 정렬 글자 "ROUND 03 / 15", [아이콘] "EXTRACT"
+        float labelX = -rowWidth * 0.5f - hudLabelGap;
+        roundText = CreateText("RoundLabel", root, hudLabelFontSize, TextAlignmentOptions.Right);
+        roundText.fontStyle = FontStyles.Bold;
+        roundText.characterSpacing = 4f;
+        roundText.color = hudLabelColor;
+        Place(roundText.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(labelX, -34f), new Vector2(260f, 30f));
+
+        extractLabel = CreateText("ExtractLabel", root, hudLabelFontSize, TextAlignmentOptions.Right);
+        extractLabel.fontStyle = FontStyles.Bold;
+        extractLabel.characterSpacing = 4f;
+        extractLabel.color = hudLabelColor;
+        extractLabel.text = "EXTRACT";
+        Place(extractLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(labelX, lineY), new Vector2(200f, 30f));
+
+        if (theme.hudExtractIcon != null)
+        {
+            extractLabel.ForceMeshUpdate();
+            float iconX = labelX - extractLabel.preferredWidth - 8f;
+            extractIcon = CreateImage("ExtractIcon", root, hudLabelColor);
+            theme.ApplySprite(extractIcon, theme.hudExtractIcon, 1f);
+            extractIcon.preserveAspect = true;
+            Place(extractIcon.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(iconX, lineY), new Vector2(extractIconSize, extractIconSize));
+        }
     }
 
     private void RebuildTicks(int maxRound)
@@ -452,9 +538,29 @@ public class StageHUDUI : MonoBehaviour
         layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = false;
 
+        // D: 드랍률 앞 아이콘 = 테트리스 L 블록 (모듈 드랍), 숫자만 오른쪽으로 밀림
+        Color dropColor = new Color(1f, 1f, 1f, 0.75f);
+        float dropY = -26f - LifeRowHeight - 6f;
+        float cell = dropIconCell;
+        float iconHeight = cell * 3f + 2f;
+        GameObject iconObj = new GameObject("DropIcon", typeof(RectTransform));
+        RectTransform icon = iconObj.GetComponent<RectTransform>();
+        icon.SetParent(root, false);
+        Place(icon, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(32f, dropY - 15f), new Vector2(cell * 2f + 1f, iconHeight));
+        Vector2Int[] shape = { new Vector2Int(0, 0), new Vector2Int(0, 1), new Vector2Int(0, 2), new Vector2Int(1, 0) }; // 아래에서 위로
+        for (int i = 0; i < shape.Length; i++)
+        {
+            Image c = CreateImage("Cell_" + i, icon, dropColor);
+            RectTransform r = c.rectTransform;
+            r.anchorMin = r.anchorMax = r.pivot = Vector2.zero;
+            r.anchoredPosition = new Vector2(shape[i].x * (cell + 1f), shape[i].y * (cell + 1f));
+            r.sizeDelta = new Vector2(cell, cell);
+            AddEdge(c);
+        }
+
         dropText = CreateText("DropChance", root, dropFontSize, TextAlignmentOptions.Left);
-        dropText.color = new Color(1f, 1f, 1f, 0.75f);
-        Place(dropText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -26f - LifeRowHeight - 6f), new Vector2(140f, 30f));
+        dropText.color = dropColor;
+        Place(dropText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(32f + cell * 2f + 10f, dropY), new Vector2(140f, 30f));
     }
 
     private void RebuildLifeIcons(int maxLives)

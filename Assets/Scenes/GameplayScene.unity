@@ -2493,7 +2493,7 @@ MonoBehaviour:
   pendingElites: 0
   killsSinceLastElite: 0
   roundClearDelay: 2.5
-  logRejectedSpawns: 1
+  logRejectedSpawns: 0
 --- !u!4 &766447419
 Transform:
   m_ObjectHideFlags: 0
@@ -6394,7 +6394,9 @@ MonoBehaviour:
   explosionRadius: 4
   centerDamage: 80
   edgeDamage: 40
-  grenadeModel: {fileID: 919132149155446097, guid: 1022f258e3204454d994c9765686f594, type: 3}
+  grenadeModel: {fileID: 1975493546501718, guid: 61e46933f24816241890e016c8e5e2e0, type: 3}
+  grenadeModelSize: 0.16046666
+  grenadeVisualScale: 2
   explosionVFX: {fileID: 3555473432261732657, guid: 3cdd4ce8e9c3bfc4fb0d5985aae4503a, type: 3}
   vfxScale: 0.5
   vfxSpeed: 1.5
@@ -6487,6 +6489,15 @@ MonoBehaviour:
   lostHeartColor: {r: 1, g: 1, b: 1, a: 0.25}
   bannerFramePadding: {x: 48, y: 16}
   fillSpriteBorder: {x: 2, y: 2, z: 3, w: 3}
+  hudLabelFontSize: 20
+  hudLabelColor: {r: 1, g: 1, b: 1, a: 0.85}
+  hudLabelGap: 16
+  extractIconSize: 28
+  currentTickPulseSpeed: 1.2
+  extractPulseSpeed: 1.6
+  extractPulseFastSpeed: 4.5
+  extractFastThreshold: 0.9
+  dropIconCell: 6
 --- !u!114 &2004680689
 MonoBehaviour:
   m_ObjectHideFlags: 0
