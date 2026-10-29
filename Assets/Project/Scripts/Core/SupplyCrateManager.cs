@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 // 보급 상자 생성·관리 매니저 (전투 씬 로드 시 GameplayBootstrap이 자동 생성, 씬 배치 불필요, GDD 8-6 #13)
+// 외형 모델을 쓰려면 Tools > TD Shoot > Apply Supply Crate Model 이 씬에 매니저를 두고 프리팹 연결 (씬에 있으면 자동 생성 안 함)
 // 스테이지 시작 시 상자를 맵 무작위 위치에 생성하고, 다음 라운드 시작 시 남은 상자를 지우고 다시 생성
 public class SupplyCrateManager : MonoBehaviour
 {
@@ -28,6 +29,16 @@ public class SupplyCrateManager : MonoBehaviour
     [Header("Visual")]
     [Tooltip("상자 외형 모델. 비우면 노란 큐브 사용")]
     [SerializeField] private GameObject crateModel;
+    [Tooltip("상자 모델 크기 배율 (Crate Long 0.64x1.27m는 플레이어에 비해 작아 키움)")]
+    [SerializeField] private float crateModelScale = 1.4f;
+    [Tooltip("상자 모델 색조 (텍스처에 곱함, 무기 모델은 제외) — 회색 장애물과 구분되는 보급품 노랑")]
+    [SerializeField] private Color crateModelTint = new Color(1f, 0.78f, 0.3f);
+    [Tooltip("상자 위에 올릴 무기 모델 (비우면 없음) — 긴 축을 상자 길이 방향으로, 납작한 면을 아래로 자동 눕힘")]
+    [SerializeField] private GameObject crateWeaponModel;
+    [Tooltip("무기 길이 = 상자 긴 변 x 이 비율")]
+    [SerializeField] private float crateWeaponLengthRatio = 0.85f;
+    [Tooltip("무기를 상자 위에서 비스듬히 돌리는 각도 (도)")]
+    [SerializeField] private float crateWeaponYaw = 18f;
     [SerializeField] private Color crateColor = new Color(1f, 0.75f, 0.1f);
 
     private readonly List<SupplyCrate> activeCrates = new List<SupplyCrate>();
@@ -203,14 +214,19 @@ public class SupplyCrateManager : MonoBehaviour
     private SupplyCrate CreateCrate(Vector3 position)
     {
         GameObject crateObj;
+        NavMeshObstacle obstacle;
         if (crateModel != null)
         {
-            crateObj = Instantiate(crateModel, position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            crateObj = BuildModelCrate(position, out Bounds localBounds);
+            obstacle = crateObj.AddComponent<NavMeshObstacle>();
+            obstacle.center = localBounds.center;
+            obstacle.size = localBounds.size;
         }
         else
         {
             // 기본 외형: 노란 큐브 (바닥 위에 올려 둠)
             crateObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            obstacle = null;
             crateObj.transform.localScale = new Vector3(0.9f, 0.6f, 0.9f);
             crateObj.transform.SetPositionAndRotation(position + Vector3.up * 0.3f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
 
@@ -224,12 +240,95 @@ public class SupplyCrateManager : MonoBehaviour
         crateObj.name = "SupplyCrate";
 
         // 적이 상자를 피해 다니도록
-        NavMeshObstacle obstacle = crateObj.AddComponent<NavMeshObstacle>();
+        if (crateModel == null) obstacle = crateObj.AddComponent<NavMeshObstacle>();
         obstacle.carving = true;
 
         SupplyCrate crate = crateObj.AddComponent<SupplyCrate>();
         crate.openRadius = openRadius;
         crate.openTime = openTime;
         return crate;
+    }
+
+    // 모델 상자: 바닥 높이 루트(무작위 회전) 아래에 모델을 가운데·바닥 기준으로 맞춤 (기준점이 모서리인 Crate Long 대응)
+    //   + 위에 무기 모델 (긴 축 = 상자 긴 변 방향, 가장 얇은 축 = 위아래, 비스듬히). localBounds = 루트 기준 상자 범위 (NavMesh 장애물)
+    private GameObject BuildModelCrate(Vector3 position, out Bounds localBounds)
+    {
+        GameObject root = new GameObject("SupplyCrate");
+        root.transform.position = position;
+
+        GameObject model = Instantiate(crateModel, root.transform);
+        model.transform.localRotation = Quaternion.identity;
+        model.transform.localScale = crateModel.transform.localScale * crateModelScale;
+        model.transform.localPosition = Vector3.zero;
+        Bounds b = GetWorldBounds(model);
+        model.transform.localPosition = new Vector3(-b.center.x + position.x, -b.min.y + position.y, -b.center.z + position.z);
+        b = GetWorldBounds(model);
+        localBounds = new Bounds(b.center - position, b.size);
+        TintRenderers(model, crateModelTint);
+
+        if (crateWeaponModel != null)
+        {
+            // 상자 긴 변이 루트 Z가 되도록 모델을 돌려 둠
+            if (b.size.x > b.size.z)
+            {
+                model.transform.RotateAround(position, Vector3.up, 90f);
+                b = GetWorldBounds(model);
+                localBounds = new Bounds(b.center - position, b.size);
+            }
+
+            GameObject weapon = Instantiate(crateWeaponModel, root.transform);
+            foreach (Collider c in weapon.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            foreach (Animator a in weapon.GetComponentsInChildren<Animator>(true)) a.enabled = false;
+            weapon.transform.localPosition = Vector3.zero;
+            weapon.transform.localRotation = Quaternion.identity;
+            weapon.transform.localScale = crateWeaponModel.transform.localScale;
+
+            // 긴 축 → Z, 가장 얇은 축 → Y
+            Vector3 size = GetWorldBounds(weapon).size;
+            Quaternion lay = size.x >= size.y && size.x >= size.z ? Quaternion.Euler(0f, 90f, 0f)
+                           : size.y >= size.z ? Quaternion.Euler(90f, 0f, 0f) : Quaternion.identity;
+            weapon.transform.localRotation = lay;
+            size = GetWorldBounds(weapon).size;
+            if (size.y > size.x) weapon.transform.localRotation = Quaternion.Euler(0f, 0f, 90f) * lay;
+
+            // 길이 맞춤 후 상자 윗면 가운데에 올리고 비스듬히
+            size = GetWorldBounds(weapon).size;
+            float length = Mathf.Max(0.01f, size.z);
+            weapon.transform.localScale *= localBounds.size.z * crateWeaponLengthRatio / length;
+            weapon.transform.localRotation = Quaternion.Euler(0f, crateWeaponYaw, 0f) * weapon.transform.localRotation;
+            Bounds wb = GetWorldBounds(weapon);
+            Vector3 top = new Vector3(b.center.x, b.max.y, b.center.z);
+            weapon.transform.position += new Vector3(top.x - wb.center.x, top.y - wb.min.y + 0.01f, top.z - wb.center.z);
+        }
+
+        root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        return root;
+    }
+
+    // 재질 복사 없이 렌더러별 PropertyBlock으로 기본 색만 바꿈 (URP _BaseColor, Built-in _Color)
+    private static void TintRenderers(GameObject obj, Color tint)
+    {
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        foreach (Renderer r in obj.GetComponentsInChildren<Renderer>())
+        {
+            Material mat = r.sharedMaterial;
+            if (mat == null) continue;
+            r.GetPropertyBlock(block);
+            if (mat.HasProperty("_BaseColor")) block.SetColor("_BaseColor", mat.GetColor("_BaseColor") * tint);
+            if (mat.HasProperty("_Color")) block.SetColor("_Color", mat.GetColor("_Color") * tint);
+            r.SetPropertyBlock(block);
+        }
+    }
+
+    private static Bounds GetWorldBounds(GameObject obj)
+    {
+        Bounds bounds = new Bounds(obj.transform.position, Vector3.zero);
+        bool has = false;
+        foreach (Renderer r in obj.GetComponentsInChildren<Renderer>())
+        {
+            if (!has) { bounds = r.bounds; has = true; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        return bounds;
     }
 }

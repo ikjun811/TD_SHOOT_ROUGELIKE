@@ -3,7 +3,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 // SciFi_TopDown_SpaceStation 에셋 연결 (가독성 작업, 사용자 선택 2026-10-29)
-//   Apply SpaceStation Floor: 열린 씬 BspArenaGenerator의 바닥 텍스처 칸에 짙은 육각(hexDark) 알베도·노멀 연결 (씬 저장은 직접)
+//   Apply SpaceStation Floor (Square/Octagon/Hex): 열린 씬 BspArenaGenerator의 바닥 텍스처 칸에 알베도·노멀·텍스처 한 장 크기 연결 (씬 저장은 직접)
+//     사각 = TilesDark2(5x5 회색 사각, 사용자 선택 2026-10-29) / 팔각 = TilesDark1(4x4 짙은 팔각+마름모) / 육각 = hexDark(이전 기본)
 //   텍스처만 가져다 우리 URP Lit 재질에 씀 → 에셋의 2019년 LWRP 셰이더 그래프 변환 여부와 무관
 //   Apply SpaceStation Obstacles (사용자 결정): 직선·ㄱ자 벽 = 내부 벽 2종 / 기둥 = 기둥·상자·통 / 대형 = 상자 더미(컨테이너 등 제외) /
 //     소품 최대 높이 2.5m (벽·기둥 4m를 세로로 줄임) / 외곽 벽 = 내부 벽(변형 _B 20%)·모서리 기둥, 1.5m 묻어 2.5m만 보이게
@@ -13,8 +14,6 @@ using UnityEngine;
 public static class SpaceStationKitTools
 {
     private const string FloorFolder = "Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Resources/TDSpaceStation_Textures/Floors";
-    private const string FloorAlbedo = FloorFolder + "/HexagonalFloor_hexDark_basecolor.tga";
-    private const string FloorNormal = FloorFolder + "/HexagonalFloor_hexDark_normal.tga";
 
     private const string PrefabFolder = "Assets/SciFi_TopDown_SpaceStation/TDSpaceStation_Prefabs_LWRP";
     private const string PropFolder = PrefabFolder + "/TDSpaceStation_Props";
@@ -87,8 +86,17 @@ public static class SpaceStationKitTools
         }
     }
 
-    [MenuItem("Tools/TD Shoot/Apply SpaceStation Floor")]
-    public static void ApplyFloor()
+    // 텍스처 한 장 = worldSize m (사각 7.5m → 칸 1.5m, 팔각 6m → 칸 1.5m, 육각 5m = 에셋 원래 월드 UV)
+    [MenuItem("Tools/TD Shoot/Apply SpaceStation Floor (Square)")]
+    public static void ApplyFloorSquare() => ApplyFloor("TilesDark2", 7.5f, "사각 타일");
+
+    [MenuItem("Tools/TD Shoot/Apply SpaceStation Floor (Octagon)")]
+    public static void ApplyFloorOctagon() => ApplyFloor("TilesDark1", 6f, "짙은 팔각 타일");
+
+    [MenuItem("Tools/TD Shoot/Apply SpaceStation Floor (Hex)")]
+    public static void ApplyFloorHex() => ApplyFloor("hexDark", 5f, "짙은 육각");
+
+    private static void ApplyFloor(string textureName, float worldSize, string label)
     {
         BspArenaGenerator generator = Object.FindAnyObjectByType<BspArenaGenerator>(FindObjectsInactive.Include);
         if (generator == null)
@@ -97,11 +105,13 @@ public static class SpaceStationKitTools
             return;
         }
 
-        Texture2D albedo = AssetDatabase.LoadAssetAtPath<Texture2D>(FloorAlbedo);
-        Texture2D normal = AssetDatabase.LoadAssetAtPath<Texture2D>(FloorNormal);
+        string albedoPath = $"{FloorFolder}/HexagonalFloor_{textureName}_basecolor.tga";
+        string normalPath = $"{FloorFolder}/HexagonalFloor_{textureName}_normal.tga";
+        Texture2D albedo = AssetDatabase.LoadAssetAtPath<Texture2D>(albedoPath);
+        Texture2D normal = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
         if (albedo == null)
         {
-            EditorUtility.DisplayDialog("SpaceStation Floor", $"{FloorAlbedo}을 찾지 못했습니다.", "확인");
+            EditorUtility.DisplayDialog("SpaceStation Floor", $"{albedoPath}을 찾지 못했습니다.", "확인");
             return;
         }
 
@@ -109,8 +119,34 @@ public static class SpaceStationKitTools
         so.FindProperty("useGridFloor").boolValue = true;
         so.FindProperty("floorTexture").objectReferenceValue = albedo;
         so.FindProperty("floorNormalMap").objectReferenceValue = normal;
+        so.FindProperty("floorTextureWorldSize").floatValue = worldSize;
         so.ApplyModifiedProperties();
         EditorSceneManager.MarkSceneDirty(generator.gameObject.scene);
-        Debug.Log($"[SpaceStationKit] 바닥 = 짙은 육각 (노멀 {(normal != null ? "있음" : "없음")}) — 씬을 저장하세요.", generator);
+        Debug.Log($"[SpaceStationKit] 바닥 = {label} (한 장 {worldSize}m, 노멀 {(normal != null ? "있음" : "없음")}) — 씬을 저장하세요.", generator);
+    }
+
+    // 탈출 구역 꾸밈 (탈출 구역 연출 2단계): 열린 씬 ExtractionZone에 ExtractionZoneDecor 부착 + 프리팹 연결 (씬 저장은 직접)
+    [MenuItem("Tools/TD Shoot/Apply SpaceStation Extraction Decor")]
+    public static void ApplyExtractionDecor()
+    {
+        ExtractionZone zone = Object.FindAnyObjectByType<ExtractionZone>(FindObjectsInactive.Include);
+        if (zone == null)
+        {
+            EditorUtility.DisplayDialog("Extraction Decor", "열린 씬에 ExtractionZone이 없습니다 (GameplayScene을 여세요).", "확인");
+            return;
+        }
+
+        ExtractionZoneDecor decor = zone.GetComponent<ExtractionZoneDecor>();
+        if (decor == null) decor = Undo.AddComponent<ExtractionZoneDecor>(zone.gameObject);
+
+        SerializedObject so = new SerializedObject(decor);
+        so.FindProperty("padPrefab").objectReferenceValue = Load(PrefabFolder + "/SpaceStation_Room_A_Floor_LWRP.prefab");
+        so.FindProperty("beaconPrefab").objectReferenceValue = Load(PropFolder + "/SpaceStation_Light_A_LWRP.prefab");
+        so.FindProperty("consolePrefab").objectReferenceValue = Load(PropFolder + "/SpaceStation_Panel_A_LWRP.prefab");
+        so.FindProperty("ventPrefab").objectReferenceValue = Load(PropFolder + "/SpaceStation_FloorVent_A_LWRP.prefab");
+        so.ApplyModifiedProperties();
+        EditorSceneManager.MarkSceneDirty(zone.gameObject.scene);
+        Selection.activeObject = zone.gameObject;
+        Debug.Log("[SpaceStationKit] 탈출 구역 꾸밈 연결 (착륙장 바닥·표지등·콘솔·환풍구) — 씬을 저장하세요.", zone);
     }
 }

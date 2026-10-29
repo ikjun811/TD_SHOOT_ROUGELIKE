@@ -23,6 +23,7 @@ public class EnemyCharger : MonoBehaviour
     public float recoverTime = 0.8f;
     public float repathInterval = 0.2f;
     public float chargeAnimSpeed = 1.8f;    // 돌진 중 달리기 동작 재생 배율
+    public float dustInterval = 0.8f;       // 돌진 중 먼지 간격 (m, ChargerDustEffect)
 
     public float laneWidth = 1.2f;
     public Color laneColor = new Color(1f, 0.2f, 0.15f, 0.25f);
@@ -44,6 +45,7 @@ public class EnemyCharger : MonoBehaviour
     private float nextBlinkTime;
     private Vector3 chargeDir;
     private float chargedDistance;
+    private float nextDustDistance;
     private float laneLength;
 
     private GameObject laneRoot;
@@ -123,6 +125,7 @@ public class EnemyCharger : MonoBehaviour
         if (playerAlive && Time.time >= nextChargeTime && toPlayer.sqrMagnitude <= triggerRange * triggerRange && HasLineOfSight())
         {
             state = State.Windup;
+            AudioManager.PlaySfx(AudioManager.Library.chargerWindup, transform.position);
             stateEndTime = Time.time + windupTime;
             nextBlinkTime = 0f;
             agent.isStopped = true;
@@ -153,6 +156,8 @@ public class EnemyCharger : MonoBehaviour
         {
             state = State.Charge;
             chargedDistance = 0f;
+            nextDustDistance = dustInterval;
+            ChargerDustEffect.Spawn(transform.position, -chargeDir, true); // 출발 먼지 (크게)
             SetLaneVisible(false);
             if (enemy.ModelAnimator != null)
             {
@@ -168,8 +173,9 @@ public class EnemyCharger : MonoBehaviour
         Vector3 start = transform.position;
 
         // 벽에 막힘 → 기절
-        if (wallMask != 0 && Physics.SphereCast(start + Vector3.up, 0.4f, chargeDir, out _, step + 0.3f, wallMask, QueryTriggerInteraction.Ignore))
+        if (wallMask != 0 && Physics.SphereCast(start + Vector3.up, 0.4f, chargeDir, out RaycastHit wallHit, step + 0.3f, wallMask, QueryTriggerInteraction.Ignore))
         {
+            ChargerImpactEffect.Spawn(wallHit.point, wallHit.normal); // 벽 충돌
             EndCharge(stunTime);
             return;
         }
@@ -179,19 +185,31 @@ public class EnemyCharger : MonoBehaviour
         moved.y = 0f;
         chargedDistance += moved.magnitude;
 
+        // 돌진 중 먼지 (dustInterval마다)
+        if (chargedDistance >= nextDustDistance)
+        {
+            ChargerDustEffect.Spawn(transform.position, -chargeDir);
+            nextDustDistance += dustInterval;
+        }
+
         // 플레이어 적중 (돌진당 1회) → 공격 동작 후 멈춤
         Vector3 toPlayer = player.position - transform.position;
         toPlayer.y = 0f;
         if (playerAlive && toPlayer.sqrMagnitude <= hitRadius * hitRadius)
         {
             playerHealth.DoDamage(enemy.AttackDamage);
+            AudioManager.PlaySfx(AudioManager.Library.enemyAttack, player.position);
             EndCharge(recoverTime);
             if (enemy.ModelAnimator != null) enemy.ModelAnimator.PlayAttack();
             return;
         }
 
         // NavMesh 끝에 막힘(거의 못 움직임) → 기절, 거리 다 감 → 회복
-        if (moved.magnitude < step * 0.3f) EndCharge(stunTime);
+        if (moved.magnitude < step * 0.3f)
+        {
+            ChargerImpactEffect.Spawn(transform.position + chargeDir * 0.6f, -chargeDir); // 막힌 자리 충돌
+            EndCharge(stunTime);
+        }
         else if (chargedDistance >= chargeDistance) EndCharge(recoverTime);
     }
 

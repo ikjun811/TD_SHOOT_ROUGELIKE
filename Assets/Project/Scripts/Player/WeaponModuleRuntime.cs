@@ -99,8 +99,12 @@ public class WeaponModuleRuntime : MonoBehaviour
         if (weapon != null) weapon.OnShot.RemoveListener(OnShot);
     }
 
+    // 플레이어 무기 사격 알림 (총구 섬광 PlayerFlashlight 등) — 모든 장착 무기에 이 래퍼가 붙어 있음
+    public static event System.Action<Weapon> OnAnyPlayerShot;
+
     private void OnShot()
     {
+        OnAnyPlayerShot?.Invoke(weapon);
         lastShotTime = Time.time;
         if (postReloadShotsLeft > 0) postReloadShotsLeft--;
 

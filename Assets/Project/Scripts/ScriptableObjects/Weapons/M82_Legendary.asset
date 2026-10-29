@@ -16,7 +16,7 @@ MonoBehaviour:
   weaponType: 4
   rarity: 3
   weaponIcon: {fileID: 21300000, guid: 53619e2ce6b383745ab36f66626dcc55, type: 3}
-  weaponPrefab: {fileID: 0}
+  weaponPrefab: {fileID: 2930857990971156363, guid: 12ee8c7845ee649429e2f2a3886c056d, type: 3}
   iconVariants:
   - effects: 0d000000
     icon: {fileID: 21300000, guid: dbf5222037e4d2f4f8b6fc7c421325ef, type: 3}

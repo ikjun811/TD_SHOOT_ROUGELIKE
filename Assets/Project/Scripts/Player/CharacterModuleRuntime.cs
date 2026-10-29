@@ -177,6 +177,7 @@ public class CharacterModuleRuntime : MonoBehaviour
         bool dashing = controller != null && controller.IsDashing;
         bool started = dashing && !wasDashing;
         wasDashing = dashing;
+        if (started) AudioManager.PlaySfx(AudioManager.Library.dash, transform.position); // 대시 효과음 (모듈 무관)
 
         if (!started || dashBombRatio <= 0f || Time.time < nextDashBombTime) return;
         if (health != null && health.IsDead) return;
@@ -215,6 +216,7 @@ public class CharacterModuleRuntime : MonoBehaviour
 
         health.SetHealth(health.Health + heal);
         lifestealHealedThisRound += heal;
+        AudioManager.PlaySfx(AudioManager.Library.lifesteal, transform.position);
     }
 
     private void Update()

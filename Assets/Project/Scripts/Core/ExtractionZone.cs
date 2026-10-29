@@ -51,6 +51,7 @@ public class ExtractionZone : MonoBehaviour
     private void Awake()
     {
         gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+        ExtractionZoneVisual.Attach(this); // 바닥 링·진행 호·입자·성공 빛기둥 (기존 구체 표시는 끔)
     }
 
     // 첫 라운드도 무작위 배치 (BspArenaGenerator가 Awake에서 플레이어를 옮긴 뒤라 거리 검사가 맞게 적용됨)

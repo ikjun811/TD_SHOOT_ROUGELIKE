@@ -50,65 +50,108 @@ MonoBehaviour:
     pitchRandom: 0.05
     minInterval: 0.05
   dash:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 974a84b73f495904c9de16084e2c60c4, type: 3}
+    volume: 0.6
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.1
   grenadeThrow:
     clips: []
     volume: 1
     pitchRandom: 0.05
     minInterval: 0.05
   grenadeExplosion:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 0fc17236f67ee6b4b93e09eee791ee4e, type: 3}
+    - {fileID: 8300000, guid: 22333ae2b8afc0240bee138760768c40, type: 3}
+    volume: 0.9
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.08
   grenadeReady:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 7b887711b3e728648909f7c5cea92e00, type: 3}
+    volume: 0.6
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.2
   lifesteal:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 4b17ce71db473104ba443ddcfe82f910, type: 3}
+    volume: 0.45
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.15
   enemyHit:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: f05cf356e17f80a43a6298315c3a34cf, type: 3}
+    - {fileID: 8300000, guid: bd6e64f2ae718bd449417e6aeca63ba9, type: 3}
+    volume: 0.4
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.06
   enemyCritHit:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 1e033d09112925048a215caefeca4128, type: 3}
+    volume: 0.6
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.08
   enemyDeath:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 157ff8e0e13ed18458ded61b11586a22, type: 3}
+    volume: 0.6
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.06
   eliteDeath:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: e78ee39c4d8316c4999ad3df556acdf3, type: 3}
+    volume: 0.9
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.2
   enemyAttack:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 2e7e5ee54614c8c4ea215ae12d48e169, type: 3}
+    volume: 0.6
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.1
   eliteIncoming:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: f860c8f0ff9c7304ead017a828c0fe0c, type: 3}
+    volume: 0.7
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.3
   execute:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 902e2656865686d4f8f8fb0903adc94c, type: 3}
+    volume: 0.7
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.08
+  shooterFire:
+    clips:
+    - {fileID: 8300000, guid: bbf87cf3ae9d2344e8a0979c48676424, type: 3}
+    volume: 0.55
+    pitchRandom: 0.05
+    minInterval: 0.08
+  chargerWindup:
+    clips:
+    - {fileID: 8300000, guid: 3f8feb85c7ab6924694cdacde17e5cf7, type: 3}
+    volume: 0.6
+    pitchRandom: 0.05
+    minInterval: 0.2
+  chargerImpact:
+    clips:
+    - {fileID: 8300000, guid: 9cb3dde42e3f17341a7e2f1139c9d56e, type: 3}
+    volume: 0.8
+    pitchRandom: 0.05
+    minInterval: 0.15
+  bomberFuse:
+    clips:
+    - {fileID: 8300000, guid: 77da6ad20dfc9174aaa0314f52eafea0, type: 3}
+    volume: 0.6
+    pitchRandom: 0.05
+    minInterval: 0.15
+  bomberExplosion:
+    clips:
+    - {fileID: 8300000, guid: 3989b987d2b839448a485c420a838652, type: 3}
+    volume: 0.9
+    pitchRandom: 0.05
+    minInterval: 0.08
   roundStart:
     clips: []
     volume: 1
@@ -120,10 +163,11 @@ MonoBehaviour:
     pitchRandom: 0.05
     minInterval: 0.05
   crateOpened:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 77ec5dd4b6c22d24f92d6d7f39b520d1, type: 3}
+    volume: 0.8
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.2
   itemDrop:
     clips: []
     volume: 1
@@ -145,10 +189,11 @@ MonoBehaviour:
     pitchRandom: 0.05
     minInterval: 0.05
   extractionSuccess:
-    clips: []
-    volume: 1
+    clips:
+    - {fileID: 8300000, guid: 7e57c436d7571184a897eb1d65f3ff0f, type: 3}
+    volume: 0.8
     pitchRandom: 0.05
-    minInterval: 0.05
+    minInterval: 0.5
   gameClear:
     clips: []
     volume: 1

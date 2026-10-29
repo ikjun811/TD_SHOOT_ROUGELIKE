@@ -156,6 +156,7 @@ public class BspArenaGenerator : MonoBehaviour
     // 실행 중 맵 생성 완료 알림 (구역 조명 재배치 등, AtmosphereLighting)
     public static event System.Action<BspArenaGenerator> OnGenerated;
     public int UsedSeed => usedSeed;
+    public int ArenaSize => arenaSize;
     public Vector3 PlayerStartPosition => playerStartPosition; // 플레이어 시작 지점 (구역 중앙, M3에서 탈출·상자 배치 시 거리 기준)
 
     // 구역 중앙(월드 좌표) — 시작 지점·탈출 구역·상자 배치용 (M3)
@@ -176,6 +177,14 @@ public class BspArenaGenerator : MonoBehaviour
             if (leaves[i].rect.Contains(cell)) return i;
         }
         return -1;
+    }
+
+    // 월드 좌표가 외곽 벽 안쪽(맵 범위 margin m 안쪽)인지 — 구역·분할선 레인 모두 포함
+    public bool IsInsideArena(Vector3 worldPos, float margin = 0f)
+    {
+        Vector3 local = worldPos - transform.position;
+        float half = arenaSize / 2f - margin;
+        return Mathf.Abs(local.x) <= half && Mathf.Abs(local.z) <= half;
     }
 
     // 격자 바닥 재질·텍스처는 코드로 만든 것이라 직접 정리

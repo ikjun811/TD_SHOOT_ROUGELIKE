@@ -638,6 +638,31 @@ public static class WeaponIconGenerator
         }
     }
 
+    // 드랍 아이템 무기 모델 연결 (DroppedItemVisual): 모든 WeaponDataSO.weaponPrefab에 같은 juItemName의 JU 무기 프리팹
+    [MenuItem("Tools/TD Shoot/Link Weapon Drop Models")]
+    public static void LinkWeaponDropModels()
+    {
+        int linked = 0, missing = 0;
+        foreach (string guid in AssetDatabase.FindAssets("t:WeaponDataSO"))
+        {
+            WeaponDataSO data = AssetDatabase.LoadAssetAtPath<WeaponDataSO>(AssetDatabase.GUIDToAssetPath(guid));
+            if (data == null || string.IsNullOrEmpty(data.juItemName)) continue;
+            GameObject prefab = FindPrefab(data.juItemName);
+            if (prefab == null)
+            {
+                missing++;
+                Debug.LogWarning($"[WeaponIconGenerator] JU 무기 프리팹 없음: {data.juItemName} ({data.name})", data);
+                continue;
+            }
+            if (data.weaponPrefab == prefab) continue;
+            data.weaponPrefab = prefab;
+            EditorUtility.SetDirty(data);
+            linked++;
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[WeaponIconGenerator] 드랍 무기 모델 연결 {linked}개 (없음 {missing}개)");
+    }
+
     // juItemName과 같은 이름, 또는 그 이름으로 끝나는 프리팹 ("M82" → "SNIPER M82")
     private static GameObject FindPrefab(string juItemName)
     {

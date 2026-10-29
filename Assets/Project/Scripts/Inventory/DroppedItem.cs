@@ -24,6 +24,14 @@ public class DroppedItem : MonoBehaviour
 
     // .material 접근 시 생성되는 머티리얼 복사본 (오브젝트 삭제 시 함께 해제)
     private Material instancedMaterial;
+    private GameObject dropVisual;
+
+    // 획득 트리거가 JU 바닥·계단 검사(WhatIsGround = Default, Queries Hit Triggers 켜짐)에 잡혀
+    // 아이템 위를 지날 때 이동이 걸리지 않도록 Ignore Raycast 레이어로 (ExtractionZone과 같은 처리, 트리거 획득은 그대로 동작)
+    private void Awake()
+    {
+        gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+    }
 
     private void Start()
     {
@@ -119,6 +127,20 @@ public class DroppedItem : MonoBehaviour
             instancedMaterial.color = rarityColor;
         }
         if (itemLight != null) itemLight.color = rarityColor;
+
+        // 외형 (DroppedItemVisual): 무기 = 실제 JU 무기 모델, 모듈 = 테트리스 모양 블록 — 만들어지면 기본 정육면체 숨김
+        //   SetupVisuals가 여러 번 불려도(Start·Setup) 하나만 유지
+        if (dropVisual != null) Destroy(dropVisual);
+        dropVisual = null;
+        if (category == ItemCategory.Weapon && weaponData != null) dropVisual = DroppedItemVisual.BuildWeapon(transform, weaponData.weaponPrefab);
+        else if (category == ItemCategory.Module && moduleData != null) dropVisual = DroppedItemVisual.BuildModule(transform, moduleData, rarityColor);
+        if (dropVisual != null)
+        {
+            MeshRenderer cube = GetComponent<MeshRenderer>();
+            if (cube != null) cube.enabled = false;
+        }
+        Light glow = itemLight != null ? itemLight : GetComponentInChildren<Light>();
+        if (glow != null) glow.color = rarityColor; // 레어도 색 빛 (프리팹 자식 Point Light)
 
         // 레어도 빛기둥 (C1)
         if (category == ItemCategory.Weapon && weaponData != null)

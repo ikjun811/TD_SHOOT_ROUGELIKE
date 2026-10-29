@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // 화면 밖 엘리트 방향 표시 (D1) — GameplayBootstrap이 생성
-//   화면 가장자리에 보라색 화살표: 등장 예고 중(EliteSpawnTelegraph)은 크게 맥박, 살아 있는 엘리트(EnemyBase.ActiveElites)는 작게
+//   화면 가장자리에 보라색 화살표: 살아 있는 엘리트(EnemyBase.ActiveElites)만, 생성 직후 freshTime 동안 크게 맥박 → 이후 작게
+//   (이전: 등장 예고 중 위치도 표시 → 엉뚱한 방향으로 보여 제거, 사용자 2026-10-29)
 //   대상이 화면 안이면 숨김, 정비·결과 화면(timeScale 0)에서는 전체 숨김
 //   화살표 그림은 코드로 만든 삼각형 텍스처 (리소스 불필요)
 public class EliteOffscreenIndicator : MonoBehaviour
@@ -12,8 +13,9 @@ public class EliteOffscreenIndicator : MonoBehaviour
 
     public Color color = new Color(0.75f, 0.4f, 1f, 1f);
     public float edgeMargin = 60f;          // 화면 가장자리에서 띄우는 거리 (기준 해상도 픽셀)
-    public float telegraphSize = 56f;
+    public float telegraphSize = 56f;   // 방금 나타난 엘리트 화살표 크기
     public float eliteSize = 36f;
+    public float freshTime = 2f;        // 생성 후 크게 맥박하는 시간 (초)
 
     private Canvas canvas;
     private RectTransform root;
@@ -67,16 +69,16 @@ public class EliteOffscreenIndicator : MonoBehaviour
 
         if (visible)
         {
+            // 실제로 생성된 엘리트만 가리킴 (예고 중 위치는 표시 안 함 — 사용자 2026-10-29)
+            // 방금 나타난 엘리트(freshTime 안)는 크게 맥박, 이후 작게
             float pulse = Mathf.PingPong(Time.unscaledTime * 3f, 1f);
-            foreach (EliteSpawnTelegraph telegraph in EliteSpawnTelegraph.Active)
-            {
-                if (telegraph == null) continue;
-                if (Place(cam, telegraph.transform.position, telegraphSize * (1f + 0.25f * pulse), Mathf.Lerp(0.6f, 1f, pulse), used)) used++;
-            }
             foreach (EnemyBase elite in EnemyBase.ActiveElites)
             {
                 if (elite == null || elite.IsDead) continue;
-                if (Place(cam, elite.transform.position, eliteSize, 0.85f, used)) used++;
+                bool fresh = Time.time - elite.EliteSpawnTime < freshTime;
+                float size = fresh ? telegraphSize * (1f + 0.25f * pulse) : eliteSize;
+                float alpha = fresh ? Mathf.Lerp(0.6f, 1f, pulse) : 0.85f;
+                if (Place(cam, elite.transform.position, size, alpha, used)) used++;
             }
         }
 

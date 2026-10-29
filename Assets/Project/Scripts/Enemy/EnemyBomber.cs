@@ -91,6 +91,7 @@ public class EnemyBomber : MonoBehaviour
     {
         fuseStarted = true;
         fuseTimer = 0f;
+        AudioManager.PlaySfx(AudioManager.Library.bomberFuse, transform.position);
         nextBlinkTime = 0f;
         baseScale = transform.localScale;
         if (agent != null && agent.enabled && agent.isOnNavMesh) agent.isStopped = true;
@@ -117,10 +118,11 @@ public class EnemyBomber : MonoBehaviour
         if (ring != null) ring.enabled = false;
 
         Vector3 center = transform.position;
-        // 봄버 전용 폭발 칸(불꽃)이 있으면 그것, 없으면 폭발 공용
-        float vfxScale = explosionRadius / 4f;
-        if (VfxSpawner.Play(VfxLibrary.Current.bomberExplosion, center, vfxScale / 0.5f)) CameraShake.AddExplosion(center, vfxScale);
-        else BulletHitEffects.SpawnExplosionVFX(center, vfxScale);
+        // 코드 폭발 연출 (불덩이·불길·불티·연기·피해 반경 바닥 고리, VfxLibrary.bomberExplosion은 미사용)
+        ExplosionEffect.SpawnBomber(center, explosionRadius);
+        SoundEntry boom = AudioManager.Library.bomberExplosion;
+        AudioManager.PlaySfx(boom.IsEmpty ? AudioManager.Library.grenadeExplosion : boom, center);
+        CameraShake.AddExplosion(center, explosionRadius / 4f);
 
         // 플레이어 (수평 거리)
         if (playerHealth != null && !playerHealth.IsDead)

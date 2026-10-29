@@ -189,6 +189,8 @@ public class EnemyShooter : MonoBehaviour
         Vector3 dir = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : transform.forward;
         EnemyProjectile.Spawn(MuzzlePosition() + dir * 0.6f, dir, projectileSpeed, enemy.AttackDamage, projectileLifetime,
                               projectileHitRadius, projectileSize, player, playerHealth);
+        VfxSpawner.Play(VfxLibrary.Current.shooterMuzzle, MuzzlePosition() + dir * 0.6f); // 총구 연기 (칸 비면 없음)
+        AudioManager.PlaySfx(AudioManager.Library.shooterFire, transform.position);
         if (enemy.ModelAnimator != null) enemy.ModelAnimator.PlayAction("Shoot"); // 모델 사격 동작 (없으면 무시)
     }
 

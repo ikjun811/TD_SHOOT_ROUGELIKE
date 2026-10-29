@@ -297,10 +297,11 @@ public class WaveManager : MonoBehaviour
             GameObject elite = Instantiate(selectedPrefab, position, Quaternion.identity);
             EnemyBase eliteBase = elite.GetComponent<EnemyBase>();
             if (eliteBase != null) eliteBase.MarkAsElite();
+            // 경고는 실제로 생성된 뒤에 (사용자: 위치가 확정된 엘리트만 알림 — 화살표도 살아 있는 엘리트만 가리킴)
+            AlertBanner.ShowElite();
         });
 
         Debug.Log($"WaveManager: ELITE incoming (alive {eliteAlive}/{EliteMaxConcurrent}, pending {pendingElites}, stage {stageTime:0}s)");
-        AlertBanner.ShowElite(); // 경고 띠 (기존 HUD 글자 배너 대체)
     }
 
     // 현재 라운드의 종류 가중치로 프리팹 선택 (프리팹 가중치 = 종류 가중치 / 그 종류 프리팹 수)
@@ -379,6 +380,13 @@ public class WaveManager : MonoBehaviour
 
         Camera cam = Camera.main;
         bool hasOnMeshFallback = false;
+        if (arena == null) arena = FindAnyObjectByType<BspArenaGenerator>();
+        if (spawnPath == null) spawnPath = new NavMeshPath();
+
+        // 경로 검사 기준: 플레이어 발밑 NavMesh 지점 (플레이어는 베이크 제외라 위치 보정)
+        bool hasPlayerNav = NavMesh.SamplePosition(playerTransform.position, out NavMeshHit playerHit, 3f, NavMesh.AllAreas);
+        int rejectedOutside = 0;
+        int rejectedUnreachable = 0;
 
         for (int attempt = 0; attempt < MaxSpawnAttempts; attempt++)
         {
@@ -393,12 +401,44 @@ public class WaveManager : MonoBehaviour
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 8.0f, NavMesh.AllAreas)) continue;
             candidate = hit.position;
 
+            // 외곽 벽 밖 NavMesh 조각 제외
+            if (arena != null && !arena.IsInsideArena(candidate))
+            {
+                rejectedOutside++;
+                continue;
+            }
+
+            // 플레이어까지 걸어갈 수 없는 끊긴 NavMesh 조각(장애물 틈·막힌 구석) 제외
+            if (hasPlayerNav && (!NavMesh.CalculatePath(candidate, playerHit.position, NavMesh.AllAreas, spawnPath)
+                                 || spawnPath.status != NavMeshPathStatus.PathComplete))
+            {
+                rejectedUnreachable++;
+                continue;
+            }
+
             position = candidate;
             hasOnMeshFallback = true;
-            if (cam == null || !IsVisibleOnScreen(cam, candidate)) return true;
+            if (cam == null || !IsVisibleOnScreen(cam, candidate))
+            {
+                LogRejectedSpawns(rejectedOutside, rejectedUnreachable);
+                return true;
+            }
         }
 
+        LogRejectedSpawns(rejectedOutside, rejectedUnreachable);
         return hasOnMeshFallback; // 모든 시도가 화면 안이면 NavMesh 위였던 마지막 좌표 사용
+    }
+
+    private BspArenaGenerator arena;
+    private NavMeshPath spawnPath;
+
+    // 확인용: 버린 스폰 후보가 있으면 원인 수 기록 (원인 확인 후 끌 것)
+    [SerializeField] private bool logRejectedSpawns = true;
+
+    private void LogRejectedSpawns(int outside, int unreachable)
+    {
+        if (!logRejectedSpawns || outside + unreachable == 0) return;
+        Debug.Log($"WaveManager: 스폰 후보 제외 — 맵 밖 {outside}, 경로 없음 {unreachable}");
     }
 
     private const int MaxSpawnAttempts = 10;

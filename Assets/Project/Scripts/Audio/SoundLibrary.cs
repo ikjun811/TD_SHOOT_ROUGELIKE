@@ -89,6 +89,14 @@ public class SoundLibrary : ScriptableObject
     public SoundEntry eliteIncoming = new SoundEntry();
     public SoundEntry execute = new SoundEntry();
 
+    [Header("적 행동")]
+    public SoundEntry shooterFire = new SoundEntry();
+    public SoundEntry chargerWindup = new SoundEntry();
+    public SoundEntry chargerImpact = new SoundEntry();
+    public SoundEntry bomberFuse = new SoundEntry();
+    [Tooltip("봄버 자폭·처치 폭발 (비우면 폭발 공용 grenadeExplosion)")]
+    public SoundEntry bomberExplosion = new SoundEntry();
+
     [Header("진행")]
     public SoundEntry roundStart = new SoundEntry();
     public SoundEntry crateOpening = new SoundEntry();

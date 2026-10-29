@@ -415,6 +415,7 @@ GameObject:
   - component: {fileID: 78285918}
   - component: {fileID: 78285917}
   - component: {fileID: 78285916}
+  - component: {fileID: 78285919}
   m_Layer: 0
   m_Name: ExtractionZone_Area
   m_TagString: Untagged
@@ -481,6 +482,30 @@ Transform:
   - {fileID: 1483957415}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &78285919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 78285915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d10eb22559dcaff4faa12994b484866d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExtractionZoneDecor
+  padPrefab: {fileID: 156746, guid: f419633b12a0ce6408caed3f95ae4dbd, type: 3}
+  beaconPrefab: {fileID: 109304, guid: ee798004d0ec37e4c9c8240e6fb9ee07, type: 3}
+  consolePrefab: {fileID: 105394, guid: f9de972ba272b2b4f9de5f40086022d1, type: 3}
+  ventPrefab: {fileID: 156980, guid: 693fabc3ca3a81d478808e6d171a7aa2, type: 3}
+  padHeight: 0.02
+  beaconCount: 8
+  beaconInset: 1.3
+  beaconRotation: {x: 90, y: 0, z: 0}
+  consoleDistance: 6.2
+  consoleYawOffset: 0
+  ventDistance: 7
+  overlapPadding: 0.2
 --- !u!1 &79768102
 GameObject:
   m_ObjectHideFlags: 0
@@ -2468,6 +2493,7 @@ MonoBehaviour:
   pendingElites: 0
   killsSinceLastElite: 0
   roundClearDelay: 2.5
+  logRejectedSpawns: 1
 --- !u!4 &766447419
 Transform:
   m_ObjectHideFlags: 0
@@ -4322,6 +4348,67 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   startingWeapon: {fileID: 11400000, guid: 70469e49cc6cf184f96d250d735bde3f, type: 2}
+--- !u!1 &1210677309
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1210677311}
+  - component: {fileID: 1210677310}
+  m_Layer: 0
+  m_Name: SupplyCrateManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1210677310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1210677309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68e26dab7d672314d91acb301960ec9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SupplyCrateManager
+  crateCountRange: {x: 2, y: 3}
+  minSpawnRadius: 10
+  maxSpawnRadius: 35
+  minDistanceFromPlayer: 15
+  minDistanceFromOthers: 10
+  minDistanceFromExtraction: 16
+  maxPlacementAttempts: 30
+  zoneCenterJitter: 2
+  openRadius: 2
+  openTime: 3
+  crateModel: {fileID: 4921675115321883647, guid: e2fdcaac11701fe438724a8a8b3a76c5, type: 3}
+  crateModelScale: 1.4
+  crateModelTint: {r: 1, g: 0.78, b: 0.3, a: 1}
+  crateWeaponModel: {fileID: 1530524464552494, guid: 98422e0388b1f47468f79ed0b9997ec0, type: 3}
+  crateWeaponLengthRatio: 0.85
+  crateWeaponYaw: 18
+  crateColor: {r: 1, g: 0.75, b: 0.1, a: 1}
+--- !u!4 &1210677311
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1210677309}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1219642992
 GameObject:
   m_ObjectHideFlags: 0
@@ -6666,9 +6753,9 @@ MonoBehaviour:
   gridLineEmission: {r: 0.03, g: 0.09, b: 0.1, a: 1}
   gridCellVariation: 0.04
   gridSmoothness: 0.25
-  floorTexture: {fileID: 2800000, guid: bb8b2028edf3d7e45a7394f38427d6c7, type: 3}
-  floorNormalMap: {fileID: 2800000, guid: 3ac9207b182525e4fadb138cbe8da574, type: 3}
-  floorTextureWorldSize: 5
+  floorTexture: {fileID: 2800000, guid: 1d4c6c02f2a89884bb5f96c13b583e47, type: 3}
+  floorNormalMap: {fileID: 2800000, guid: b67e5e8c602059f43848a50f16248f81, type: 3}
+  floorTextureWorldSize: 6
   floorNormalScale: 0.5
   floorMetallic: 0.2
   floorSmoothness: 0.4
@@ -7406,3 +7493,4 @@ SceneRoots:
   - {fileID: 78285918}
   - {fileID: 2004680692}
   - {fileID: 2119934852}
+  - {fileID: 1210677311}

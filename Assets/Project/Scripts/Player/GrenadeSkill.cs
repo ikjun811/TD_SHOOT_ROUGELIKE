@@ -153,6 +153,7 @@ public class GrenadeSkill : MonoBehaviour
             {
                 currentCooldownTimer -= cooldown;
                 currentCharges++;
+                AudioManager.PlaySfx(AudioManager.Library.grenadeReady);
                 Debug.Log($"💣 [수류탄 충전 완료] 현재 충전량: {currentCharges} / {maxCharges}");
             }
             if (currentCharges >= maxCharges) currentCooldownTimer = 0f;

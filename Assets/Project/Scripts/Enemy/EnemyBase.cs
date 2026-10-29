@@ -58,6 +58,7 @@ public class EnemyBase : MonoBehaviour
     // 살아 있는 엘리트 목록 (화면 밖 방향 표시, EliteOffscreenIndicator)
     private static readonly System.Collections.Generic.List<EnemyBase> activeElites = new System.Collections.Generic.List<EnemyBase>();
     public static System.Collections.Generic.IReadOnlyList<EnemyBase> ActiveElites => activeElites;
+    public float EliteSpawnTime { get; private set; } // 방금 나타난 엘리트 화살표 강조용 (EliteOffscreenIndicator)
 
     // 적 사망 알림 (처치 시 쿨감 모듈 등, GrenadeSkill)
     public static event System.Action<EnemyBase> OnAnyEnemyDeath;
@@ -104,6 +105,7 @@ public class EnemyBase : MonoBehaviour
         if (IsElite)
         {
             activeElites.Add(this);
+            EliteSpawnTime = Time.time;
             currentHp *= eliteHealthMultiplier;
             currentDmg *= eliteDamageMultiplier;
             currentSpd *= eliteSpeedMultiplier;
@@ -263,6 +265,7 @@ public class EnemyBase : MonoBehaviour
             if (toPlayer.sqrMagnitude <= reach * reach && playerHealth != null && !playerHealth.IsDead)
             {
                 playerHealth.DoDamage(baseAttackDamage);
+                AudioManager.PlaySfx(AudioManager.Library.enemyAttack, playerTransform.position);
             }
         }
 
@@ -294,6 +297,7 @@ public class EnemyBase : MonoBehaviour
             nextHitVfxTime = Time.time + HitVfxInterval;
             Vector3 hitPos = resultInfo.HitPosition != Vector3.zero ? resultInfo.HitPosition : transform.position + Vector3.up;
             VfxSpawner.Play(VfxLibrary.Current.enemyHit, hitPos);
+            AudioManager.PlaySfx(AudioManager.Library.enemyHit, hitPos);
         }
 
         // 피격 반응 훅 (매 피격 로그는 성능 문제로 제거)
@@ -309,6 +313,9 @@ public class EnemyBase : MonoBehaviour
         DeathFrame = Time.frameCount;
         foreach (Light l in GetComponentsInChildren<Light>()) l.enabled = false; // 엘리트 빛 끔 (시체가 남아 있는 동안)
         OnAnyEnemyDeath?.Invoke(this);
+        // 봄버는 폭발 소리로 대신 (처치당해도 폭발)
+        if (GetComponent<EnemyBomber>() == null)
+            AudioManager.PlaySfx(IsElite ? AudioManager.Library.eliteDeath : AudioManager.Library.enemyDeath, transform.position);
 
         if (ItemDropManager.Instance != null)
         {

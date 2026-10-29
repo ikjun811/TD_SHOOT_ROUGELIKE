@@ -1,9 +1,9 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 // 보급 상자 (SupplyCrateManager가 런타임에 생성, GDD 8-6 #13)
 // 플레이어가 반경 안에 머무르면 열기 진행, 벗어나면 진행도 유지(일시정지). 다 차면 무기 1개 드랍 후 사라짐
 // 연출 (C4): 여는 중 진행도만큼 떨림(막바지 더 빠르게) → 열림 순간 살짝 부풀었다 줄어들며 사라짐 + CrateOpenEffect(나온 무기 레어도 색)
+// 표식 (CrateMarker): 열기 범위 노란 바닥 원 + 진행 호 + 위 꺾쇠 — 예전 상자 위 진행 막대 대체 (사용자 2026-10-29)
 public class SupplyCrate : MonoBehaviour
 {
     [HideInInspector] public float openRadius = 2f;
@@ -22,8 +22,7 @@ public class SupplyCrate : MonoBehaviour
     private const float PopUpTime = 0.06f;
     private const float PopDownTime = 0.2f;
 
-    private GameObject barRoot;
-    private RectTransform fillRect;
+    private CrateMarker marker;
 
     private void Start()
     {
@@ -31,7 +30,7 @@ public class SupplyCrate : MonoBehaviour
         if (playerObj != null) player = playerObj.transform;
         basePosition = transform.position;
 
-        BuildProgressBar();
+        marker = CrateMarker.Create(this, player);
         AtmosphereLighting.AttachCrateLight(transform); // 노란 빛 (렌더링 ③)
     }
 
@@ -53,8 +52,6 @@ public class SupplyCrate : MonoBehaviour
             }
         }
         UpdateShake(opening);
-
-        UpdateProgressBar();
     }
 
     // 여는 중 떨림: 진행도만큼 세지고 막바지(80%~)에 빨라짐, 범위를 벗어나면 제자리
@@ -81,7 +78,7 @@ public class SupplyCrate : MonoBehaviour
         WeaponDataSO weapon = ItemDropManager.Instance != null ? ItemDropManager.Instance.DropCrateWeapon(basePosition, round) : null;
 
         CrateOpenEffect.Spawn(basePosition, weapon != null ? weapon.GetRarityColor() : progressColor);
-        if (barRoot != null) barRoot.SetActive(false);
+        if (marker != null) marker.Hide();
         StartCoroutine(PopAndDestroy());
     }
 
@@ -107,59 +104,6 @@ public class SupplyCrate : MonoBehaviour
             yield return null;
         }
         Destroy(gameObject);
-    }
-
-    // 상자 위 진행 막대 (진행이 시작된 뒤에만 표시)
-    private void BuildProgressBar()
-    {
-        barRoot = new GameObject("CrateProgress", typeof(RectTransform), typeof(Canvas));
-        barRoot.transform.SetParent(transform, false);
-        barRoot.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-
-        RectTransform rootRect = barRoot.GetComponent<RectTransform>();
-        rootRect.sizeDelta = new Vector2(100f, 12f);
-
-        // 상자 스케일 영향을 받지 않도록 월드 크기 기준으로 보정 (가로 1.2m)
-        Vector3 parentScale = transform.lossyScale;
-        barRoot.transform.localScale = new Vector3(1.2f / 100f / parentScale.x, 0.15f / 12f / parentScale.y, 1f / parentScale.z);
-
-        CreateBarImage("Background", new Color(0f, 0f, 0f, 0.6f), rootRect);
-        fillRect = CreateBarImage("Fill", progressColor, rootRect);
-        fillRect.anchorMax = new Vector2(0f, 1f);
-
-        barRoot.SetActive(false);
-    }
-
-    private RectTransform CreateBarImage(string objName, Color color, RectTransform parent)
-    {
-        GameObject obj = new GameObject(objName, typeof(RectTransform), typeof(Image));
-        RectTransform rect = obj.GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-
-        Image img = obj.GetComponent<Image>();
-        img.color = color;
-        img.raycastTarget = false;
-        return rect;
-    }
-
-    private void UpdateProgressBar()
-    {
-        if (barRoot == null) return;
-
-        bool visible = openTimer > 0f;
-        if (barRoot.activeSelf != visible) barRoot.SetActive(visible);
-        if (!visible) return;
-
-        fillRect.anchorMax = new Vector2(Progress, 1f);
-
-        // 상자 위 1.5m, 카메라를 향하도록
-        barRoot.transform.position = transform.position + Vector3.up * 1.5f;
-        Camera cam = Camera.main;
-        if (cam != null) barRoot.transform.rotation = cam.transform.rotation;
     }
 
     private void OnDrawGizmosSelected()

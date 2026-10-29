@@ -31,7 +31,7 @@ public class BulletHitEffects : MonoBehaviour
 
     // 착탄 폭발 이펙트 (수류탄 폭발 이펙트 재사용, PlayerStatAndWeaponSync가 지정)
     public static GameObject ExplosionVFX;
-    private const float VfxScale = 0.3f;
+    private const float VfxScale = 0.25f; // 착탄 폭발 이펙트 크기 (사용자: 0.5는 조명 작업 후 과해 보여 절반으로)
     private const float VfxDuration = 2f;
 
     private static readonly Collider[] overlapBuffer = new Collider[64];
@@ -119,7 +119,7 @@ public class BulletHitEffects : MonoBehaviour
 
         if (explosionChance > 0f && Random.value < explosionChance)
         {
-            ExplodeAt(hitPoint, explosionRadius, damage * explosionDamageRatio, enemy, owner, VfxScale);
+            ExplodeAt(hitPoint, explosionRadius, damage * explosionDamageRatio, enemy, owner, VfxScale, true); // 착탄 폭발 = 예전 JU 수류탄 이펙트 (사용자)
         }
 
         if ((executeThreshold > 0f || refundRatio > 0f) && health != null)
@@ -130,9 +130,11 @@ public class BulletHitEffects : MonoBehaviour
     }
 
     // 반경 안 적에게 피해 + 폭발 이펙트 (착탄 폭발, 재장전 시 폭발(WeaponModuleRuntime)이 사용). exclude는 피해 제외, 플레이어는 대상 아님
-    public static void ExplodeAt(Vector3 center, float radius, float damage, EnemyBase exclude, GameObject owner, float vfxScale)
+    // classicVfx = VfxLibrary 폭발 칸 대신 JU 수류탄 폭발 이펙트 (착탄 폭발)
+    public static void ExplodeAt(Vector3 center, float radius, float damage, EnemyBase exclude, GameObject owner, float vfxScale, bool classicVfx = false)
     {
-        SpawnExplosionVFX(center, vfxScale);
+        SpawnExplosionVFX(center, vfxScale, classicVfx);
+        ExplosionEffect.SpawnGroundRing(center, radius, ExplosionEffect.ringColor); // 피해 반경 바닥 고리
 
         HashSet<JUHealth> damaged = new HashSet<JUHealth>();
         int count = Physics.OverlapSphereNonAlloc(center, radius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
@@ -160,11 +162,15 @@ public class BulletHitEffects : MonoBehaviour
 
     // GrenadeProjectile 폭발 이펙트와 같은 처리 (JU Explosion 피해·물리 힘은 끄고 이펙트만, 크기 축소)
     // 적 폭발(봄버)도 사용 — 모듈이 없어 아직 연결 전이면 씬의 GrenadeSkill에서 가져옴
-    public static void SpawnExplosionVFX(Vector3 center, float scale)
+    public static void SpawnExplosionVFX(Vector3 center, float scale, bool classicVfx = false)
     {
         CameraShake.AddExplosion(center, scale);
-        // VfxLibrary 폭발 칸이 있으면 그것 (배율 0.5 = 수류탄 기준 → 칸 배율 그대로), 없으면 아래 JU 폭발
-        if (VfxSpawner.Play(VfxLibrary.Current.explosion, center, scale / 0.5f)) return;
+        // VfxLibrary 폭발 칸이 있으면 그것 (배율 0.5 = 수류탄 기준 → 칸 배율 그대로), 없거나 classicVfx면 아래 JU 폭발
+        if (!classicVfx && VfxSpawner.Play(VfxLibrary.Current.explosion, center, scale / 0.5f))
+        {
+            AudioManager.PlaySfx(AudioManager.Library.grenadeExplosion, center); // JU 폭발 프리팹(아래)은 자체 소리
+            return;
+        }
         if (ExplosionVFX == null)
         {
             GrenadeSkill grenade = FindAnyObjectByType<GrenadeSkill>();
@@ -233,6 +239,7 @@ public class BulletHitEffects : MonoBehaviour
                 if (p.threshold <= 0f || p.health == null || p.health.IsDead) continue;
                 if (p.health.Health > p.health.MaxHealth * p.threshold) continue;
 
+                AudioManager.PlaySfx(AudioManager.Library.execute, p.point);
                 // 방어력만큼 깎이므로 더해서 확실히 0으로
                 p.health.DoDamage(new IHealth.DamageInfo
                 {

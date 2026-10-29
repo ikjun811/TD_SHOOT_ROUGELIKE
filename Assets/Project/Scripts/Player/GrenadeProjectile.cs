@@ -40,9 +40,11 @@ public class GrenadeProjectile : MonoBehaviour
         exploded = true;
         Vector3 center = transform.position;
         CameraShake.AddExplosion(center, vfxScale);
+        ExplosionEffect.SpawnGroundRing(center, radius, ExplosionEffect.ringColor); // 피해 반경 바닥 고리
 
         // VfxLibrary 폭발 칸이 있으면 그것 (수류탄 vfxScale 0.5 = 칸 배율 그대로), 없으면 JU 폭발
         bool libraryVfx = VfxSpawner.Play(VfxLibrary.Current.explosion, center, vfxScale / 0.5f);
+        if (libraryVfx) AudioManager.PlaySfx(AudioManager.Library.grenadeExplosion, center); // JU 폭발 프리팹은 자체 소리
         if (!libraryVfx && explosionVFX != null)
         {
             GameObject vfx = Instantiate(explosionVFX, center, Quaternion.identity);

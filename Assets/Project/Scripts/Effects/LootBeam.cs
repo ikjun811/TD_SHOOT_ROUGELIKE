@@ -116,18 +116,20 @@ public class LootBeam : MonoBehaviour
         SetVisible(visible);
         if (!visible) return;
 
+        // 빛기둥은 아이템 위치에서 위로 (바닥부터 솟으면 어색 — 사용자), 맥박 고리는 바닥
         Vector3 ground = transform.position;
         ground.y = 0.05f;
-        Vector3 top = ground + Vector3.up * height;
+        Vector3 bottom = transform.position;
+        Vector3 top = bottom + Vector3.up * height;
         float pulse = 1f + 0.12f * Mathf.Sin((Time.time + phase) * 3f);
 
-        beam.SetPosition(0, ground);
+        beam.SetPosition(0, bottom);
         beam.SetPosition(1, top);
         beam.widthMultiplier = width * pulse;
 
         if (core != null)
         {
-            core.SetPosition(0, ground);
+            core.SetPosition(0, bottom);
             core.SetPosition(1, top);
         }
 
