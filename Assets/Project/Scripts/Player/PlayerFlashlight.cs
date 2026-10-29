@@ -73,7 +73,7 @@ public class PlayerFlashlight : MonoBehaviour
 
     private void LateUpdate()
     {
-        bool active = !Suppressed && Time.timeScale > 0f && (health == null || !health.IsDead);
+        bool active = !Suppressed && (Time.timeScale > 0f || PauseMenuUI.IsPaused) && (health == null || !health.IsDead);
         flashlight.enabled = active;
         if (!active)
         {

@@ -21,6 +21,7 @@ public static class GameSettings
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneLoaded += OnSceneLoaded;
         ApplyResolution();
+        ApplyFrameRate();
         AudioListener.volume = MasterVolume;
     }
 
@@ -28,6 +29,17 @@ public static class GameSettings
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         ApplyResolution();
+        ApplyFrameRate();
+    }
+
+    // 프레임 제한 (사용자 요청 2026-10-29: 빌드에서 약 600 FPS로 GPU를 과하게 씀 → 60)
+    //   수직 동기화를 끄고 targetFrameRate로 고정 (모니터 주사율과 무관하게 60, 수직 동기화가 켜져 있으면 targetFrameRate가 무시됨)
+    public const int TargetFrameRate = 60;
+
+    private static void ApplyFrameRate()
+    {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = TargetFrameRate;
     }
 
     #region Resolution

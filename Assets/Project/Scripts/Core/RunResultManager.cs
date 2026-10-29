@@ -23,6 +23,7 @@ public class RunResultManager : MonoBehaviour
     [SerializeField] private int modulesCollected;
 
     private bool isShowing;
+    public bool IsShowing => isShowing; // 결과 화면 표시 중 (PauseMenuUI가 일시정지 막음)
 
     public static void EnsureCreated()
     {

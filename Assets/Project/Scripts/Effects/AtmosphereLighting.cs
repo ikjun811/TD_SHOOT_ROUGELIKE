@@ -45,7 +45,7 @@ public class AtmosphereLighting : MonoBehaviour
     public int dustPerLamp = 14;
 
     [Header("바닥 안개")]
-    public bool groundFog = true;
+    public bool groundFog = false; // 끔 (사용자 2026-10-29: 빌드에서 존재감이 약한데 화면 크기 반투명 판 ~70장 겹침 비용) — 다시 쓰려면 true
     public Color fogColor = new Color(0.62f, 0.58f, 0.48f, 0.13f); // 누런 회색 (이전 푸른 회색 알파 0.09)
 
     [Header("분위기 색감 (전용 Volume, 기본 후처리 10 위·위기 화면 15 아래)")]
@@ -520,6 +520,27 @@ public class AtmosphereLighting : MonoBehaviour
     {
         if (fogMaterial != null) return fogMaterial;
         Texture2D tex = CreateSoftTexture("GroundFog", 128, true);
+
+        // 빌드 대응: URP Particles/Lit 반투명이 빌드에서 풀려 안개 판이 사각형으로 보임 (기준 재질 복사로도 해결 안 됨)
+        // → 키워드 변형이 없는 전용 셰이더 TDShoot/GroundFog (Resources/Shaders, 조명 반영) 우선
+        Shader fogShader = Shader.Find("TDShoot/GroundFog");
+        if (fogShader != null)
+        {
+            fogMaterial = new Material(fogShader) { name = "GroundFog", hideFlags = HideFlags.DontSave };
+            fogMaterial.SetTexture("_BaseMap", tex);
+            fogMaterial.SetColor("_BaseColor", Color.white);
+            return fogMaterial;
+        }
+
+        Material reference = Resources.Load<Material>("BuildShaderRefs/Ref_ParticlesLit_Transparent");
+        if (reference != null)
+        {
+            Material mat = new Material(reference) { name = "GroundFog", hideFlags = HideFlags.DontSave };
+            mat.SetTexture("_BaseMap", tex);
+            mat.SetColor("_BaseColor", Color.white);
+            fogMaterial = mat;
+            return fogMaterial;
+        }
 
         Shader lit = Shader.Find("Universal Render Pipeline/Particles/Lit");
         if (lit != null)

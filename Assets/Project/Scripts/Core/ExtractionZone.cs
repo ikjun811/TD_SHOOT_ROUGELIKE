@@ -44,6 +44,7 @@ public class ExtractionZone : MonoBehaviour
     // 탈출 완료 후에는 가득 고정 (성공 순간 라운드가 올라 최종 라운드 배율이 바뀌어도 게이지가 줄지 않게)
     public float RemainingTime => isExtractionComplete ? 0f : Mathf.Max(0f, RequiredTime - currentExtractionProgress);
     public bool IsPlayerInside => isPlayerInsideZone;
+    public bool IsSequenceActive => isExtractionComplete; // 탈출 성공 연출~다음 라운드 전 (PauseMenuUI가 일시정지 막음)
     public float ProgressPercent => isExtractionComplete ? 1f : Mathf.Clamp01(currentExtractionProgress / RequiredTime);
 
     // 트리거가 JU 바닥·계단 검사(WhatIsGround = Default, Queries Hit Triggers 켜짐)에 잡혀 가장자리에서 걸리지 않도록 Ignore Raycast 레이어로

@@ -19,6 +19,19 @@ public class SettingsPanelUI : MonoBehaviour
     private List<Vector2Int> resolutions = new List<Vector2Int>();
     private bool bound;
 
+    // 코드로 만든 패널에 컨트롤 연결 (PauseMenuUI — 패널을 끈 상태에서 부른 뒤 켜야 OnEnable에서 연결됨)
+    public void Configure(TMP_Dropdown resolution, Slider master, Slider sfx, Slider music,
+                          TextMeshProUGUI masterValue, TextMeshProUGUI sfxValue, TextMeshProUGUI musicValue)
+    {
+        resolutionDropdown = resolution;
+        masterSlider = master;
+        sfxSlider = sfx;
+        musicSlider = music;
+        masterValueText = masterValue;
+        sfxValueText = sfxValue;
+        musicValueText = musicValue;
+    }
+
     private void OnEnable()
     {
         Bind();

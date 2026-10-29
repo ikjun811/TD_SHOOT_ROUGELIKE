@@ -98,6 +98,7 @@ public class KillStreakUI : MonoBehaviour
     private void Update()
     {
         // 라운드가 끝나 적이 정리되면(탈출·사망) 다음 라운드로 이어지지 않게 — 정비 중엔 숨김
+        if (PauseMenuUI.IsPaused) { canvas.enabled = false; return; } // 일시정지는 라운드 종료가 아님 → 연속 처치 유지
         bool running = Time.timeScale > 0f;
         if (!running) streak = 0; // 정비 진입 = 라운드 종료
         float elapsed = Time.time - lastKillTime;
