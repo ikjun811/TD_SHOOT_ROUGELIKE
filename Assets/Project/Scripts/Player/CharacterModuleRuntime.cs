@@ -188,14 +188,12 @@ public class CharacterModuleRuntime : MonoBehaviour
 
     private IEnumerator DashBombRoutine(Vector3 position)
     {
-        // 폭발 전 표시: 콜라이더 없는 작은 빨간 구체
-        GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        marker.name = "DashBomb";
-        Destroy(marker.GetComponent<Collider>());
-        marker.transform.position = position + Vector3.up * 0.15f;
-        marker.transform.localScale = Vector3.one * 0.3f;
-        Renderer markerRenderer = marker.GetComponent<Renderer>();
-        if (markerRenderer != null) markerRenderer.material.color = new Color(1f, 0.2f, 0.1f);
+        // 폭발 전 표시: 수류탄과 같은 외형(GrenadeSkill.CreateGrenadeVisual) + 같은 점멸등(GrenadeBeacon)
+        float visualSize = grenadeSkill != null ? grenadeSkill.VisualSize : 0.4f;
+        GameObject marker = new GameObject("DashBomb");
+        marker.transform.SetPositionAndRotation(position + Vector3.up * visualSize * 0.3f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+        if (grenadeSkill != null) grenadeSkill.CreateGrenadeVisual(marker.transform);
+        GrenadeBeacon.Attach(marker, dashBombFuse, visualSize * 0.5f);
 
         yield return new WaitForSeconds(dashBombFuse); // 정비 중(timeScale 0)엔 함께 정지
 

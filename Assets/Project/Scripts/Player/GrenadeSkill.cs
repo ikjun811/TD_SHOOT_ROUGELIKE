@@ -26,6 +26,10 @@ public class GrenadeSkill : MonoBehaviour
     [Header("Visuals")]
     [Tooltip("수류탄 외형 모델 (예: JU Granade.fbx). 비우면 작은 구체 사용. 콜라이더·스크립트는 제거됨")]
     [SerializeField] private GameObject grenadeModel;
+    [Tooltip("모델의 가장 긴 변을 이 길이(m)로 맞춤 + 가운데 정렬. 0이면 모델 원래 크기·기준점 그대로")]
+    [SerializeField] private float grenadeModelSize = 0f;
+    [Tooltip("시인성용 외형 배율 (위 크기 x 이 값, 판정 반경 4m와 무관). 탑다운 화면에서 실제 크기는 너무 작아 보임")]
+    [SerializeField] private float grenadeVisualScale = 2f;
     [Tooltip("폭발 이펙트 (예: JU Explosion Particle). JU Explosion 피해·물리 힘은 자동으로 꺼짐")]
     [SerializeField] private GameObject explosionVFX;
     [SerializeField] private float vfxScale = 0.5f;     // 폭발 이펙트 크기 배율
@@ -64,6 +68,8 @@ public class GrenadeSkill : MonoBehaviour
     public int MaxCharges => maxCharges;
     public float CooldownProgress => currentCooldownTimer / cooldown;
     public float ScaledCenterDamage => centerDamage * damageMultiplier; // 중심 피해 x 공격력 % (대시 폭탄 기준값)
+    // 화면에 보이는 외형의 가장 긴 변 (m) — 모델 원래 크기를 쓰는 경우(grenadeModelSize 0)는 대략값
+    public float VisualSize => (grenadeModel != null && grenadeModelSize > 0f ? grenadeModelSize : 0.25f) * grenadeVisualScale;
 
     // 충전 시간 배율 (CharacterModuleRuntime: 단일 P226을 드는 동안 0.75). 진행도 표시가 그대로 맞도록 타이머 증가 속도로 적용
     public float ChargeTimeMultiplier { get; set; } = 1f;
@@ -215,6 +221,7 @@ public class GrenadeSkill : MonoBehaviour
         projectile.vfxDuration = vfxDuration;
         projectile.owner = gameObject;
         projectile.clusterDamageRatio = clusterDamageRatio;
+        GrenadeBeacon.Attach(grenade, fuse, VisualSize * 0.5f); // 점멸등 + 비행 궤적
         return grenade.GetComponent<Collider>();
     }
 
@@ -268,7 +275,7 @@ public class GrenadeSkill : MonoBehaviour
         grenade.transform.position = position;
 
         SphereCollider sphere = grenade.AddComponent<SphereCollider>();
-        sphere.radius = 0.12f;
+        sphere.radius = Mathf.Max(0.12f, VisualSize * 0.3f); // 커진 외형이 바닥에 파묻히지 않게
         sphere.sharedMaterial = GetGrenadeMaterial();
 
         Rigidbody rb = grenade.AddComponent<Rigidbody>();
@@ -285,22 +292,47 @@ public class GrenadeSkill : MonoBehaviour
             if (own != null) Physics.IgnoreCollision(sphere, own);
         }
 
-        // 외형: 지정 모델 또는 기본 구체 (외형의 콜라이더·스크립트는 제거해 물리는 위 구체만 사용)
+        CreateGrenadeVisual(grenade.transform);
+        return grenade;
+    }
+
+    // 수류탄 외형: 지정 모델 또는 기본 구체 (외형의 콜라이더·스크립트는 제거해 물리는 부모 쪽만 사용)
+    // 대시 폭탄(CharacterModuleRuntime)도 같은 외형을 씀
+    public GameObject CreateGrenadeVisual(Transform parent)
+    {
         GameObject visual = grenadeModel != null
-            ? Instantiate(grenadeModel, grenade.transform)
+            ? Instantiate(grenadeModel, parent)
             : GameObject.CreatePrimitive(PrimitiveType.Sphere);
         if (grenadeModel == null)
         {
-            visual.transform.SetParent(grenade.transform, false);
-            visual.transform.localScale = Vector3.one * 0.25f;
+            visual.transform.SetParent(parent, false);
+            visual.transform.localScale = Vector3.one * 0.25f * grenadeVisualScale;
         }
         visual.transform.localPosition = Vector3.zero;
+        if (grenadeModel != null && grenadeModelSize > 0f) FitVisual(visual.transform, parent);
 
         // 콜라이더·리지드바디는 첫 물리 프레임에 섞이지 않도록 즉시 제거
         foreach (Collider c in visual.GetComponentsInChildren<Collider>(true)) DestroyImmediate(c);
         foreach (Rigidbody r in visual.GetComponentsInChildren<Rigidbody>(true)) DestroyImmediate(r);
         foreach (MonoBehaviour m in visual.GetComponentsInChildren<MonoBehaviour>(true)) Destroy(m);
 
-        return grenade;
+        return visual;
+    }
+
+    // 모델 크기를 grenadeModelSize로, 렌더러 바운드 가운데를 부모 위치로 (모델마다 기준점·가져오기 배율이 달라서)
+    private void FitVisual(Transform visual, Transform parent)
+    {
+        Renderer[] renderers = visual.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0) return;
+
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+        float longest = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+        if (longest < 0.0001f) return;
+
+        float factor = grenadeModelSize * grenadeVisualScale / longest;
+        visual.localScale *= factor;
+        Vector3 offset = (bounds.center - parent.position) * factor; // 부모 기준 가운데 차이도 같은 비율로 줄어듦
+        visual.position -= offset;
     }
 }
