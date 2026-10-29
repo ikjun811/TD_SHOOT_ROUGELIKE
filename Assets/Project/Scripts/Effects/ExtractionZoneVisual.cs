@@ -17,6 +17,7 @@ public class ExtractionZoneVisual : MonoBehaviour
     public static float arcInset = 0.6f;       // 진행 호를 링보다 안쪽으로 (m)
     public static float beamHeight = 30f;
     public static float beamTime = 1.6f;
+    public static bool successBeam = false;    // 구역 중앙 성공 빛기둥 (텔레포트 연출 ExtractionTeleportEffect로 대체되어 끔)
 
     private static Material ringMaterial;
     private static Material arcMaterial;
@@ -128,7 +129,7 @@ public class ExtractionZoneVisual : MonoBehaviour
 
         // 성공 순간 빛기둥 (한 번)
         bool complete = progress >= 1f;
-        if (complete && !wasComplete) beamStartTime = Time.unscaledTime;
+        if (complete && !wasComplete && successBeam) beamStartTime = Time.unscaledTime;
         wasComplete = complete;
         UpdateBeam(center);
     }

@@ -195,7 +195,9 @@ public class ExtractionZone : MonoBehaviour
             ItemDropManager.Instance.CollectAllRemainingDropsOnField();
         }
 
-        AudioManager.PlaySfx(AudioManager.Library.extractionSuccess);
+        // 텔레포트 연출: 빛 충전 → 빛기둥과 함께 플레이어가 사라짐 (효과음은 텔레포트 순간, 실제 시간 기준)
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj != null) ExtractionTeleportEffect.Begin(playerObj.transform);
 
         // D3 슬로모션 → 암전 (물리 간격도 같은 비율로 줄여 움직임이 끊기지 않게)
         defaultFixedDeltaTime = Time.fixedDeltaTime;
@@ -206,6 +208,9 @@ public class ExtractionZone : MonoBehaviour
         yield return new WaitForSecondsRealtime(successSlowTime);
         ScreenFader.FadeTo(1f, successFadeTime);
         yield return new WaitForSecondsRealtime(successFadeTime);
+
+        // 암전 중 플레이어 모습 복구 (텔레포트로 숨김)
+        ExtractionTeleportEffect.RestorePlayer();
 
         // 정비·결과 진입 전 원래 속도로 복구 (정비는 이어서 0으로 정지)
         Time.timeScale = 1f;

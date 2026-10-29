@@ -26,6 +26,9 @@ public class PlayerFlashlight : MonoBehaviour
     public float flashRange = 7f;
     public float flashTime = 0.06f;
 
+    // 탈출 텔레포트로 플레이어 모습이 사라진 동안 손전등·섬광 끔 (ExtractionTeleportEffect)
+    public static bool Suppressed;
+
     private Light flashlight;
     private Light muzzleFlash;
     private JUHealth health;
@@ -40,6 +43,7 @@ public class PlayerFlashlight : MonoBehaviour
 
     private void Awake()
     {
+        Suppressed = false; // 씬 다시 시작 시 초기화
         health = GetComponent<JUHealth>();
         aimDir = Flat(transform.forward);
 
@@ -69,7 +73,7 @@ public class PlayerFlashlight : MonoBehaviour
 
     private void LateUpdate()
     {
-        bool active = Time.timeScale > 0f && (health == null || !health.IsDead);
+        bool active = !Suppressed && Time.timeScale > 0f && (health == null || !health.IsDead);
         flashlight.enabled = active;
         if (!active)
         {
@@ -104,7 +108,7 @@ public class PlayerFlashlight : MonoBehaviour
 
     private void HandleShot(Weapon weapon)
     {
-        if (weapon == null || Time.timeScale <= 0f) return;
+        if (weapon == null || Time.timeScale <= 0f || Suppressed) return;
         Vector3 pos = weapon.Shoot_Position != null ? weapon.Shoot_Position.position : transform.position + Vector3.up * 1.2f + aimDir * 0.6f;
         muzzleFlash.transform.position = pos;
         muzzleFlash.color = flashColor;
