@@ -7,6 +7,17 @@ using JUTPS.WeaponSystem;
 // 상황에 따라 바뀌는 효과(3점사·연사 예열·거치 사격·빠른 장전 후 강화 등)는 WeaponModuleRuntime이 실행 중에 처리 → 여기 수치에는 없음
 public static class WeaponStatCalculator
 {
+    // 무기군 고유 특성 (사용자 채택 2026-10-31) — 저격총: 한 발이 크게 터지는 무기
+    public const float SniperBaseCritChance = 0.15f;  // 기본 치명타 확률 (모듈 치명타에 더함)
+    public const float SniperCritMultiplier = 3.5f;   // 치명타 피해 배율 (다른 무기는 PlayerStatAndWeaponSync.critDamageMultiplier 2배)
+    public const int SniperBasePierce = 1;            // 탄 궤적 모듈(관통·도탄)이 없을 때 기본 관통 횟수
+
+    // 권총: 누르고 있으면 연사하는 최소 간격 (W2)
+    public const float PistolAutoInterval = 0.15f;
+
+    public static float BaseCritChance(WeaponType type) => type == WeaponType.Sniper ? SniperBaseCritChance : 0f;
+    public static float CritMultiplier(WeaponType type, float defaultMultiplier) => type == WeaponType.Sniper ? SniperCritMultiplier : defaultMultiplier;
+
     // JU 무기 프리팹의 원래 값 (작동 모듈이 바꾸지 않을 때 그대로 쓰는 값)
     public struct BaseValues
     {
@@ -108,9 +119,18 @@ public static class WeaponStatCalculator
             }
         }
 
+        // 권총 자동 연사 필수 (W2, 사용자 2026-10-31 — 클릭 피로 제거): 반자동 단일 권총은 누르고 있으면 연사
+        //   간격은 최소 PistolAutoInterval (리볼버 개조 0.35초처럼 더 느리면 그대로), 기관권총 개조는 이미 자동
+        if (data.weaponType == WeaponType.Pistol && r.fireMode == Weapon.WeaponFireMode.SemiAuto)
+        {
+            r.fireMode = Weapon.WeaponFireMode.Auto;
+            r.continuousUse = true;
+            r.fireIntervalBeforeStat = Mathf.Max(r.fireIntervalBeforeStat, PistolAutoInterval);
+        }
+
         r.attackPercent = attackPercent;
         r.fireRateFactor = 1f + fireRatePercent;
-        r.critChance = Mathf.Clamp01(critChance);
+        r.critChance = Mathf.Clamp01(critChance + BaseCritChance(data.weaponType));
         r.reloadSpeedPercent = reloadSpeedPercent;
         r.damage = data.GetFinalDamage() * damageMultiplier * (1f + attackPercent);
         r.pellets = r.fireMode == Weapon.WeaponFireMode.Shotgun ? Mathf.Max(1, r.pelletCountSetting) : 1;

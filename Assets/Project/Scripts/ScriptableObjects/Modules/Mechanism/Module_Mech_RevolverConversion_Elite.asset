@@ -22,13 +22,13 @@ MonoBehaviour:
   effect: 5
   effectValue: 0
   effectCount: 0
-  description: "\uB300\uAD6C\uACBD 6\uC5F0\uBC1C, \uBC1C\uB2F9 \uD53C\uD574 \xD72.2.\n\uB300\uAC00:
+  description: "\uB300\uAD6C\uACBD 6\uC5F0\uBC1C, \uBC1C\uB2F9 \uD53C\uD574 \xD73, \uC801\uC911\uB2F9 \uC218\uB958\uD0C4 \uCDA9\uC804 +0.3\uCD08.\n\uB300\uAC00:
     \uD0C4\uCC3D 16\u21926\uBC1C, \uBC1C\uC0AC \uAC04\uACA9 0.35\uCD08, \uC7A5\uC804
     1.2\u21921.5\uCD08."
   magazineOverride: 6
   reloadTimeOverride: 1.5
   fireIntervalOverride: 0.35
-  damageMultiplier: 2.2
+  damageMultiplier: 3
   pelletCountOverride: 0
   spreadOverride: 0
   fireModeOverride: 0

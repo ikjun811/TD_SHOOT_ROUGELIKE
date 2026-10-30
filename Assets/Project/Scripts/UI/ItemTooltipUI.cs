@@ -187,7 +187,22 @@ public class ItemTooltipUI : MonoBehaviour
                             + StatLine("탄창", weapon.maxAmmo, stats.magazine, "0", "발", true) + "\n"
                             + StatLine("장전", weapon.reloadTime, stats.FinalReloadTime, "0.##", "초", false) + "\n"
                             + Row("사격", GetFireModeName(stats.fireMode));
-                if (stats.critChance > 0f) text += "\n" + Row("치명타", $"{stats.critChance * 100f:0.#}%");
+                if (stats.critChance > 0f)
+                {
+                    // 저격총은 치명타 피해 배율이 달라 함께 표시
+                    string critMult = weapon.weaponType == WeaponType.Sniper ? $"  <alpha=#99>피해 ×{WeaponStatCalculator.SniperCritMultiplier:0.#}" : "";
+                    text += "\n" + Row("치명타", $"{stats.critChance * 100f:0.#}%{critMult}");
+                }
+                if (weapon.weaponType == WeaponType.Pistol)
+                {
+                    // 단일 권총 수류탄 엔진 (W3, CharacterModuleRuntime)
+                    text += "\n" + Row("특성", "수류탄 엔진") +
+                            "\n<size=85%><alpha=#AA>들고 있는 동안 수류탄 충전 40% 빠름 · 최대 충전 +1\n적중·처치마다 충전 진행, 투척 직후 연사 +30%\n자동 투척 모듈과 함께 쓰면 효과 없음</size>";
+                }
+                if (weapon.weaponType == WeaponType.Sniper && !PlayerStatAndWeaponSync.Instance.HasBulletPathModule(WeaponType.Sniper))
+                {
+                    text += "\n" + Row("탄 궤적", $"기본 관통 {WeaponStatCalculator.SniperBasePierce}회");
+                }
                 if (stats.mechanisms.Count > 0)
                 {
                     text += "\n" + Row("작동", string.Join(", ", stats.mechanisms.ConvertAll(m => m.moduleName)));

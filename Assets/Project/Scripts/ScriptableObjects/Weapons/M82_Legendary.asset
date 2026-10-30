@@ -25,7 +25,7 @@ MonoBehaviour:
   - effects: 0d0000000e000000
     icon: {fileID: 21300000, guid: ff8f613b8f1cb1d439e4a5c3f29db7be, type: 3}
   juItemName: M82
-  baseDamage: 60
+  baseDamage: 150
   fireRate: 1.2
   maxAmmo: 7
   reloadTime: 3

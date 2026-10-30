@@ -606,6 +606,10 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         GameObject template = Instantiate(originalBullet, bulletTemplateHolder.transform);
         template.name = $"{originalBullet.name} ({data.weaponName})";
 
+        // 무기군 기본 치명타(저격총 15%)를 더하고, 배율은 무기군별 (저격총 3.5배)
+        float weaponCritChance = Mathf.Clamp01(moduleCritChance + WeaponStatCalculator.BaseCritChance(data.weaponType));
+        float weaponCritMultiplier = WeaponStatCalculator.CritMultiplier(data.weaponType, critDamageMultiplier);
+
         Bullet bullet = template.GetComponent<Bullet>();
         if (bullet != null)
         {
@@ -618,11 +622,11 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
             if (quickReload) template.AddComponent<BulletWeaponLink>().sourceWeapon = weapon;
 
             // 치명타: 템플릿에 판정 컴포넌트를 붙여 두면 JU가 복제한 탄마다 판정 (템플릿은 비활성 부모 밑이라 판정 안 함)
-            if (moduleCritChance > 0f)
+            if (weaponCritChance > 0f)
             {
                 CriticalBullet crit = template.AddComponent<CriticalBullet>();
-                crit.critChance = moduleCritChance;
-                crit.critMultiplier = critDamageMultiplier;
+                crit.critChance = weaponCritChance;
+                crit.critMultiplier = weaponCritMultiplier;
             }
 
             // 적중 효과 특수 (넉백·착탄 폭발·처형, 함께 사용 가능). BulletChain보다 먼저 붙여 가로챈 적중에서도 호출되게 함
@@ -664,12 +668,21 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
                 if (pathModule.effect == ModuleEffect.ShotgunRicochet) chain.targetPoolSize = ShotgunRicochetTargetPool;
                 mechanismNames += $" [{pathModule.moduleName}]";
             }
+            else if (data.weaponType == WeaponType.Sniper)
+            {
+                // 저격총 기본 관통 (탄 궤적 모듈이 있으면 그 모듈로 대체 — 도탄을 끼우면 도탄 저격총)
+                BulletChain chain = template.AddComponent<BulletChain>();
+                chain.mode = BulletChain.ChainMode.Pierce;
+                chain.remaining = WeaponStatCalculator.SniperBasePierce;
+                chain.damageFactor = 1f;
+                mechanismNames += $" [기본 관통 {WeaponStatCalculator.SniperBasePierce}]";
+            }
         }
 
         bulletTemplates[weapon] = template;
         weapon.BulletPrefab = template;
 
-        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {moduleCritChance * 100f:0.#}% x{critDamageMultiplier}{mechanismNames}");
+        Debug.Log($"PlayerStatAndWeaponSync: Applied {data.weaponName} -> Damage {finalDamage:0.#}, FireRate {finalFireRate:0.###}, Magazine {weapon.BulletsPerMagazine}, Reload {reloadTime}s, Crit {weaponCritChance * 100f:0.#}% x{weaponCritMultiplier}{mechanismNames}");
     }
 
     private static WeaponStatCalculator.BaseValues ToBaseValues(WeaponOriginals originals)
@@ -757,6 +770,25 @@ public class PlayerStatAndWeaponSync : MonoBehaviour
         if (BulletHitEffects.ExplosionVFX != null) return;
         GrenadeSkill grenade = grenadeSkill != null ? grenadeSkill : GetComponent<GrenadeSkill>();
         if (grenade != null) BulletHitEffects.ExplosionVFX = grenade.ExplosionVFX;
+    }
+
+    // 이 무기군에 해당 작동 모듈이 그리드에 배치돼 있는지 (단일 권총 수류탄 엔진: 리볼버 개조 적중 충전)
+    public bool HasWeaponMechanism(WeaponType weaponType, ModuleEffect effect)
+    {
+        if (GridInventorySystem.Instance == null) return false;
+        foreach (var pm in GridInventorySystem.Instance.placedModules)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m != null && m.category == ModuleCategory.Mechanism && m.effect == effect && m.TargetsWeapon(weaponType)) return true;
+        }
+        return false;
+    }
+
+    // 이 무기군에 탄 궤적 특수 모듈(관통·도탄)이 적용 중인지 (툴팁: 저격총 기본 관통 대체 여부)
+    public bool HasBulletPathModule(WeaponType weaponType)
+    {
+        return FindActiveWeaponSpecial(weaponType, ModuleEffect.Pierce) != null
+            || FindActiveWeaponSpecial(weaponType, ModuleEffect.Ricochet) != null;
     }
 
     // 이 무기에 적용되는 특수 모듈 (공용 또는 이 무기 전용, 중복이면 효과가 적용되는 1개만)

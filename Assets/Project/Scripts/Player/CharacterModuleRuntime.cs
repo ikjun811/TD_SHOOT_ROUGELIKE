@@ -6,7 +6,10 @@ using JUTPS;
 using JUTPS.WeaponSystem;
 
 // 캐릭터 효과 런타임 (GDD 8-6 #17 A4c) — 플레이어 루트에 부착 (PlayerStatAndWeaponSync가 자동 추가)
-// A4c-1 단일 P226: 들고 있는 동안 대시 쿨타임·수류탄 충전 시간 25% 단축 (쌍권총 제외)
+// A4c-1 단일 P226: 들고 있는 동안 대시 쿨타임 25% 단축 (쌍권총 제외)
+//   + 수류탄 엔진 (W3, 사용자 채택 2026-10-31 — 단일 권총 = 수류탄 빌드 무기): 들고 있는 동안 수류탄 충전 40% 빠름·최대 충전 +1,
+//     권총 탄 적중마다 충전 +0.1초·권총을 든 채 탄으로 처치하면 +1초(폭발 피해는 제외 — ExplosionDamageScope), 직접 투척 직후 1.5초 연사 +30%
+//     자동 투척 모듈과는 상극 (충전을 쓰지 않음)
 // A4c-2 흡혈: 처치당 최대 체력 % 회복, 라운드당 상한
 // A4c-3 대시 폭탄: 대시 시작 자리에 폭탄 (IsDashing 감지)
 // A4c-4 탈출 집중: 탈출 구역 안에서 연사 증가·받는 피해 감소
@@ -15,7 +18,18 @@ using JUTPS.WeaponSystem;
 public class CharacterModuleRuntime : MonoBehaviour
 {
     [Header("Single P226 (GDD 8-6 #17)")]
-    [SerializeField] private float pistolCooldownFactor = 0.75f; // 대시 쿨타임·수류탄 충전 시간 배율
+    [SerializeField] private float pistolCooldownFactor = 0.75f; // 대시 쿨타임 배율
+
+    [Header("Single P226 수류탄 엔진 (W3, 임시값)")]
+    [SerializeField] private float pistolGrenadeChargeFactor = 0.6f;  // 수류탄 충전 시간 배율 (0.6 = 40% 빠름)
+    [SerializeField] private int pistolExtraGrenadeCharges = 1;
+    [SerializeField] private float pistolHitChargeSeconds = 0.1f;     // 권총 탄 적중당 충전 진행 (초)
+    [SerializeField] private float revolverHitChargeSeconds = 0.3f;   // 리볼버 개조 적중당 (한 발이 무거운 만큼)
+    [SerializeField] private float pistolKillChargeSeconds = 1f;      // 권총 처치당 충전 진행 (초)
+    [SerializeField] private float throwFireRateBonus = 0.3f;         // 직접 투척 직후 권총 연사 +30%
+    [SerializeField] private float throwFireRateDuration = 1.5f;
+    private float throwBoostUntil = -1f;
+    private GrenadeSkill throwSubscribed;
 
     private JUCharacterController controller;
     private JUHealth health;
@@ -74,6 +88,8 @@ public class CharacterModuleRuntime : MonoBehaviour
     private void OnEnable()
     {
         EnemyBase.OnAnyEnemyDeath += OnEnemyKilled;
+        EnemyBase.OnAnyEnemyDeath += OnEnemyKilledForGrenadeEngine;
+        IHealth.OnAnyDamaged += OnAnyDamagedForGrenadeEngine;
         if (health != null)
         {
             health.SubscribeOnBeforeDamaged(ReduceIncomingDamage);
@@ -84,6 +100,10 @@ public class CharacterModuleRuntime : MonoBehaviour
     private void OnDisable()
     {
         EnemyBase.OnAnyEnemyDeath -= OnEnemyKilled;
+        EnemyBase.OnAnyEnemyDeath -= OnEnemyKilledForGrenadeEngine;
+        IHealth.OnAnyDamaged -= OnAnyDamagedForGrenadeEngine;
+        if (throwSubscribed != null) throwSubscribed.OnManualThrow -= OnManualThrow;
+        throwSubscribed = null;
         if (health != null)
         {
             health.UnsubscribeOnBeforeDamaged(ReduceIncomingDamage);
@@ -128,7 +148,8 @@ public class CharacterModuleRuntime : MonoBehaviour
         }
 
         insideFocusZone = inside;
-        WeaponModuleRuntime.ExternalFireRateMultiplier = inside ? 1f + focusFireRate : 1f;
+        float throwBoost = holdingSinglePistol && Time.time < throwBoostUntil ? 1f + throwFireRateBonus : 1f;
+        WeaponModuleRuntime.ExternalFireRateMultiplier = (inside ? 1f + focusFireRate : 1f) * throwBoost;
     }
 
     // JUHealth 피해 적용 직전 (방어력 적용 후 피해)
@@ -219,15 +240,49 @@ public class CharacterModuleRuntime : MonoBehaviour
 
     private void Update()
     {
+        holdingSinglePistol = IsHoldingSinglePistol();
+
         CheckDashBomb();
         UpdateExtractionFocus();
 
-        holdingSinglePistol = IsHoldingSinglePistol();
-        float factor = holdingSinglePistol ? pistolCooldownFactor : 1f;
-
-        if (controller != null) controller.DashCooldown = baseDashCooldown * factor;
+        if (controller != null) controller.DashCooldown = baseDashCooldown * (holdingSinglePistol ? pistolCooldownFactor : 1f);
         if (grenadeSkill == null) grenadeSkill = GetComponent<GrenadeSkill>(); // 늦게 붙는 경우 대비
-        if (grenadeSkill != null) grenadeSkill.ChargeTimeMultiplier = factor;
+        if (grenadeSkill != null)
+        {
+            grenadeSkill.ChargeTimeMultiplier = holdingSinglePistol ? pistolGrenadeChargeFactor : 1f;
+            grenadeSkill.ExtraMaxCharges = holdingSinglePistol ? pistolExtraGrenadeCharges : 0;
+            if (throwSubscribed != grenadeSkill)
+            {
+                if (throwSubscribed != null) throwSubscribed.OnManualThrow -= OnManualThrow;
+                grenadeSkill.OnManualThrow += OnManualThrow;
+                throwSubscribed = grenadeSkill;
+            }
+        }
+    }
+
+    // 수류탄 엔진: 권총 탄 적중 → 충전 진행 (플레이어가 준 탄 피해만, 폭발 제외)
+    private void OnAnyDamagedForGrenadeEngine(IHealth.DamageResultInfo result)
+    {
+        if (!holdingSinglePistol || grenadeSkill == null || result.RealDamage <= 0f || ExplosionDamageScope.Active) return;
+        if (result.DamageOwner == null || !result.DamageOwner.transform.IsChildOf(transform)) return;
+        Component target = result.DamagedObject as Component;
+        if (target == null || target.GetComponentInParent<EnemyBase>() == null) return;
+        // 리볼버 개조는 한 발이 무거운 만큼 적중 충전도 큼 (사용자 채택 2026-10-31)
+        bool revolver = sync != null && sync.HasWeaponMechanism(WeaponType.Pistol, ModuleEffect.RevolverConversion);
+        grenadeSkill.AddChargeProgress(revolver ? revolverHitChargeSeconds : pistolHitChargeSeconds);
+    }
+
+    // 수류탄 엔진: 권총을 든 채 탄으로 처치 → 충전 진행 (폭발로 죽은 적 제외)
+    private void OnEnemyKilledForGrenadeEngine(EnemyBase enemy)
+    {
+        if (!holdingSinglePistol || grenadeSkill == null || ExplosionDamageScope.Active) return;
+        grenadeSkill.AddChargeProgress(pistolKillChargeSeconds);
+    }
+
+    // 직접 투척 직후 잠깐 권총 연사 증가 (던지고 → 쏘고 → 다시 차는 흐름)
+    private void OnManualThrow()
+    {
+        if (holdingSinglePistol) throwBoostUntil = Time.time + throwFireRateDuration;
     }
 
     // 오른손 무기가 P226(무기군 Pistol)이고 왼손 무기가 없을 때 (쌍권총은 무기군 DualPistols + 왼손 무기 있음)

@@ -136,6 +136,7 @@ public class BulletHitEffects : MonoBehaviour
         SpawnExplosionVFX(center, vfxScale, classicVfx);
         ExplosionEffect.SpawnGroundRing(center, radius, ExplosionEffect.ringColor); // 피해 반경 바닥 고리
 
+        ExplosionDamageScope.Begin(); // 탄 적중과 구분 (단일 권총 수류탄 엔진)
         HashSet<JUHealth> damaged = new HashSet<JUHealth>();
         int count = Physics.OverlapSphereNonAlloc(center, radius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
         EnemyBase hitEnemy = exclude;
@@ -158,6 +159,7 @@ public class BulletHitEffects : MonoBehaviour
                 DamageOwner = owner
             });
         }
+        ExplosionDamageScope.End();
     }
 
     // GrenadeProjectile 폭발 이펙트와 같은 처리 (JU Explosion 피해·물리 힘은 끄고 이펙트만, 크기 축소)

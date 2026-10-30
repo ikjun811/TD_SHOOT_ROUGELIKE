@@ -66,7 +66,22 @@ public class GrenadeSkill : MonoBehaviour
     public GameObject ExplosionVFX => explosionVFX; // 착탄 폭발 모듈이 이펙트 재사용 (BulletHitEffects)
     public bool UsesCharges => !autoThrow; // 자동 투척이면 충전을 쓰지 않음 (WorldAmmoRing이 충전 막대 숨김)
     public int CurrentCharges => currentCharges;
-    public int MaxCharges => maxCharges;
+    // 화면 표시용 최대 충전 (추가 칸이 사라져도 이미 찬 충전은 남으므로 그만큼 표시)
+    public int MaxCharges => Mathf.Max(EffectiveMaxCharges, currentCharges);
+
+    // 단일 권총 수류탄 엔진 (W3, CharacterModuleRuntime): 들고 있는 동안 최대 충전 추가. 자동 투척이면 무시
+    public int ExtraMaxCharges { get; set; }
+    private int EffectiveMaxCharges => maxCharges + (autoThrow ? 0 : ExtraMaxCharges);
+
+    // 수류탄을 직접 던졌을 때 (자동 투척 제외) — 단일 권총 투척 연계
+    public event System.Action OnManualThrow;
+
+    // 충전 진행을 앞당김 (초, 충전 시간 배율과 무관한 실제 진행). 가득 찼거나 자동 투척이면 무시 — 단일 권총 적중·처치 충전
+    public void AddChargeProgress(float seconds)
+    {
+        if (autoThrow || seconds <= 0f || currentCharges >= EffectiveMaxCharges) return;
+        currentCooldownTimer += seconds;
+    }
     public float CooldownProgress => currentCooldownTimer / cooldown;
     public float ScaledCenterDamage => centerDamage * damageMultiplier; // 중심 피해 x 공격력 % (대시 폭탄 기준값)
     // 화면에 보이는 외형의 가장 긴 변 (m) — 모델 원래 크기를 쓰는 경우(grenadeModelSize 0)는 대략값
@@ -110,7 +125,7 @@ public class GrenadeSkill : MonoBehaviour
     // 처치 시 쿨감: 충전 대기 시간을 앞당김 (충전 완료 처리는 Update)
     private void OnEnemyKilled(EnemyBase enemy)
     {
-        if (killRefundSeconds <= 0f || currentCharges >= maxCharges) return;
+        if (killRefundSeconds <= 0f || currentCharges >= EffectiveMaxCharges) return;
         currentCooldownTimer += killRefundSeconds;
     }
 
@@ -180,7 +195,7 @@ public class GrenadeSkill : MonoBehaviour
     // 다음 라운드 시작 시 충전 가득 채움
     public void RefillCharges()
     {
-        currentCharges = maxCharges;
+        currentCharges = EffectiveMaxCharges;
         currentCooldownTimer = 0f;
     }
 
@@ -189,18 +204,19 @@ public class GrenadeSkill : MonoBehaviour
         // 정비 단계(timeScale 0)에서는 충전·투척 모두 정지
         if (Time.timeScale <= 0f) return;
 
-        // 쿨타임 충전 연산 (처치 시 쿨감으로 한 번에 여러 충전이 찰 수 있음)
-        if (currentCharges < maxCharges)
+        // 쿨타임 충전 연산 (처치 시 쿨감·단일 권총 충전으로 한 번에 여러 충전이 찰 수 있음)
+        int max = EffectiveMaxCharges;
+        if (currentCharges < max)
         {
             currentCooldownTimer += Time.deltaTime / Mathf.Max(0.01f, ChargeTimeMultiplier);
-            while (currentCooldownTimer >= cooldown && currentCharges < maxCharges)
+            while (currentCooldownTimer >= cooldown && currentCharges < max)
             {
                 currentCooldownTimer -= cooldown;
                 currentCharges++;
                 AudioManager.PlaySfx(AudioManager.Library.grenadeReady);
-                Debug.Log($"💣 [수류탄 충전 완료] 현재 충전량: {currentCharges} / {maxCharges}");
+                Debug.Log($"💣 [수류탄 충전 완료] 현재 충전량: {currentCharges} / {max}");
             }
-            if (currentCharges >= maxCharges) currentCooldownTimer = 0f;
+            if (currentCharges >= max) currentCooldownTimer = 0f;
         }
 
         // 자동 투척 모듈이면 G키 투척 불가 (대가)
@@ -209,7 +225,8 @@ public class GrenadeSkill : MonoBehaviour
         {
             currentCharges--;
             ThrowAt(GetAimGroundPoint(), flightTime, fuseTime, 1f);
-            Debug.Log($"💣 [수류탄 투척!] 남은 충전량: {currentCharges} / {maxCharges}");
+            OnManualThrow?.Invoke();
+            Debug.Log($"💣 [수류탄 투척!] 남은 충전량: {currentCharges} / {EffectiveMaxCharges}");
         }
     }
 

@@ -37,8 +37,8 @@ public static class MechanismModuleGenerator
             target = ModuleTarget.Pistol, slot = MechanismSlot.FireMode, fireMode = FireModeOverride.Auto, fireInterval = 0.06f, damageMultiplier = 0.8f,
             description = "누르고 있으면 연사, 발사 간격 0.1→0.06초.\n대가: 발당 피해 −20%." },
         new Spec { fileKey = "RevolverConversion", displayName = "리볼버 개조", effect = ModuleEffect.RevolverConversion,
-            target = ModuleTarget.Pistol, slot = MechanismSlot.FireMode, magazine = 6, reloadTime = 1.5f, fireInterval = 0.35f, damageMultiplier = 2.2f,
-            description = "대구경 6연발, 발당 피해 ×2.2.\n대가: 탄창 16→6발, 발사 간격 0.35초, 장전 1.2→1.5초." },
+            target = ModuleTarget.Pistol, slot = MechanismSlot.FireMode, magazine = 6, reloadTime = 1.5f, fireInterval = 0.35f, damageMultiplier = 3f, // 2026-10-31: 2.2 → 3 + 적중 충전 0.3초 (권총 자동 연사 후 장점 보강)
+            description = "대구경 6연발, 발당 피해 ×3, 적중당 수류탄 충전 +0.3초.\n대가: 탄창 16→6발, 발사 간격 0.35초, 장전 1.2→1.5초." },
         new Spec { fileKey = "ExtendedMagazine", displayName = "확장 탄창", effect = ModuleEffect.ExtendedMagazine,
             target = ModuleTarget.DualPistols, slot = MechanismSlot.Magazine, magazine = 28, reloadTime = 2.7f,
             description = "탄창 16→28발.\n대가: 장전 시간 1.8→2.7초." },

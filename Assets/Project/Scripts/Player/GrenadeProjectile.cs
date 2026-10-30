@@ -72,6 +72,7 @@ public class GrenadeProjectile : MonoBehaviour
         }
 
         // 같은 대상의 여러 콜라이더에 중복 피해가 들어가지 않도록 체력 컴포넌트 단위로 1회만
+        ExplosionDamageScope.Begin(); // 탄 적중과 구분 (단일 권총 수류탄 엔진)
         HashSet<JUHealth> damaged = new HashSet<JUHealth>();
         foreach (Collider col in Physics.OverlapSphere(center, radius, ~0, QueryTriggerInteraction.Ignore))
         {
@@ -93,6 +94,8 @@ public class GrenadeProjectile : MonoBehaviour
                 DamageOwner = owner
             });
         }
+
+        ExplosionDamageScope.End();
 
         if (clusterDamageRatio > 0f) SpawnClusterBomblets(center);
 
