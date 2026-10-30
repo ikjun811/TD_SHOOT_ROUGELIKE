@@ -41,6 +41,14 @@ public class SupplyCrateManager : MonoBehaviour
     [SerializeField] private float crateWeaponYaw = 18f;
     [SerializeField] private Color crateColor = new Color(1f, 0.75f, 0.1f);
 
+    [Header("Medical Crate (탐색 보상 S2 — 의료 상자, BSP 맵에서만)")]
+    [SerializeField] private int medicalCrateCount = 1;
+    [Range(0f, 1f)] [SerializeField] private float medicalHealRatio = 0.5f;
+    [Tooltip("의료 상자 몸체 색조 (흰색 — 노란 무기 상자와 구분)")]
+    [SerializeField] private Color medicalTint = new Color(1f, 1f, 1f);
+    [Tooltip("의료 상자 윗면 십자 색 (HDR 배율 포함, 블룸)")]
+    [SerializeField] private Color medicalCrossColor = new Color(2.2f, 0.25f, 0.25f, 1f);
+
     [Header("Corpses (탐색 보상 S1 — 시체 수색, BSP 맵에서만)")]
     [Tooltip("시체 모델 (무작위). Tools > TD Shoot > Apply Supply Crate Model이 Horrors 시체 소품 3종 연결. 비우면 어두운 캡슐")]
     [SerializeField] private GameObject[] corpsePrefabs;
@@ -95,6 +103,7 @@ public class SupplyCrateManager : MonoBehaviour
         if (arena != null && arena.Leaves.Count > 0)
         {
             SpawnCratesInZones(arena, count, player, zone);
+            SpawnMedicalCrates(arena, player, zone);
             SpawnCorpses(arena, player, zone);
         }
         else
@@ -124,6 +133,15 @@ public class SupplyCrateManager : MonoBehaviour
         return crate;
     }
 
+    // 지정 위치에 시체 1구 생성 (튜토리얼, NavMesh 보정)
+    public SearchableCorpse SpawnCorpseAt(Vector3 position)
+    {
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas)) position = hit.position;
+        SearchableCorpse corpse = CreateCorpse(position);
+        activeCorpses.Add(corpse);
+        return corpse;
+    }
+
     // 아직 열리지 않은 상자 중 가장 가까운 것 (가이드 화살표용)
     public SupplyCrate GetNearestCrate(Vector3 from)
     {
@@ -132,7 +150,7 @@ public class SupplyCrateManager : MonoBehaviour
 
         foreach (SupplyCrate crate in activeCrates)
         {
-            if (crate == null || crate.IsOpened) continue;
+            if (crate == null || crate.IsOpened || crate.kind != SupplyCrate.Kind.Weapon) continue; // 의료 상자는 화살표 안내 없음
             float dist = (crate.transform.position - from).sqrMagnitude;
             if (dist < best)
             {
@@ -155,6 +173,52 @@ public class SupplyCrateManager : MonoBehaviour
             if (corpse != null) Destroy(corpse.gameObject);
         }
         activeCorpses.Clear();
+    }
+
+    // 의료 상자: 무기 상자가 없는 구역 중앙(시작·탈출 구역 제외), 플레이어·탈출 구역 거리 조건은 무기 상자와 같음 (모자라면 거리 조건만 풂)
+    private void SpawnMedicalCrates(BspArenaGenerator arena, Transform player, ExtractionZone zone)
+    {
+        if (medicalCrateCount <= 0) return;
+        List<Vector3> centers = arena.GetZoneCenters();
+        HashSet<int> used = new HashSet<int>();
+        if (player != null) used.Add(arena.GetZoneIndexAt(player.position));
+        if (zone != null) used.Add(arena.GetZoneIndexAt(zone.transform.position));
+        foreach (SupplyCrate crate in activeCrates)
+        {
+            if (crate != null) used.Add(arena.GetZoneIndexAt(crate.transform.position));
+        }
+
+        List<int> order = new List<int>();
+        for (int i = 0; i < centers.Count; i++)
+        {
+            if (!used.Contains(i)) order.Add(i);
+        }
+        for (int i = order.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+
+        int spawned = 0;
+        for (int pass = 0; pass < 2 && spawned < medicalCrateCount; pass++)
+        {
+            foreach (int index in order)
+            {
+                if (spawned >= medicalCrateCount) break;
+                if (used.Contains(index)) continue;
+                Vector3 candidate = centers[index] + new Vector3(Random.Range(-zoneCenterJitter, zoneCenterJitter), 0f, Random.Range(-zoneCenterJitter, zoneCenterJitter));
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, NavMesh.AllAreas)) continue;
+                candidate = hit.position;
+                if (pass == 0)
+                {
+                    if (player != null && HorizontalDistance(candidate, player.position) < minDistanceFromPlayer) continue;
+                    if (zone != null && HorizontalDistance(candidate, zone.transform.position) < minDistanceFromExtraction) continue;
+                }
+                used.Add(index);
+                activeCrates.Add(CreateCrate(candidate, SupplyCrate.Kind.Medical));
+                spawned++;
+            }
+        }
     }
 
     // 시체: 시작·탈출 구역을 뺀 구역마다 최대 1구, 구역 중앙(상자 자리)에서 비켜서 장애물(Walls)과 겹치지 않는 NavMesh 위
@@ -342,13 +406,14 @@ public class SupplyCrateManager : MonoBehaviour
         return Vector3.Distance(a, b);
     }
 
-    private SupplyCrate CreateCrate(Vector3 position)
+    private SupplyCrate CreateCrate(Vector3 position, SupplyCrate.Kind kind = SupplyCrate.Kind.Weapon)
     {
+        bool medical = kind == SupplyCrate.Kind.Medical;
         GameObject crateObj;
         NavMeshObstacle obstacle;
         if (crateModel != null)
         {
-            crateObj = BuildModelCrate(position, out Bounds localBounds);
+            crateObj = BuildModelCrate(position, out Bounds localBounds, medical);
             obstacle = crateObj.AddComponent<NavMeshObstacle>();
             obstacle.center = localBounds.center;
             obstacle.size = localBounds.size;
@@ -361,14 +426,16 @@ public class SupplyCrateManager : MonoBehaviour
             crateObj.transform.localScale = new Vector3(0.9f, 0.6f, 0.9f);
             crateObj.transform.SetPositionAndRotation(position + Vector3.up * 0.3f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
 
+            Color color = medical ? medicalTint : crateColor;
             Renderer rend = crateObj.GetComponent<Renderer>();
             if (rend != null)
             {
-                rend.material.color = crateColor;
-                if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", crateColor);
+                rend.material.color = color;
+                if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", color);
             }
+            if (medical) AddMedicalCross(crateObj.transform, crateObj.transform.position + Vector3.up * 0.3f, 0.9f);
         }
-        crateObj.name = "SupplyCrate";
+        crateObj.name = medical ? "MedicalCrate" : "SupplyCrate";
 
         // 적이 상자를 피해 다니도록
         if (crateModel == null) obstacle = crateObj.AddComponent<NavMeshObstacle>();
@@ -377,6 +444,8 @@ public class SupplyCrateManager : MonoBehaviour
         RemoveColliders(crateObj);
 
         SupplyCrate crate = crateObj.AddComponent<SupplyCrate>();
+        crate.kind = kind;
+        crate.healRatio = medicalHealRatio;
         crate.openRadius = openRadius;
         crate.openTime = openTime;
         return crate;
@@ -384,7 +453,7 @@ public class SupplyCrateManager : MonoBehaviour
 
     // 모델 상자: 바닥 높이 루트(무작위 회전) 아래에 모델을 가운데·바닥 기준으로 맞춤 (기준점이 모서리인 Crate Long 대응)
     //   + 위에 무기 모델 (긴 축 = 상자 긴 변 방향, 가장 얇은 축 = 위아래, 비스듬히). localBounds = 루트 기준 상자 범위 (NavMesh 장애물)
-    private GameObject BuildModelCrate(Vector3 position, out Bounds localBounds)
+    private GameObject BuildModelCrate(Vector3 position, out Bounds localBounds, bool medical = false)
     {
         GameObject root = new GameObject("SupplyCrate");
         root.transform.position = position;
@@ -397,9 +466,14 @@ public class SupplyCrateManager : MonoBehaviour
         model.transform.localPosition = new Vector3(-b.center.x + position.x, -b.min.y + position.y, -b.center.z + position.z);
         b = GetWorldBounds(model);
         localBounds = new Bounds(b.center - position, b.size);
-        TintRenderers(model, crateModelTint);
+        TintRenderers(model, medical ? medicalTint : crateModelTint);
 
-        if (crateWeaponModel != null)
+        if (medical)
+        {
+            // 의료 상자: 무기 대신 윗면 가운데 빨간 십자
+            AddMedicalCross(root.transform, new Vector3(b.center.x, b.max.y, b.center.z), Mathf.Min(b.size.x, b.size.z) * 0.8f);
+        }
+        else if (crateWeaponModel != null)
         {
             // 상자 긴 변이 루트 Z가 되도록 모델을 돌려 둠
             if (b.size.x > b.size.z)
@@ -436,6 +510,32 @@ public class SupplyCrateManager : MonoBehaviour
 
         root.transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         return root;
+    }
+
+    // 윗면 빨간 십자 (발광 판 2장, 겉모습만 — 콜라이더는 CreateCrate에서 제거)
+    private static Material crossMaterial;
+
+    private void AddMedicalCross(Transform parent, Vector3 top, float size)
+    {
+        if (crossMaterial == null)
+        {
+            crossMaterial = new Material(Shader.Find("Sprites/Default")) { name = "MedicalCross", hideFlags = HideFlags.DontSave };
+        }
+        crossMaterial.color = medicalCrossColor;
+        float length = Mathf.Max(0.2f, size);
+        float width = length * 0.3f;
+        for (int i = 0; i < 2; i++)
+        {
+            GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bar.name = "MedicalCross";
+            bar.transform.SetParent(parent, true);
+            bar.transform.position = top + Vector3.up * 0.015f;
+            bar.transform.rotation = parent.rotation;
+            bar.transform.localScale = i == 0 ? new Vector3(length, 0.02f, width) : new Vector3(width, 0.02f, length);
+            Renderer r = bar.GetComponent<Renderer>();
+            r.sharedMaterial = crossMaterial;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
     }
 
     // 재질 복사 없이 렌더러별 PropertyBlock으로 기본 색만 바꿈 (URP _BaseColor, Built-in _Color)

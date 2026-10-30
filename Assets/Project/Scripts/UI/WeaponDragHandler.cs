@@ -106,6 +106,15 @@ public class WeaponDragHandler : MonoBehaviour
         WeaponDataSO newWeapon = selectedWeapon;
         WeaponDataSO oldWeapon = PlayerInventory.Instance.equippedWeapons[slotIndex];
 
+        // 같은 종류 무기(같은 JU 총) 2개 장착 막기 — JU에서는 한 자루로 처리돼 다른 슬롯이 무시되고 E키 교체도 안 됨
+        WeaponDataSO[] equipped = PlayerInventory.Instance.equippedWeapons;
+        for (int i = 0; i < equipped.Length; i++)
+        {
+            if (i == slotIndex || equipped[i] == null || equipped[i].juItemName != newWeapon.juItemName) continue;
+            if (MaintenanceUI.Instance != null) MaintenanceUI.Instance.ShowWarning("같은 종류의 무기는 함께 장착할 수 없습니다");
+            return; // 손에 든 채로 유지
+        }
+
         PlayerInventory.Instance.equippedWeapons[slotIndex] = newWeapon;
 
         if (oldWeapon != null)

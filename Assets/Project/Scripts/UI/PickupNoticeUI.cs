@@ -60,6 +60,12 @@ public class PickupNoticeUI : MonoBehaviour
         Show($"[{ItemTooltipUI.GetRarityName(weapon.rarity)}] {weapon.weaponName} (무기)", weapon.GetRarityColor(), weapon.rarity, weapon.rarity >= RarityType.Legendary);
     }
 
+    // 아이템이 아닌 획득 알림 (의료 상자 회복 등) — 일반 테두리 + 지정 색, 굵게
+    public static void ShowMessage(string text, Color color)
+    {
+        Show(text, color, RarityType.Common, true);
+    }
+
     private static void Show(string text, Color color, RarityType rarity, bool emphasize)
     {
         if (instance == null)

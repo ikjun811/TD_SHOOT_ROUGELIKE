@@ -37,6 +37,7 @@ public static class GameplayBootstrap
         // KillEffects.EnsureCreated(); // B4 처치 연출(피) — 너무 잔인해 비활성 (사용자 2026-10-29), 다시 켜려면 주석 해제
         PlayerPositionGuard.EnsureOnPlayer();
         DashAfterimage.EnsureOnPlayer();
+        UnusedInputBlocker.EnsureOnPlayer(); // 안 쓰는 JU 키(Q·휠 굴리기·숫자키·C·Z·Ctrl·F·Tab) 끔
         PlayerFlashlight.EnsureOnPlayer();
         SilhouetteRenderer.Attach(GameObject.FindGameObjectWithTag("Player"), new Color(0.3f, 0.85f, 1f, 0.6f));
     }

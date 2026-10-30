@@ -4,8 +4,16 @@ using UnityEngine;
 // 플레이어가 반경 안에 머무르면 열기 진행, 벗어나면 진행도 유지(일시정지). 다 차면 무기 1개 드랍 후 사라짐
 // 연출 (C4): 여는 중 진행도만큼 떨림(막바지 더 빠르게) → 열림 순간 살짝 부풀었다 줄어들며 사라짐 + CrateOpenEffect(나온 무기 레어도 색)
 // 표식 (CrateMarker): 열기 범위 노란 바닥 원 + 진행 호 + 위 꺾쇠 — 예전 상자 위 진행 막대 대체 (사용자 2026-10-29)
+// 종류 (탐색 보상 S2, 2026-10-30): 무기 상자(노랑, 무기 드랍, 노란 화살표 안내) / 의료 상자(흰 몸체 + 빨간 십자, 최대 체력 healRatio 회복, 화살표 없음)
 public class SupplyCrate : MonoBehaviour
 {
+    public enum Kind { Weapon, Medical }
+
+    public static Color medicalColor = new Color(1f, 0.4f, 0.4f, 1f);       // 표식·열림 효과
+    public static Color medicalLightColor = new Color(1f, 0.75f, 0.72f);    // 상자 위 빛 (붉은 흰빛)
+
+    [HideInInspector] public Kind kind = Kind.Weapon;
+    [HideInInspector] public float healRatio = 0.5f;
     [HideInInspector] public float openRadius = 2f;
     [HideInInspector] public float openTime = 3f;
     [HideInInspector] public Color progressColor = new Color(1f, 0.8f, 0.2f);
@@ -30,8 +38,16 @@ public class SupplyCrate : MonoBehaviour
         if (playerObj != null) player = playerObj.transform;
         basePosition = transform.position;
 
-        marker = CrateMarker.Create(this, player);
-        AtmosphereLighting.AttachCrateLight(transform); // 노란 빛 (렌더링 ③)
+        if (kind == Kind.Medical)
+        {
+            marker = CrateMarker.Create(transform, () => openRadius, () => Progress, player, medicalColor);
+            AtmosphereLighting.AttachCrateLight(transform, medicalLightColor);
+        }
+        else
+        {
+            marker = CrateMarker.Create(this, player);
+            AtmosphereLighting.AttachCrateLight(transform); // 노란 빛 (렌더링 ③)
+        }
     }
 
     private void Update()
@@ -74,12 +90,35 @@ public class SupplyCrate : MonoBehaviour
         IsOpened = true;
         transform.position = basePosition;
 
-        int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
-        WeaponDataSO weapon = ItemDropManager.Instance != null ? ItemDropManager.Instance.DropCrateWeapon(basePosition, round) : null;
-
-        CrateOpenEffect.Spawn(basePosition, weapon != null ? weapon.GetRarityColor() : progressColor);
+        if (kind == Kind.Medical)
+        {
+            HealPlayer();
+            CrateOpenEffect.Spawn(basePosition, medicalColor);
+        }
+        else
+        {
+            int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
+            WeaponDataSO weapon = ItemDropManager.Instance != null ? ItemDropManager.Instance.DropCrateWeapon(basePosition, round) : null;
+            CrateOpenEffect.Spawn(basePosition, weapon != null ? weapon.GetRarityColor() : progressColor);
+        }
         if (marker != null) marker.Hide();
         StartCoroutine(PopAndDestroy());
+    }
+
+    // 의료 상자: 최대 체력의 healRatio만큼 회복 (최대치 넘지 않음 — JU가 제한)
+    private void HealPlayer()
+    {
+        JU.JUHealth health = player != null ? player.GetComponent<JU.JUHealth>() : null;
+        if (health == null || health.IsDead) return;
+        float before = health.Health;
+        float amount = health.MaxHealth * healRatio;
+        health.AddHealth(new JU.IHealth.AddedHealthInfo { HealthAdded = amount });
+        float healed = health.Health - before;
+        Debug.Log($"SupplyCrate: Medical crate healed {healed:0} ({health.Health:0}/{health.MaxHealth:0}).");
+
+        // 획득 알림 줄에 실제 회복량 (가득 찬 상태였으면 그대로 알림)
+        string text = healed >= 1f ? $"[의료 상자] 체력 +{healed:0}" : "[의료 상자] 체력이 이미 가득합니다";
+        PickupNoticeUI.ShowMessage(text, new Color(0.45f, 1f, 0.55f));
     }
 
     // 살짝 부풀었다가 줄어들며 사라짐

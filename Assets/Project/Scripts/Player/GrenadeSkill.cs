@@ -1,13 +1,14 @@
 using UnityEngine;
 using JU;
 
-// 수류탄 스킬 (G키, 무기 슬롯과 별개, GDD 3-3) — 플레이어 루트에 부착
+// 수류탄 스킬 (마우스 휠 클릭, 무기 슬롯과 별개, GDD 3-3) — 플레이어 루트에 부착
 // 마우스가 가리키는 바닥 지점으로 포물선 투척, fuse 후 범위 피해 (GrenadeProjectile)
-// 모듈(A4b): 공격력 % 공유, 자동 투척(G키 불가·적중 시 확률), 다중 투척, 집속탄, 충전 +1, 처치 시 쿨감
+// 모듈(A4b): 공격력 % 공유, 자동 투척(직접 투척 불가·적중 시 확률), 다중 투척, 집속탄, 충전 +1, 처치 시 쿨감
 public class GrenadeSkill : MonoBehaviour
 {
     [Header("Grenade Skill Settings")]
-    [SerializeField] private KeyCode grenadeKey = KeyCode.G;
+    [Tooltip("투척 입력 (2026-10-30 사용자: 자주 쓰는데 G키는 조작이 어려워 휠 클릭으로, G키 제거)")]
+    [SerializeField] private KeyCode throwButton = KeyCode.Mouse2;
     [SerializeField] private float cooldown = 10f;       // 쿨타임 (초)
     [SerializeField] private int maxCharges = 2;         // 최대 충전 횟수
     [SerializeField] private float maxCooldownReduction = 0.7f; // 쿨감 상한 (임시값, GDD 8-4)
@@ -120,10 +121,44 @@ public class GrenadeSkill : MonoBehaviour
         if (health != null && health.IsDead) return;
         if (Time.time < nextAutoThrowTime || Random.value >= autoThrowChance) return;
 
+        // 맞은 적이 투척 사거리(maxThrowRange) 밖이면 사거리 안 가장 가까운 적으로, 없으면 이번엔 던지지 않음 (쿨도 소모 안 함)
+        //   이전: 저격총 등으로 멀리 맞힌 적에게 사거리 제한 없이 0.5초 만에 낮고 빠르게 던져 장애물에 막히거나 효과를 못 봄 (2026-10-30)
+        EnemyBase chosen = IsWithinThrowRange(target) ? target : FindNearestEnemyInRange();
+        if (chosen == null) return;
+
         nextAutoThrowTime = Time.time + autoThrowCooldown;
-        Vector3 point = target.transform.position;
+        Vector3 point = chosen.transform.position;
         point.y = transform.position.y; // 바닥 높이
         ThrowAt(point, autoThrowFlightTime, autoThrowFlightTime + autoThrowFuseAfterLanding, autoThrowDamageRatio);
+    }
+
+    private bool IsWithinThrowRange(EnemyBase enemy)
+    {
+        Vector3 offset = enemy.transform.position - transform.position;
+        offset.y = 0f;
+        return !enemy.IsDead && offset.sqrMagnitude <= maxThrowRange * maxThrowRange;
+    }
+
+    private readonly Collider[] nearbyBuffer = new Collider[64];
+
+    private EnemyBase FindNearestEnemyInRange()
+    {
+        int count = Physics.OverlapSphereNonAlloc(transform.position, maxThrowRange, nearbyBuffer, ~0, QueryTriggerInteraction.Ignore);
+        EnemyBase best = null;
+        float bestDistance = float.MaxValue;
+        for (int i = 0; i < count; i++)
+        {
+            EnemyBase enemy = nearbyBuffer[i].GetComponentInParent<EnemyBase>();
+            if (enemy == null || enemy.IsDead || !IsWithinThrowRange(enemy)) continue;
+            Vector3 offset = enemy.transform.position - transform.position;
+            offset.y = 0f;
+            if (offset.sqrMagnitude < bestDistance)
+            {
+                bestDistance = offset.sqrMagnitude;
+                best = enemy;
+            }
+        }
+        return best;
     }
 
     private void Start()
@@ -170,7 +205,7 @@ public class GrenadeSkill : MonoBehaviour
 
         // 자동 투척 모듈이면 G키 투척 불가 (대가)
         bool isDead = health != null && health.IsDead;
-        if (!autoThrow && !InputLocked && Input.GetKeyDown(grenadeKey) && currentCharges > 0 && !isDead)
+        if (!autoThrow && !InputLocked && Input.GetKeyDown(throwButton) && currentCharges > 0 && !isDead)
         {
             currentCharges--;
             ThrowAt(GetAimGroundPoint(), flightTime, fuseTime, 1f);

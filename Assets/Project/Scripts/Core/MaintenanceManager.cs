@@ -115,6 +115,15 @@ public class MaintenanceManager : MonoBehaviour
                 LastBlockReason = "무기를 1개 이상 장착하세요";
                 return false;
             }
+
+            // 같은 종류(같은 JU 총) 2개는 한 자루로 처리돼 한 슬롯이 무시됨 (장착은 WeaponDragHandler가 막지만, 취소 복귀 등 다른 경로 대비)
+            WeaponDataSO a = PlayerInventory.Instance.equippedWeapons[0];
+            WeaponDataSO b = PlayerInventory.Instance.equippedWeapons[1];
+            if (a != null && b != null && a.juItemName == b.juItemName)
+            {
+                LastBlockReason = "같은 종류의 무기 2개는 함께 장착할 수 없습니다";
+                return false;
+            }
         }
 
         isInMaintenance = false;

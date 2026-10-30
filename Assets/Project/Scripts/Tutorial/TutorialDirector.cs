@@ -152,6 +152,7 @@ public class TutorialDirector : MonoBehaviour
         yield return StepModuleDrop();
         yield return StepGrenade();
         yield return StepSupplyCrate();
+        yield return StepExploration();
         yield return StepExtraction();
         yield return StepMaintenance();
 
@@ -170,8 +171,8 @@ public class TutorialDirector : MonoBehaviour
         GrenadeSkill grenade = FindAnyObjectByType<GrenadeSkill>();
         if (grenade != null) grenade.RefillCharges();
 
-        ui.ShowObjective("STEP 06", "모듈 효과", "그리드에 배치한 다중 투척이 적용되었습니다. 수류탄이 한 번에 여러 개 날아갑니다.",
-            new TutorialUI.ObjectiveItem("G", "수류탄 던지기"),
+        ui.ShowObjective("STEP 07", "모듈 효과", "그리드에 배치한 다중 투척이 적용되었습니다. 수류탄이 한 번에 여러 개 날아갑니다.",
+            new TutorialUI.ObjectiveItem("휠클릭", "수류탄 던지기"),
             new TutorialUI.ObjectiveItem("", "무리 처치"));
 
         List<EnemyBase> pack = SpawnOffscreen(EnemyType.Runner, 9, true);
@@ -201,7 +202,7 @@ public class TutorialDirector : MonoBehaviour
         string nameA = equipped.Length > 0 && equipped[0] != null ? equipped[0].weaponName : "첫 번째 무기";
         string nameB = equipped.Length > 1 && equipped[1] != null ? equipped[1].weaponName : "두 번째 무기";
 
-        ui.ShowObjective("STEP 07", "무기 교체", "E키로 무기를 바꿔 들 수 있습니다. 두 무기로 각각 적을 처치하세요.",
+        ui.ShowObjective("STEP 08", "무기 교체", "E키로 무기를 바꿔 들 수 있습니다. 두 무기로 각각 적을 처치하세요.",
             new TutorialUI.ObjectiveItem("E", "무기 교체"),
             new TutorialUI.ObjectiveItem("", $"{nameA}로 처치"),
             new TutorialUI.ObjectiveItem("", $"{nameB}로 처치"));
@@ -429,11 +430,11 @@ public class TutorialDirector : MonoBehaviour
         yield return CompleteStep();
     }
 
-    // C 수류탄: G키 해제·충전 채움 → 한쪽에서 몰려오는 무리 처치
+    // C 수류탄: 투척 잠금 해제·충전 채움 → 한쪽에서 몰려오는 무리 처치
     private IEnumerator StepGrenade()
     {
         yield return Popup("수류탄",
-            $"<color={Accent}>G</color>키로 마우스 위치에 수류탄을 던집니다.\n" +
+            $"<color={Accent}>마우스 휠 클릭</color>으로 마우스 위치에 수류탄을 던집니다.\n" +
             "쓴 수류탄은 시간이 지나면 다시 충전됩니다. (장탄 링 오른쪽 막대)\n\n" +
             "적이 뭉쳐 있을 때 던지면 한 번에 처리할 수 있습니다.");
 
@@ -445,7 +446,7 @@ public class TutorialDirector : MonoBehaviour
         }
 
         ui.ShowObjective("STEP 03", "수류탄", "한쪽에서 적 무리가 몰려옵니다.",
-            new TutorialUI.ObjectiveItem("G", "수류탄 던지기"),
+            new TutorialUI.ObjectiveItem("휠클릭", "수류탄 던지기"),
             new TutorialUI.ObjectiveItem("", "무리 처치"));
 
         List<EnemyBase> pack = SpawnOffscreen(EnemyType.Runner, 6, true);
@@ -487,6 +488,43 @@ public class TutorialDirector : MonoBehaviour
         yield return CompleteStep();
     }
 
+    // 탐색 (S3): 시체 수색 체험 + 의료 상자 소개 — 둘 다 화살표 안내가 없다는 점 강조. 시체는 플레이어 근처(화면 안쪽) 1구
+    private IEnumerator StepExploration()
+    {
+        yield return Popup("탐색",
+            $"맵 곳곳에 쓰러진 대원의 <color={Accent}>시체</color>가 있습니다. 청록 표식 옆에 잠시 머물러 수색하면 모듈을 얻습니다.\n" +
+            $"흰 몸체에 빨간 십자가 그려진 <color={Accent}>의료 상자</color>를 열면 체력을 회복합니다.\n\n" +
+            $"<color={Gold}>시체와 의료 상자는 화살표로 안내되지 않습니다.\n맵을 돌아다니며 직접 찾으세요.</color>");
+
+        Vector3 origin = controller != null ? controller.transform.position : Vector3.zero;
+        SearchableCorpse corpse = SupplyCrateManager.Instance != null ? SupplyCrateManager.Instance.SpawnCorpseAt(FindOpenSpot(origin, 8f)) : null;
+
+        ui.ShowObjective("STEP 05", "탐색", "근처에 청록 표식이 있습니다. 시체 옆에서 잠시 기다리세요.",
+            new TutorialUI.ObjectiveItem("", "시체 수색"));
+
+        while (corpse != null && !corpse.IsSearched) yield return null;
+        ui.SetItemDone(0);
+        ui.ShowNotice("모듈 발견!  시체 수색은 적 처치와 별개로 모듈을 얻는 방법입니다", 4f);
+        yield return CompleteStep();
+    }
+
+    // origin에서 distance 떨어진 걸을 수 있는 빈 자리 (여러 방향 시도, 장애물(Walls)과 겹치지 않게). 못 찾으면 origin 근처
+    private static Vector3 FindOpenSpot(Vector3 origin, float distance)
+    {
+        int wallMask = LayerMask.GetMask("Walls");
+        for (int i = 0; i < 12; i++)
+        {
+            float angle = i * 30f;
+            Vector3 candidate = origin + Quaternion.Euler(0f, angle, 0f) * Vector3.forward * distance;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(candidate, out UnityEngine.AI.NavMeshHit hit, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) continue;
+            if (Physics.CheckSphere(hit.position + Vector3.up * 0.5f, 0.9f, wallMask, QueryTriggerInteraction.Ignore)) continue;
+            // 벽 너머가 아닌, 걸어서 바로 갈 수 있는 자리
+            if (Physics.Linecast(origin + Vector3.up, hit.position + Vector3.up, wallMask, QueryTriggerInteraction.Ignore)) continue;
+            return hit.position;
+        }
+        return origin + Vector3.forward * 2f;
+    }
+
     // E 탈출 구역 공개 → F 들어가면 파밍 권장 알림, 10초 버티는 동안 적 계속 등장 → 탈출 성공 시 정비
     private IEnumerator StepExtraction()
     {
@@ -502,7 +540,7 @@ public class TutorialDirector : MonoBehaviour
             "게이지가 가득 차면 이 층을 벗어나 위층으로 올라갑니다. 구역 밖으로 나가면 게이지는 멈춥니다.\n\n" +
             "버티는 동안 적이 계속 몰려옵니다.");
 
-        ui.ShowObjective("STEP 05", "탈출", "탈출 구역으로 이동해 게이지를 채우세요.",
+        ui.ShowObjective("STEP 06", "탈출", "탈출 구역으로 이동해 게이지를 채우세요.",
             new TutorialUI.ObjectiveItem("", "탈출 구역으로 이동"),
             new TutorialUI.ObjectiveItem("", "버티기"));
 

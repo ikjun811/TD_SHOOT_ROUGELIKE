@@ -70,7 +70,7 @@ public static class MechanismModuleGenerator
         // A4b 수류탄 작동 (동작은 GrenadeSkill)
         new Spec { fileKey = "AutoThrow", displayName = "자동 투척", effect = ModuleEffect.AutoThrow,
             target = ModuleTarget.Grenade, slot = MechanismSlot.GrenadeThrow,
-            description = "내 탄이 적에게 맞으면 8% 확률로 그 적에게 수류탄 자동 투척 (내부 쿨 1초, 피해 60%, 충전 무관).\n대가: G키 투척 불가. 충전 +1·처치 시 쿨감은 효과 없음." },
+            description = "내 탄이 적에게 맞으면 8% 확률로 그 적에게 수류탄 자동 투척 (내부 쿨 1초, 피해 60%, 충전 무관).\n대가: 직접 투척 불가. 충전 +1·처치 시 쿨감은 효과 없음." },
         new Spec { fileKey = "EmptyQuickReload", displayName = "빈 탄창 급속 장전", effect = ModuleEffect.EmptyQuickReload,
             target = ModuleTarget.DualPistols, slot = MechanismSlot.Reload,
             description = "탄창이 0발일 때 시작한 장전은 시간 −45% (1.8→1.0초).\nR키로 미리 하는 장전은 원래 속도." },

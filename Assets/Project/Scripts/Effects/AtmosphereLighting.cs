@@ -119,10 +119,11 @@ public class AtmosphereLighting : MonoBehaviour
     private ExtractionZone extractionZone;
 
     // 보급 상자 위 노란 빛 (상자와 함께 사라짐), 분위기 조명이 없으면 붙이지 않음
-    public static void AttachCrateLight(Transform crate)
+    // color 지정 시 그 색 (의료 상자 = 붉은 흰빛), 없으면 보급 상자 노랑
+    public static void AttachCrateLight(Transform crate, Color? color = null)
     {
         if (Instance == null || crate == null) return;
-        Light light = Instance.CreateObjectLight("CrateLight", crate, Instance.crateColor, Instance.crateRange, Instance.crateIntensity, Instance.crateLightHeight);
+        Light light = Instance.CreateObjectLight("CrateLight", crate, color ?? Instance.crateColor, Instance.crateRange, Instance.crateIntensity, Instance.crateLightHeight);
         Instance.crateLights.Add(light);
     }
 

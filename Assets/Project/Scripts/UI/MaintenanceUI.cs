@@ -299,6 +299,14 @@ public class MaintenanceUI : MonoBehaviour
         warningText.gameObject.SetActive(show);
     }
 
+    // 조작이 거부됐을 때 경고 글 (같은 종류 무기 장착 등)
+    public void ShowWarning(string message)
+    {
+        if (warningText == null) return;
+        warningText.text = message;
+        warningText.gameObject.SetActive(true);
+    }
+
     // 장착 슬롯 놓을 자리 표시 (WeaponSlotUI가 무기를 든 채 마우스를 올리면 호출)
     public void SetEquipSlotDropHighlight(int slotIndex, bool on)
     {

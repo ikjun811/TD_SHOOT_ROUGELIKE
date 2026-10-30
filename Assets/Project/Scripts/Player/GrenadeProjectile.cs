@@ -19,6 +19,7 @@ public class GrenadeProjectile : MonoBehaviour
     [HideInInspector] public float vfxDuration = 2f;    // 이 시간 뒤 이펙트 제거 (초)
     [HideInInspector] public GameObject owner;
     [HideInInspector] public float clusterDamageRatio;  // 집속탄 모듈: 소형 폭탄 피해 비율 (0 = 없음, 소형 폭탄은 다시 집속 안 함)
+    [HideInInspector] public bool playSound = true;     // 집속탄 소형 폭탄은 첫 개만 소리 (4개가 연달아 울려 소리가 과했음)
 
     private const int ClusterCount = 4;
     private const float ClusterSpread = 3f;      // 소형 폭탄 흩어지는 반경 (m)
@@ -44,7 +45,7 @@ public class GrenadeProjectile : MonoBehaviour
 
         // VfxLibrary 폭발 칸이 있으면 그것 (수류탄 vfxScale 0.5 = 칸 배율 그대로), 없으면 JU 폭발
         bool libraryVfx = VfxSpawner.Play(VfxLibrary.Current.explosion, center, vfxScale / 0.5f);
-        if (libraryVfx) AudioManager.PlaySfx(AudioManager.Library.grenadeExplosion, center); // JU 폭발 프리팹은 자체 소리
+        if (libraryVfx && playSound) AudioManager.PlaySfx(AudioManager.Library.grenadeExplosion, center); // JU 폭발 프리팹은 자체 소리
         if (!libraryVfx && explosionVFX != null)
         {
             GameObject vfx = Instantiate(explosionVFX, center, Quaternion.identity);
@@ -121,6 +122,7 @@ public class GrenadeProjectile : MonoBehaviour
             projectile.vfxDuration = vfxDuration;
             projectile.owner = owner;
             projectile.clusterDamageRatio = 0f;
+            projectile.playSound = i == 0;
         }
     }
 

@@ -28,6 +28,14 @@ public static class VfxSpawner
         GameObject vfx = Object.Instantiate(prefab, position + Vector3.up * entry.yOffset, rotation ?? prefab.transform.rotation);
         vfx.transform.localScale = prefab.transform.localScale * (entry.scale * prefabScale * scale);
 
+        // 프리팹에 든 소리는 끔 — Vefects 데모 프리팹은 반복(Loop) AudioSource라 효과음(SoundLibrary)과 겹치고,
+        //   제거 타이머가 게임 시간이라 정비(시간 정지) 중에는 계속 반복되던 문제 (2026-10-30). 소리는 호출 쪽 AudioManager가 담당
+        foreach (AudioSource source in vfx.GetComponentsInChildren<AudioSource>(true))
+        {
+            source.Stop();
+            source.enabled = false;
+        }
+
         float speed = Mathf.Max(0.05f, entry.speed);
         float lifetime = 0.5f;
         foreach (ParticleSystem ps in vfx.GetComponentsInChildren<ParticleSystem>(true))

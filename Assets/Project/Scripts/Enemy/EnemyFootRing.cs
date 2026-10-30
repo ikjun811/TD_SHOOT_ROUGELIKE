@@ -5,14 +5,17 @@ using UnityEngine.AI;
 //   바닥에 눕힌 은은한 고리 (일반 붉은색 / 엘리트 보라), 크기 = NavMeshAgent 반경 x 크기 배율
 //   코드 생성 고리 텍스처 + SpriteRenderer (메시 렌더러가 아니라 피격 번쩍임·실루엣·디졸브 대상에서 빠짐), 사망하면 숨김
 //   적 회전과 무관하게 매 프레임 발밑 바닥 높이에 수평으로 둠
+//   어두운 곳 위치 파악용이라 살짝 발광 (재질 색 HDR glow 배율 → 블룸, 사용자 2026-10-30)
 public class EnemyFootRing : MonoBehaviour
 {
     public static Color normalColor = new Color(1f, 0.3f, 0.25f, 0.4f);
     public static Color eliteColor = new Color(0.72f, 0.38f, 1f, 0.55f);
     public static float radiusScale = 1.5f; // 에이전트 반경 대비
     public static float groundOffset = 0.03f;
+    public static float glow = 1.8f; // 1 = 발광 없음
 
     private static Sprite ringSprite;
+    private static Material glowMaterial;
 
     private EnemyBase enemy;
     private NavMeshAgent agent;
@@ -35,6 +38,7 @@ public class EnemyFootRing : MonoBehaviour
         ring.SetParent(transform, false);
         ringRenderer = go.AddComponent<SpriteRenderer>();
         ringRenderer.sprite = GetSprite();
+        ringRenderer.sharedMaterial = GetMaterial();
         ringRenderer.color = enemy != null && enemy.IsElite ? eliteColor : normalColor;
         ringRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         ringRenderer.receiveShadows = false;
@@ -59,6 +63,15 @@ public class EnemyFootRing : MonoBehaviour
         // 스프라이트 한 변 = 1 유닛 → 지름에 맞춤 (부모 크기 배율 상쇄)
         float diameter = radius * 2f;
         ring.localScale = Vector3.one * (diameter / Mathf.Max(0.001f, scale));
+    }
+
+    // Sprites/Default + _Color HDR 배율 → 블룸 (CrateMarker와 같은 방식)
+    private static Material GetMaterial()
+    {
+        if (glowMaterial != null) return glowMaterial;
+        glowMaterial = new Material(Shader.Find("Sprites/Default")) { name = "EnemyFootRingGlow", hideFlags = HideFlags.DontSave };
+        glowMaterial.color = new Color(glow, glow, glow, 1f);
+        return glowMaterial;
     }
 
     // 64px 부드러운 고리 + 아주 옅은 안쪽 채움 (한 변 1 유닛)
