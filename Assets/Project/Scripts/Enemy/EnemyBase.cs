@@ -69,6 +69,13 @@ public class EnemyBase : MonoBehaviour
         IsElite = true;
     }
 
+    // 제자리 표적 (튜토리얼 사격 연습): 추적·근접 공격 끔
+    public void MakeStationaryTarget()
+    {
+        useDefaultChase = false;
+        useMeleeAttack = false;
+    }
+
     private NavMeshAgent agent;
     private Transform playerTransform;
     private JUHealth juHealth;
@@ -164,6 +171,9 @@ public class EnemyBase : MonoBehaviour
         Color silhouetteColor = IsElite ? eliteColor : new Color(1f, 0.25f, 0.2f);
         silhouetteColor.a = 0.6f;
         SilhouetteRenderer.Attach(gameObject, silhouetteColor);
+
+        // 발밑 원형 위치 표시 (일반 붉은색·엘리트 보라) — 실루엣 복제 뒤라 섞이지 않음
+        EnemyFootRing.Attach(this);
 
         // 엘리트 보라 빛 (렌더링 ③, 분위기 조명이 있을 때만) — 실루엣 복제 대상이 아닌 Light라 순서 무관
         if (IsElite) AtmosphereLighting.AttachEliteLight(transform);

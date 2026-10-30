@@ -36,6 +36,26 @@ public class WeaponSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHa
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        // 휠 클릭: 장착 무기를 바로 가방(전리품 목록)으로
+        if (eventData.button == PointerEventData.InputButton.Middle)
+        {
+            bool holding = (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
+                || (WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging);
+            if (holding || slotType != SlotType.WeaponSlot || PlayerInventory.Instance == null) return;
+
+            WeaponDataSO equipped = PlayerInventory.Instance.equippedWeapons[weaponSlotIndex];
+            if (equipped == null) return;
+            PlayerInventory.Instance.equippedWeapons[weaponSlotIndex] = null;
+            PlayerInventory.Instance.collectedWeapons.Add(equipped);
+            if (ItemTooltipUI.Instance != null) ItemTooltipUI.Instance.HideTooltip();
+            if (MaintenanceUI.Instance != null)
+            {
+                MaintenanceUI.Instance.RefreshEquipAndVaultUI();
+                MaintenanceUI.Instance.RefreshLootPanel();
+            }
+            return;
+        }
+
         if (eventData.button != PointerEventData.InputButton.Left) return;
         if (WeaponDragHandler.Instance == null) return;
 
@@ -51,8 +71,9 @@ public class WeaponSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHa
                 WeaponDragHandler.Instance.DropOnVaultSlot(weaponSlotIndex);
             }
         }
-        // 2. 맨손 상태인 경우 장착된 무기 집어 올리기
-        else if (slotType == SlotType.WeaponSlot && PlayerInventory.Instance != null)
+        // 2. 맨손 상태인 경우 장착된 무기 집어 올리기 (모듈을 들고 있으면 무시)
+        else if (slotType == SlotType.WeaponSlot && PlayerInventory.Instance != null
+                 && (ModuleDragHandler.Instance == null || !ModuleDragHandler.Instance.IsDragging))
         {
             WeaponDataSO currentWeapon = PlayerInventory.Instance.equippedWeapons[weaponSlotIndex];
             if (currentWeapon != null)

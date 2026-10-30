@@ -139,6 +139,9 @@ public class GrenadeSkill : MonoBehaviour
         Debug.Log($"💣 [수류탄 쿨타임] {baseCooldown}s -> {cooldown:0.##}s (-{reduction * 100f:0.#}%)");
     }
 
+    // 튜토리얼(TutorialDirector)용: 켜면 G키 투척 막음 (충전은 계속)
+    public bool InputLocked { get; set; }
+
     // 다음 라운드 시작 시 충전 가득 채움
     public void RefillCharges()
     {
@@ -167,7 +170,7 @@ public class GrenadeSkill : MonoBehaviour
 
         // 자동 투척 모듈이면 G키 투척 불가 (대가)
         bool isDead = health != null && health.IsDead;
-        if (!autoThrow && Input.GetKeyDown(grenadeKey) && currentCharges > 0 && !isDead)
+        if (!autoThrow && !InputLocked && Input.GetKeyDown(grenadeKey) && currentCharges > 0 && !isDead)
         {
             currentCharges--;
             ThrowAt(GetAimGroundPoint(), flightTime, fuseTime, 1f);

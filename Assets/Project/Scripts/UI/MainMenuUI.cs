@@ -24,9 +24,11 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button[] closeButtons;
 
     [Header("Tutorial")]
-    [Tooltip("튜토리얼 구현 전에는 끔 → 버튼 비활성 + 문구")]
-    [SerializeField] private bool tutorialAvailable = false;
+    [Tooltip("끄면 버튼 비활성 + 문구 (튜토리얼 구현 완료 2026-10-30 — 씬에 저장된 옛 '준비 중' 값이 덮지 않도록 필드 이름 변경)")]
+    [SerializeField] private bool tutorialEnabled = true;
     [SerializeField] private string tutorialUnavailableLabel = "튜토리얼 (준비 중)";
+    [Tooltip("훈련을 한 번 마쳤으면 버튼 글자 뒤에 붙임")]
+    [SerializeField] private string tutorialClearedSuffix = "   <size=24><alpha=#99>CLEAR</size>";
 
     private void Awake()
     {
@@ -45,11 +47,19 @@ public class MainMenuUI : MonoBehaviour
             foreach (Button close in closeButtons) Bind(close, CloseAllPanels);
         }
 
-        if (tutorialButton != null && !tutorialAvailable)
+        if (tutorialButton != null)
         {
-            tutorialButton.interactable = false;
             TextMeshProUGUI label = tutorialButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (label != null && !string.IsNullOrEmpty(tutorialUnavailableLabel)) label.text = tutorialUnavailableLabel;
+            if (!tutorialEnabled)
+            {
+                tutorialButton.interactable = false;
+                if (label != null && !string.IsNullOrEmpty(tutorialUnavailableLabel)) label.text = tutorialUnavailableLabel;
+            }
+            else if (label != null)
+            {
+                // 씬 글자가 옛 "SOON" 문구면 정리 후, 완료했으면 CLEAR 표시
+                label.text = "튜토리얼" + (TutorialDirector.IsCompleted ? tutorialClearedSuffix : "");
+            }
         }
 
         CloseAllPanels();

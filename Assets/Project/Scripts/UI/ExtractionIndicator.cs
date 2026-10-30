@@ -167,7 +167,7 @@ public class ExtractionIndicator : MonoBehaviour
         if (guideTarget == GuideTarget.Extraction)
         {
             if (extractionZone == null) extractionZone = FindAnyObjectByType<ExtractionZone>();
-            if (extractionZone == null || extractionZone.IsPlayerInside) return false;
+            if (extractionZone == null || extractionZone.IsPlayerInside || extractionZone.IsHidden) return false;
 
             position = extractionZone.transform.position;
             return true;

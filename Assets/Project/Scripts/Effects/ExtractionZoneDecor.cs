@@ -25,6 +25,7 @@ public class ExtractionZoneDecor : MonoBehaviour
     public float overlapPadding = 0.2f;
 
     private SphereCollider trigger;
+    private ExtractionZone zone;
     private Transform root;
     private Vector3 builtPosition = new Vector3(float.MaxValue, 0f, 0f);
     private int wallMask;
@@ -32,6 +33,7 @@ public class ExtractionZoneDecor : MonoBehaviour
     private void Awake()
     {
         trigger = GetComponent<SphereCollider>();
+        zone = GetComponent<ExtractionZone>();
         wallMask = LayerMask.GetMask("Walls");
     }
 
@@ -42,6 +44,11 @@ public class ExtractionZoneDecor : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 튜토리얼에서 숨긴 동안 꾸밈도 끔
+        bool hidden = zone != null && zone.IsHidden;
+        if (root != null && root.gameObject.activeSelf == hidden) root.gameObject.SetActive(!hidden);
+        if (hidden) return;
+
         Vector3 center = transform.position;
         center.y = 0f;
         if ((center - builtPosition).sqrMagnitude < 0.25f) return;

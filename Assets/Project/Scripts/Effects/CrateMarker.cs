@@ -5,6 +5,7 @@ using UnityEngine;
 //     → 상자 위 진행 막대 대체 (탈출 구역 ExtractionZoneVisual과 같은 시각 언어)
 //   B 위 꺾쇠: 상자 위에서 아래를 가리키는 ⌄가 위아래로 천천히 움직임, 블룸으로 빛남 (멀리·어둠 속에서도 보임)
 //   상자의 떨림·부풂에 흔들리지 않도록 상자와 분리된 오브젝트, 열림(Hide)·상자 제거 시 함께 사라짐. 실제 시간 기준 맥박
+//   시체 수색(SearchableCorpse)·의료 상자도 같은 표식을 색만 바꿔 사용 (대상 Transform + 반경·진행도 함수)
 public class CrateMarker : MonoBehaviour
 {
     private const int RingSegments = 48;
@@ -22,7 +23,10 @@ public class CrateMarker : MonoBehaviour
     private static Material lineMaterial;
     private static Material glowMaterial;
 
-    private SupplyCrate crate;
+    private Transform target;
+    private System.Func<float> radiusOf;
+    private System.Func<float> progressOf;
+    private Color markerColor;
     private Transform player;
     private Vector3 center;
     private LineRenderer ring;
@@ -32,17 +36,26 @@ public class CrateMarker : MonoBehaviour
 
     public static CrateMarker Create(SupplyCrate crate, Transform player)
     {
+        return Create(crate.transform, () => crate.openRadius, () => crate.Progress, player, color);
+    }
+
+    // 일반형: 대상이 사라지면 표식도 사라짐, 반경·진행도는 매 프레임 함수로 읽음
+    public static CrateMarker Create(Transform target, System.Func<float> radiusOf, System.Func<float> progressOf, Transform player, Color markerColor)
+    {
         EnsureMaterials();
         GameObject go = new GameObject("CrateMarker");
         CrateMarker marker = go.AddComponent<CrateMarker>();
-        marker.crate = crate;
+        marker.target = target;
+        marker.radiusOf = radiusOf;
+        marker.progressOf = progressOf;
+        marker.markerColor = markerColor;
         marker.player = player;
-        marker.center = new Vector3(crate.transform.position.x, 0f, crate.transform.position.z);
+        marker.center = new Vector3(target.position.x, 0f, target.position.z);
         go.transform.position = marker.center;
         marker.ring = marker.CreateFlatLine("Ring", lineMaterial, true, RingSegments);
         marker.arc = marker.CreateFlatLine("ProgressArc", glowMaterial, false, 2);
         marker.chevron = marker.CreateChevron();
-        marker.SetCircle(marker.ring, crate.openRadius, RingSegments);
+        marker.SetCircle(marker.ring, radiusOf(), RingSegments);
         return marker;
     }
 
@@ -53,7 +66,7 @@ public class CrateMarker : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (crate == null)
+        if (target == null)
         {
             Destroy(gameObject);
             return;
@@ -62,7 +75,7 @@ public class CrateMarker : MonoBehaviour
         ring.enabled = arc.enabled = chevron.enabled = !paused;
         if (paused) return;
 
-        float radius = crate.openRadius;
+        float radius = radiusOf();
         bool inside = false;
         if (player != null)
         {
@@ -74,13 +87,13 @@ public class CrateMarker : MonoBehaviour
         float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * (inside ? 7f : 3f));
 
         // A 바닥 원
-        Color ringColor = color;
+        Color ringColor = markerColor;
         ringColor.a = Mathf.Lerp(0.55f, 1f, insideBlend) * pulse;
         ring.startColor = ring.endColor = ringColor;
         ring.widthMultiplier = ringWidth * (1f + 0.6f * insideBlend);
 
         // 진행 호
-        float progress = crate.Progress;
+        float progress = progressOf();
         arc.enabled = progress > 0.001f;
         if (arc.enabled)
         {
@@ -92,7 +105,7 @@ public class CrateMarker : MonoBehaviour
                 float angle = (90f - 360f * progress * i / (count - 1)) * Mathf.Deg2Rad;
                 arc.SetPosition(i, center + new Vector3(Mathf.Cos(angle) * arcRadius, 0.04f, Mathf.Sin(angle) * arcRadius));
             }
-            Color arcColor = color;
+            Color arcColor = markerColor;
             arcColor.a = Mathf.Lerp(0.6f, 1f, insideBlend);
             arc.startColor = arc.endColor = arcColor;
             arc.widthMultiplier = arcWidth;
@@ -107,7 +120,7 @@ public class CrateMarker : MonoBehaviour
         chevron.SetPosition(0, top + (-right + up) * chevronSize);
         chevron.SetPosition(1, top);
         chevron.SetPosition(2, top + (right + up) * chevronSize);
-        Color chevronColor = color;
+        Color chevronColor = markerColor;
         chevronColor.a = Mathf.Lerp(0.75f, 1f, pulse);
         chevron.startColor = chevron.endColor = chevronColor;
     }

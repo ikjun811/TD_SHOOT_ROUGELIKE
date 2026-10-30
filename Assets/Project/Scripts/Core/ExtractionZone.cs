@@ -7,8 +7,8 @@ using UnityEngine.AI;
 public class ExtractionZone : MonoBehaviour
 {
     [Header("Extraction Settings")]
-    [Tooltip("일반 라운드 탈출 시간 (GDD 40초)")]
-    [SerializeField] private float requiredExtractionTime = 40f;
+    [Tooltip("일반 라운드 탈출 시간 (2026-10-30 플레이 후 40 → 30초, 사용자)")]
+    [SerializeField] private float requiredExtractionTime = 30f;
     [Tooltip("최종 라운드 탈출 시간 배율 (보스 대신 버티기 연장, GDD 8-6 #18)")]
     [SerializeField] private float finalRoundTimeMultiplier = 1.5f;
     [SerializeField] private float currentExtractionProgress = 0f;
@@ -37,13 +37,30 @@ public class ExtractionZone : MonoBehaviour
         if (isSlowMotionActive) Time.fixedDeltaTime = defaultFixedDeltaTime;
     }
 
+    // 튜토리얼(TutorialDirector)용: 숨기면 표시·조명·가이드 화살표가 꺼지고 들어가도 탈출이 진행되지 않음
+    public bool IsHidden { get; private set; }
+    public void SetHidden(bool hidden) => IsHidden = hidden;
+    // 0보다 크면 탈출 시간을 이 값으로 (최종 라운드 배율 무시)
+    public float RequiredTimeOverride { get; set; }
+    // 지정하면 탈출 성공 배너 대신 호출 (인자 = 유지 시간)
+    public System.Action<float> SuccessBannerOverride { get; set; }
+
+    // 지정 위치로 옮기고 타이머 리셋 (튜토리얼의 고정 배치)
+    public void PlaceAt(Vector3 position)
+    {
+        currentExtractionProgress = 0f;
+        isExtractionComplete = false;
+        transform.position = position + Vector3.up * 0.02f;
+    }
+
     // 이번 라운드 탈출 시간 (최종 라운드면 배율 적용)
-    public float RequiredTime => requiredExtractionTime * (IsFinalRound ? finalRoundTimeMultiplier : 1f);
+    public float RequiredTime => RequiredTimeOverride > 0f ? RequiredTimeOverride
+        : requiredExtractionTime * (IsFinalRound ? finalRoundTimeMultiplier : 1f);
     private static bool IsFinalRound => WaveManager.Instance != null && WaveManager.Instance.CurrentRound >= WaveManager.Instance.MaxRound;
 
     // 탈출 완료 후에는 가득 고정 (성공 순간 라운드가 올라 최종 라운드 배율이 바뀌어도 게이지가 줄지 않게)
     public float RemainingTime => isExtractionComplete ? 0f : Mathf.Max(0f, RequiredTime - currentExtractionProgress);
-    public bool IsPlayerInside => isPlayerInsideZone;
+    public bool IsPlayerInside => isPlayerInsideZone && !IsHidden;
     public bool IsSequenceActive => isExtractionComplete; // 탈출 성공 연출~다음 라운드 전 (PauseMenuUI가 일시정지 막음)
     public float ProgressPercent => isExtractionComplete ? 1f : Mathf.Clamp01(currentExtractionProgress / RequiredTime);
 
@@ -63,10 +80,13 @@ public class ExtractionZone : MonoBehaviour
 
     private void Update()
     {
-        if (isExtractionComplete) return;
+        if (isExtractionComplete || IsHidden) return;
 
         if (isPlayerInsideZone)
         {
+            // 사망한 순간에는 탈출 완료 안 함 (탈출·사망 연출이 겹치면 사망 대기가 정비 중 멈췄다가 다음 라운드에서 이어져 사망 → 정비 반복)
+            if (PlayerHealth != null && PlayerHealth.IsDead) return;
+
             currentExtractionProgress += Time.deltaTime;
 
             if (currentExtractionProgress >= RequiredTime)
@@ -83,6 +103,7 @@ public class ExtractionZone : MonoBehaviour
         currentExtractionProgress = 0f;
         isExtractionComplete = false;
         isPlayerInsideZone = false;
+        SetPlayerInvincible(false);
 
         Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
@@ -148,6 +169,25 @@ public class ExtractionZone : MonoBehaviour
         return candidates.Count > 0 ? candidates[Random.Range(0, candidates.Count)] : farthest;
     }
 
+    private JU.JUHealth playerHealth;
+    private JU.JUHealth PlayerHealth
+    {
+        get
+        {
+            if (playerHealth == null)
+            {
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null) playerHealth = player.GetComponent<JU.JUHealth>();
+            }
+            return playerHealth;
+        }
+    }
+
+    private void SetPlayerInvincible(bool invincible)
+    {
+        if (PlayerHealth != null) PlayerHealth.IsInvencible = invincible;
+    }
+
     private static float HorizontalDistance(Vector3 a, Vector3 b)
     {
         a.y = 0f;
@@ -175,6 +215,8 @@ public class ExtractionZone : MonoBehaviour
 
     private IEnumerator ExtractionSuccessSequence()
     {
+        // 탈출 완료 ~ 다음 라운드 시작(RelocateAndResetZone)까지 무적 — 남은 폭발·탄 등으로 연출 중 사망하지 않게
+        SetPlayerInvincible(true);
         WaveManager.EndRoundAndDespawn();
 
         // 최종 라운드 탈출 = 게임 클리어 (정비 대신 결과 화면)
@@ -182,7 +224,8 @@ public class ExtractionZone : MonoBehaviour
 
         // 경고 띠 배너 (슬로모션·암전 동안 유지, 라운드 증가 전 번호)
         int clearedRound = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 0;
-        AlertBanner.ShowExtractionSuccess(clearedRound, isGameClear, successSlowTime + successFadeTime);
+        if (SuccessBannerOverride != null) SuccessBannerOverride(successSlowTime + successFadeTime);
+        else AlertBanner.ShowExtractionSuccess(clearedRound, isGameClear, successSlowTime + successFadeTime);
 
         // 탈출 성공 시에만 라운드 +1
         if (WaveManager.Instance != null && !isGameClear)

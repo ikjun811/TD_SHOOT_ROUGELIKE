@@ -41,7 +41,22 @@ public class SupplyCrateManager : MonoBehaviour
     [SerializeField] private float crateWeaponYaw = 18f;
     [SerializeField] private Color crateColor = new Color(1f, 0.75f, 0.1f);
 
+    [Header("Corpses (탐색 보상 S1 — 시체 수색, BSP 맵에서만)")]
+    [Tooltip("시체 모델 (무작위). Tools > TD Shoot > Apply Supply Crate Model이 Horrors 시체 소품 3종 연결. 비우면 어두운 캡슐")]
+    [SerializeField] private GameObject[] corpsePrefabs;
+    [SerializeField] private Vector2Int corpseCountRange = new Vector2Int(3, 4);
+    [SerializeField] private float corpseSearchRadius = 1.6f;
+    [SerializeField] private float corpseSearchTime = 2f;
+    [SerializeField] private Vector2Int corpseModuleCount = new Vector2Int(1, 2);
+    [Tooltip("구역 중앙(상자 자리)에서 비켜 놓는 거리 범위 (m)")]
+    [SerializeField] private Vector2 corpseOffsetFromCenter = new Vector2(4.5f, 7f);
+    [SerializeField] private float corpseMinDistanceFromPlayer = 12f;
+    [SerializeField] private float corpseMinSpacing = 8f;
+    [Tooltip("시체 모델 크기 배율")]
+    [SerializeField] private float corpseModelScale = 1f;
+
     private readonly List<SupplyCrate> activeCrates = new List<SupplyCrate>();
+    private readonly List<SearchableCorpse> activeCorpses = new List<SearchableCorpse>();
 
     // GameplayBootstrap이 전투 씬 로드마다 호출
     public static void EnsureCreated()
@@ -69,6 +84,7 @@ public class SupplyCrateManager : MonoBehaviour
     public void RespawnCrates()
     {
         ClearCrates();
+        if (!AutoSpawnEnabled) return;
 
         Transform player = GameObject.FindGameObjectWithTag("Player")?.transform;
         ExtractionZone zone = FindAnyObjectByType<ExtractionZone>();
@@ -79,6 +95,7 @@ public class SupplyCrateManager : MonoBehaviour
         if (arena != null && arena.Leaves.Count > 0)
         {
             SpawnCratesInZones(arena, count, player, zone);
+            SpawnCorpses(arena, player, zone);
         }
         else
         {
@@ -92,7 +109,19 @@ public class SupplyCrateManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"SupplyCrateManager: Spawned {activeCrates.Count} crates.");
+        Debug.Log($"SupplyCrateManager: Spawned {activeCrates.Count} crates, {activeCorpses.Count} corpses.");
+    }
+
+    // 튜토리얼(TutorialDirector)용: 끄면 스테이지 시작 시 상자를 만들지 않고 SpawnCrateAt으로만 생성
+    public bool AutoSpawnEnabled { get; set; } = true;
+
+    // 지정 위치에 상자 1개 생성 (NavMesh 보정)
+    public SupplyCrate SpawnCrateAt(Vector3 position)
+    {
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas)) position = hit.position;
+        SupplyCrate crate = CreateCrate(position);
+        activeCrates.Add(crate);
+        return crate;
     }
 
     // 아직 열리지 않은 상자 중 가장 가까운 것 (가이드 화살표용)
@@ -121,6 +150,108 @@ public class SupplyCrateManager : MonoBehaviour
             if (crate != null) Destroy(crate.gameObject);
         }
         activeCrates.Clear();
+        foreach (SearchableCorpse corpse in activeCorpses)
+        {
+            if (corpse != null) Destroy(corpse.gameObject);
+        }
+        activeCorpses.Clear();
+    }
+
+    // 시체: 시작·탈출 구역을 뺀 구역마다 최대 1구, 구역 중앙(상자 자리)에서 비켜서 장애물(Walls)과 겹치지 않는 NavMesh 위
+    private void SpawnCorpses(BspArenaGenerator arena, Transform player, ExtractionZone zone)
+    {
+        int count = Random.Range(corpseCountRange.x, corpseCountRange.y + 1);
+        if (count <= 0) return;
+
+        List<Vector3> centers = arena.GetZoneCenters();
+        int playerZone = player != null ? arena.GetZoneIndexAt(player.position) : -1;
+        int extractionZone = zone != null ? arena.GetZoneIndexAt(zone.transform.position) : -1;
+        List<int> order = new List<int>();
+        for (int i = 0; i < centers.Count; i++)
+        {
+            if (i != playerZone && i != extractionZone) order.Add(i);
+        }
+        for (int i = order.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+
+        int wallMask = LayerMask.GetMask("Walls");
+        foreach (int index in order)
+        {
+            if (activeCorpses.Count >= count) break;
+            for (int attempt = 0; attempt < 6; attempt++)
+            {
+                Vector2 dir = Random.insideUnitCircle.normalized * Random.Range(corpseOffsetFromCenter.x, corpseOffsetFromCenter.y);
+                Vector3 candidate = centers[index] + new Vector3(dir.x, 0f, dir.y);
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, NavMesh.AllAreas)) continue;
+                candidate = hit.position;
+                if (Physics.CheckSphere(candidate + Vector3.up * 0.5f, 0.9f, wallMask, QueryTriggerInteraction.Ignore)) continue;
+                if (player != null && HorizontalDistance(candidate, player.position) < corpseMinDistanceFromPlayer) continue;
+                if (IsNearAny(candidate, corpseMinSpacing)) continue;
+
+                activeCorpses.Add(CreateCorpse(candidate));
+                break;
+            }
+        }
+    }
+
+    private bool IsNearAny(Vector3 position, float distance)
+    {
+        foreach (SearchableCorpse corpse in activeCorpses)
+        {
+            if (corpse != null && HorizontalDistance(position, corpse.transform.position) < distance) return true;
+        }
+        foreach (SupplyCrate crate in activeCrates)
+        {
+            if (crate != null && HorizontalDistance(position, crate.transform.position) < 3f) return true;
+        }
+        return false;
+    }
+
+    private SearchableCorpse CreateCorpse(Vector3 position)
+    {
+        GameObject root = new GameObject("Corpse");
+        root.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+
+        GameObject prefab = corpsePrefabs != null && corpsePrefabs.Length > 0 ? corpsePrefabs[Random.Range(0, corpsePrefabs.Length)] : null;
+        GameObject model;
+        if (prefab != null)
+        {
+            model = Instantiate(prefab, root.transform);
+            model.transform.localRotation = prefab.transform.localRotation;
+            model.transform.localScale = prefab.transform.localScale * corpseModelScale;
+            foreach (Animator a in model.GetComponentsInChildren<Animator>(true)) a.enabled = false;
+        }
+        else
+        {
+            // 기본 외형: 바닥에 누운 어두운 캡슐
+            model = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            model.transform.SetParent(root.transform, false);
+            model.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            model.transform.localScale = new Vector3(0.5f, 0.85f, 0.35f);
+            Renderer rend = model.GetComponent<Renderer>();
+            if (rend != null) rend.material.color = new Color(0.18f, 0.17f, 0.16f);
+        }
+
+        // 바닥에 맞춤 (기준점이 모서리·중심 어디든)
+        model.transform.localPosition = Vector3.zero;
+        Bounds b = GetWorldBounds(model);
+        model.transform.position += new Vector3(position.x - b.center.x, position.y - b.min.y, position.z - b.center.z);
+        RemoveColliders(root);
+
+        SearchableCorpse corpse = root.AddComponent<SearchableCorpse>();
+        corpse.searchRadius = corpseSearchRadius;
+        corpse.searchTime = corpseSearchTime;
+        corpse.moduleCount = corpseModuleCount;
+        return corpse;
+    }
+
+    // 상자·시체는 겉모습만 (플레이어 이동·조준을 막지 않음, 사용자 2026-10-30). 적은 NavMeshObstacle로 피해 다님
+    private static void RemoveColliders(GameObject obj)
+    {
+        foreach (Collider c in obj.GetComponentsInChildren<Collider>(true)) Destroy(c);
     }
 
     // BSP 맵: 구역 중앙 빈 공간에 구역당 최대 1개. 플레이어 시작 구역·탈출 구역이 있는 구역은 제외
@@ -242,6 +373,8 @@ public class SupplyCrateManager : MonoBehaviour
         // 적이 상자를 피해 다니도록
         if (crateModel == null) obstacle = crateObj.AddComponent<NavMeshObstacle>();
         obstacle.carving = true;
+
+        RemoveColliders(crateObj);
 
         SupplyCrate crate = crateObj.AddComponent<SupplyCrate>();
         crate.openRadius = openRadius;

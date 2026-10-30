@@ -52,6 +52,27 @@ public class GridSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
     // 타일 클릭 (배치 또는 장착된 모듈 다시 집어 올리기)
     public void OnPointerClick(PointerEventData eventData)
     {
+        // 휠 클릭: 배치된 모듈을 바로 가방(전리품 목록)으로 (가방이 가득해 끌어다 놓기 어려울 때)
+        if (eventData.button == PointerEventData.InputButton.Middle)
+        {
+            bool holding = (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
+                || (WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging);
+            if (holding || GridInventorySystem.Instance == null || PlayerInventory.Instance == null) return;
+
+            var placed = GridInventorySystem.Instance.GetPlacedModuleAt(gridX, gridY);
+            if (placed == null) return;
+            GridInventorySystem.Instance.RemoveModule(placed);
+            PlayerInventory.Instance.collectedModules.Add(placed.moduleData);
+            if (GridPanelUI.Instance != null) GridPanelUI.Instance.RefreshGridVisuals();
+            if (ItemTooltipUI.Instance != null) ItemTooltipUI.Instance.HideTooltip();
+            if (MaintenanceUI.Instance != null)
+            {
+                MaintenanceUI.Instance.RefreshLootPanel();
+                MaintenanceUI.Instance.RefreshEquipAndVaultUI();
+            }
+            return;
+        }
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             if (ModuleDragHandler.Instance == null) return;
@@ -61,8 +82,8 @@ public class GridSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
             {
                 ModuleDragHandler.Instance.TryPlaceOnGrid(gridX, gridY);
             }
-            // 2. 맨손 상태 ➔ 장착된 모듈 다시 집기
-            else
+            // 2. 맨손 상태 ➔ 장착된 모듈 다시 집기 (무기를 들고 있으면 무시 — 무기·모듈을 동시에 드는 문제)
+            else if (WeaponDragHandler.Instance == null || !WeaponDragHandler.Instance.IsDragging)
             {
                 if (GridInventorySystem.Instance != null)
                 {

@@ -70,9 +70,38 @@ public class ItemDropManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    // 튜토리얼(TutorialDirector)용: 끄면 적 처치 무작위 드랍(천장 포함) 없음 → DropModule로만
+    public bool RandomDropsEnabled { get; set; } = true;
+    // 지정하면 보급 상자가 항상 이 무기를 드랍
+    public WeaponDataSO ForcedCrateWeapon { get; set; }
+
+    // 등록된 아이템 풀에서 에셋 이름으로 찾기 (없으면 null)
+    public ModuleDataSO FindModule(string assetName) => allModules.Find(m => m != null && m.name == assetName);
+    public WeaponDataSO FindWeapon(string assetName) => allWeapons.Find(w => w != null && w.name == assetName);
+
+    // 지정 모듈 확정 드랍
+    public void DropModule(Vector3 position, ModuleDataSO module)
+    {
+        if (module != null) SpawnDrop(position, null, module);
+    }
+
+    // 탐색 보상 (시체 수색 등): 현재 층 레어도 표로 모듈 count개를 주변에 흩어 드랍. 적 드랍률 감소·천장과는 무관
+    public void DropBonusModules(Vector3 position, int count, int currentRound)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            ModuleDataSO module = GetRandomModuleOfRarity(DetermineRarityByRound(currentRound));
+            if (module == null) continue;
+            Vector2 scatter = count > 1 ? Random.insideUnitCircle.normalized * 0.7f : Vector2.zero;
+            SpawnDrop(position + new Vector3(scatter.x, 0f, scatter.y), null, module);
+        }
+    }
+
     // 적 사망 시 드랍 시도 (실시간 감쇄 드랍률 및 천장 연동)
     public void TryDropItem(Vector3 spawnPosition, int currentRound, bool isElite = false)
     {
+        if (!RandomDropsEnabled) return;
+
         StageDifficultyManager sdm = StageDifficultyManager.Instance;
 
         // StageDifficultyManager의 실시간 드랍률 값 가져오기
@@ -155,6 +184,12 @@ public class ItemDropManager : MonoBehaviour
     // 드랍한 무기 반환 (상자 열림 연출 색, 없으면 null)
     public WeaponDataSO DropCrateWeapon(Vector3 position, int currentRound)
     {
+        if (ForcedCrateWeapon != null)
+        {
+            SpawnDrop(position, ForcedCrateWeapon, null);
+            return ForcedCrateWeapon;
+        }
+
         RarityType rarity = DetermineRarityByRound(currentRound);
 
         List<WeaponDataSO> candidates = allWeapons.FindAll(w => w != null && w.rarity == rarity);
@@ -315,9 +350,13 @@ public class ItemDropManager : MonoBehaviour
         return equipped;
     }
 
+    // 아이템이 필드에 떨어질 때 (밸런스 기록 BalanceLogger — 무기 또는 모듈 중 하나)
+    public static event System.Action<WeaponDataSO, ModuleDataSO> OnItemDropped;
+
     private void SpawnDrop(Vector3 pos, WeaponDataSO weapon, ModuleDataSO module)
     {
         if (droppedItemPrefab == null) return;
+        OnItemDropped?.Invoke(weapon, module);
 
         GameObject dropObj = Instantiate(droppedItemPrefab, pos + Vector3.up * 0.5f, Quaternion.identity);
         DroppedItem droppedItem = dropObj.GetComponent<DroppedItem>();

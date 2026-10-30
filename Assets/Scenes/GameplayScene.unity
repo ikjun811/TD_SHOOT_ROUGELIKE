@@ -436,7 +436,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c61084bc81998248ae3953c6fc026ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExtractionZone
-  requiredExtractionTime: 3
+  requiredExtractionTime: 30
   finalRoundTimeMultiplier: 1.5
   currentExtractionProgress: 0
   minDistanceFromPlayer: 25
@@ -3746,6 +3746,11 @@ MonoBehaviour:
   - {fileID: 1851504418}
   - {fileID: 1547854920}
   warningText: {fileID: 0}
+  controlsHintText: {fileID: 0}
+  controlsHintPosition: {x: 0, y: 18}
+  controlsHint: "<b>\uC88C\uD074\uB9AD</b> \uC9D1\uAE30\xB7\uB193\uAE30     <b>R</b>
+    \uBAA8\uB4C8 \uD68C\uC804     <b>\uC6B0\uD074\uB9AD</b> \uCDE8\uC18C     <b>\uD720\uD074\uB9AD</b>
+    \uC989\uC2DC \uD574\uC81C(\uAC00\uBC29\uC73C\uB85C)"
 --- !u!114 &1060276222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4399,6 +4404,18 @@ MonoBehaviour:
   crateWeaponLengthRatio: 0.85
   crateWeaponYaw: 18
   crateColor: {r: 1, g: 0.75, b: 0.1, a: 1}
+  corpsePrefabs:
+  - {fileID: 1000013644470712, guid: 4ad9f9b0f8ed93846af55322db491ef8, type: 3}
+  - {fileID: 1000010199362048, guid: cfb0fa32fefc8084aa66e8ec2fc7c65d, type: 3}
+  - {fileID: 1000012416238130, guid: abba55e6f016e4849b37a95d3f3283fe, type: 3}
+  corpseCountRange: {x: 3, y: 4}
+  corpseSearchRadius: 1.6
+  corpseSearchTime: 2
+  corpseModuleCount: {x: 1, y: 2}
+  corpseOffsetFromCenter: {x: 4.5, y: 7}
+  corpseMinDistanceFromPlayer: 12
+  corpseMinSpacing: 8
+  corpseModelScale: 1
 --- !u!4 &1210677311
 Transform:
   m_ObjectHideFlags: 0

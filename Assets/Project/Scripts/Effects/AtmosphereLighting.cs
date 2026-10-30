@@ -615,7 +615,7 @@ public class AtmosphereLighting : MonoBehaviour
         {
             extractionLight.transform.position = extractionZone.transform.position + Vector3.up * extractionHeight;
             float boost = extractionZone.IsPlayerInside ? extractionActiveBoost : 1f;
-            extractionLight.intensity = extractionIntensity * pulse * boost;
+            extractionLight.intensity = extractionZone.IsHidden ? 0f : extractionIntensity * pulse * boost; // 튜토리얼에서 숨긴 동안 끔
             extractionLight.color = extractionColor;
             extractionLight.range = extractionRange;
         }

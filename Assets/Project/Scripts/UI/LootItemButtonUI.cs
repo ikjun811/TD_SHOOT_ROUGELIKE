@@ -137,15 +137,9 @@ public class LootItemButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (eventData.button == PointerEventData.InputButton.Left)
         {
-            if (ModuleDragHandler.Instance != null && ModuleDragHandler.Instance.IsDragging)
-            {
-                ModuleDragHandler.Instance.CancelDrag();
-            }
-
-            if (WeaponDragHandler.Instance != null && WeaponDragHandler.Instance.IsDragging)
-            {
-                WeaponDragHandler.Instance.CancelDrag();
-            }
+            // 손에 든 게 있으면 이 카드를 집지 않고 들고 있던 것을 가방에 넣음
+            // (이전: 들고 있던 것을 원래 자리로 취소하고 이 카드를 집음 → 가방이 가득하면 빈 곳이 없어 넣기 어려웠음)
+            if (LootPanelDropHandler.DepositHeldItem()) return;
 
             // ⭐ 전리품 가방 출처(DragSource.LootList) 인자 전달
             if (moduleData != null && ModuleDragHandler.Instance != null)

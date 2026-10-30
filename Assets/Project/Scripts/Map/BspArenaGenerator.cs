@@ -208,7 +208,8 @@ public class BspArenaGenerator : MonoBehaviour
 
         Clear();
 
-        usedSeed = seed != 0 ? seed : Random.Range(1, int.MaxValue);
+        int baseSeed = Application.isPlaying && GameSession.ArenaSeedOverride != 0 ? GameSession.ArenaSeedOverride : seed;
+        usedSeed = baseSeed != 0 ? baseSeed : Random.Range(1, int.MaxValue);
         lastGeneratedSeed = usedSeed;
         System.Random rng = new System.Random(usedSeed);
 

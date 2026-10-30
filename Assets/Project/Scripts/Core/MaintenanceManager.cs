@@ -28,6 +28,11 @@ public class MaintenanceManager : MonoBehaviour
     [Header("State")]
     public bool isInMaintenance = false;
 
+    // 튜토리얼(TutorialDirector)용: NEXT ROUND 시 호출, 막을 이유(글)를 돌려주면 시작하지 않음 (null = 통과)
+    public System.Func<string> NextRoundBlocker { get; set; }
+    // 마지막으로 NEXT ROUND가 막힌 이유 (MaintenanceUI 경고 글)
+    public string LastBlockReason { get; private set; }
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -94,21 +99,20 @@ public class MaintenanceManager : MonoBehaviour
             WeaponDragHandler.Instance.CancelDrag();
         }
 
+        LastBlockReason = NextRoundBlocker?.Invoke();
+        if (!string.IsNullOrEmpty(LastBlockReason))
+        {
+            Debug.Log($"MaintenanceManager: Next round blocked — {LastBlockReason}");
+            return false;
+        }
+
         if (PlayerInventory.Instance != null)
         {
-            if (PlayerInventory.Instance.equippedWeapons[0] == null && PlayerInventory.Instance.equippedWeapons[1] == null)
-            {
-                if (PlayerInventory.Instance.collectedWeapons.Count > 0)
-                {
-                    PlayerInventory.Instance.equippedWeapons[0] = PlayerInventory.Instance.collectedWeapons[0];
-                    PlayerInventory.Instance.collectedWeapons.RemoveAt(0);
-                }
-            }
-
-            // 맨손 시작 방지: 가방에도 무기가 없어 장착 슬롯이 모두 비면 정비 유지
+            // 맨손 시작 방지: 장착 슬롯이 모두 비면 정비 유지 (사용자 2026-10-30: 가방 무기 자동 장착은 모르는 사이 진행돼 제거)
             if (PlayerInventory.Instance.equippedWeapons[0] == null && PlayerInventory.Instance.equippedWeapons[1] == null)
             {
                 Debug.LogWarning("MaintenanceManager: No weapon equipped. Next round blocked.");
+                LastBlockReason = "무기를 1개 이상 장착하세요";
                 return false;
             }
         }

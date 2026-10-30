@@ -81,6 +81,10 @@ public class StageHUDUI : MonoBehaviour
     private Image extractionFill;
     private TextMeshProUGUI extractionTimeText;
     private RectTransform livesRow;
+    private GameObject extractionLine;
+    private GameObject surfaceArrow;
+    private GameObject surfaceLabel;
+    private GameObject dropIcon;
     private Image[] lifeIcons = new Image[0];
     private TextMeshProUGUI dropText;
     private TextMeshProUGUI roundText;
@@ -97,6 +101,15 @@ public class StageHUDUI : MonoBehaviour
     private Sprite activeFillSprite;
     private Sprite finalFillSprite;
     private readonly System.Collections.Generic.List<Sprite> createdSprites = new System.Collections.Generic.List<Sprite>();
+
+    // 튜토리얼(TutorialDirector)용 표시 설정
+    // 깊이 글자 대신 이 글자 (비우면 DEPTH 표시)
+    public string DepthLabelOverride { get; set; }
+    // 끄면 라운드 눈금·SURFACE 숨김
+    public bool ShowRoundTicks { get; set; } = true;
+    // 끄면 목숨·드랍률 숨김
+    public bool ShowLivesAndDrop { get; set; } = true;
+    private string shownLabelOverride;
 
     private int shownMaxRound = -1;
     private int shownRound = -1;
@@ -157,6 +170,7 @@ public class StageHUDUI : MonoBehaviour
 
     private void Update()
     {
+        UpdateVisibility();
         UpdateRound();
         PulseCurrentTick();
         UpdateLives();
@@ -222,13 +236,22 @@ public class StageHUDUI : MonoBehaviour
         int max = WaveManager.Instance.MaxRound;
         int round = WaveManager.Instance.CurrentRound;
         if (max != shownMaxRound) RebuildTicks(max);
-        if (round == shownRound) return;
+        if (round == shownRound && DepthLabelOverride == shownLabelOverride) return;
         shownRound = round;
+        shownLabelOverride = DepthLabelOverride;
 
         if (roundText != null)
         {
-            roundText.text = DepthDisplay.Label(DepthDisplay.FromRound(round, max)); // 깊이 표시 D-2: ROUND 03 / 15 → DEPTH 13
-            roundText.color = round >= max ? finalRoundColor : hudLabelColor;
+            if (!string.IsNullOrEmpty(DepthLabelOverride))
+            {
+                roundText.text = DepthLabelOverride;
+                roundText.color = hudLabelColor;
+            }
+            else
+            {
+                roundText.text = DepthDisplay.Label(DepthDisplay.FromRound(round, max)); // 깊이 표시 D-2: ROUND 03 / 15 → DEPTH 13
+                roundText.color = round >= max ? finalRoundColor : hudLabelColor;
+            }
         }
 
         if (pixelSkin)
@@ -307,6 +330,27 @@ public class StageHUDUI : MonoBehaviour
         Color c = isFinal ? finalRoundColor : Color.white;
         c.a = Mathf.Lerp(0.5f, 1f, pulse);
         ticks[i].color = c;
+    }
+
+    // 튜토리얼 표시 설정 + 탈출 구역을 숨긴 동안 탈출 막대·초·EXTRACT 숨김
+    private void UpdateVisibility()
+    {
+        SetVisible(tickRow != null ? tickRow.gameObject : null, ShowRoundTicks);
+        SetVisible(surfaceArrow, ShowRoundTicks);
+        SetVisible(surfaceLabel, ShowRoundTicks);
+        SetVisible(livesRow != null ? livesRow.gameObject : null, ShowLivesAndDrop);
+        SetVisible(dropIcon, ShowLivesAndDrop);
+        SetVisible(dropText != null ? dropText.gameObject : null, ShowLivesAndDrop);
+
+        bool showExtraction = extractionZone == null || !extractionZone.IsHidden;
+        SetVisible(extractionLine, showExtraction);
+        SetVisible(extractionTimeText != null ? extractionTimeText.gameObject : null, showExtraction);
+        SetVisible(extractLabel != null ? extractLabel.gameObject : null, showExtraction);
+    }
+
+    private static void SetVisible(GameObject obj, bool visible)
+    {
+        if (obj != null && obj.activeSelf != visible) obj.SetActive(visible);
     }
 
     // 0~1 부드러운 맥박
@@ -436,6 +480,7 @@ public class StageHUDUI : MonoBehaviour
 
         Image lineBg = CreateImage("ExtractionLine", root, pixelSkin ? Color.white : emptyColor);
         Place(lineBg.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, lineY), new Vector2(rowWidth, lineHeight));
+        extractionLine = lineBg.gameObject;
 
         extractionFill = CreateImage("ExtractionFill", lineBg.rectTransform, activeColor);
         Stretch(extractionFill.rectTransform);
@@ -484,6 +529,7 @@ public class StageHUDUI : MonoBehaviour
             Vector2 arrowSize = new Vector2(r.width, r.height) * theme.hudPixelScale;
             Place(arrow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(surfaceX + arrowSize.x * 0.5f, -34f), arrowSize);
             arrow.rectTransform.localEulerAngles = new Vector3(0f, 0f, 180f);
+            surfaceArrow = arrow.gameObject;
             surfaceX += arrowSize.x + 8f;
         }
         TextMeshProUGUI surfaceText = CreateText("SurfaceLabel", root, hudLabelTextSize, TextAlignmentOptions.Left);
@@ -491,6 +537,7 @@ public class StageHUDUI : MonoBehaviour
         surfaceText.characterSpacing = 4f;
         surfaceText.color = surfaceColor;
         surfaceText.text = "SURFACE";
+        surfaceLabel = surfaceText.gameObject;
         Place(surfaceText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(surfaceX, -34f), new Vector2(200f, 30f));
     }
 
@@ -559,6 +606,7 @@ public class StageHUDUI : MonoBehaviour
         GameObject iconObj = new GameObject("DropIcon", typeof(RectTransform));
         RectTransform icon = iconObj.GetComponent<RectTransform>();
         icon.SetParent(root, false);
+        dropIcon = iconObj;
         Place(icon, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(32f, dropY - 15f), new Vector2(cell * 2f + 1f, iconHeight));
         Vector2Int[] shape = { new Vector2Int(0, 0), new Vector2Int(0, 1), new Vector2Int(0, 2), new Vector2Int(1, 0) }; // 아래에서 위로
         for (int i = 0; i < shape.Length; i++)

@@ -71,6 +71,9 @@ public class ExtractionZoneVisual : MonoBehaviour
     private void LateUpdate()
     {
         if (zone == null) return;
+        // 튜토리얼에서 숨긴 동안 전체 표시 끔
+        if (root.gameObject.activeSelf == zone.IsHidden) root.gameObject.SetActive(!zone.IsHidden);
+        if (zone.IsHidden) return;
         Vector3 center = transform.position;
         center.y = 0f;
         root.position = center;

@@ -27,10 +27,58 @@ public class MaintenanceUI : MonoBehaviour
     [Header("Warning (선택 연결)")]
     [SerializeField] private TextMeshProUGUI warningText; // 장착 무기 없이 NEXT ROUND 시 경고 표시
 
+    [Header("조작 안내 (비우면 정비 패널 아래 가운데에 자동 생성)")]
+    [SerializeField] private TextMeshProUGUI controlsHintText;
+    [SerializeField] private Vector2 controlsHintPosition = new Vector2(0f, 18f); // 패널 아래 가운데 기준
+    [SerializeField] private string controlsHint =
+        "<b>좌클릭</b> 집기·놓기     <b>R</b> 모듈 회전     <b>우클릭</b> 취소     <b>휠클릭</b> 즉시 해제(가방으로)";
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+        CreateControlsHint();
+    }
+
+    // 정비 패널 아래에 조작 키 안내 한 줄 (흐린 글자)
+    private void CreateControlsHint()
+    {
+        if (controlsHintText == null && maintenancePanel != null)
+        {
+            GameObject obj = new GameObject("ControlsHint", typeof(RectTransform), typeof(TextMeshProUGUI));
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.SetParent(maintenancePanel.transform, false);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = controlsHintPosition;
+            rect.sizeDelta = new Vector2(1400f, 32f);
+            controlsHintText = obj.GetComponent<TextMeshProUGUI>();
+            UITheme.Current.ApplyFont(controlsHintText, UIFontRole.Body);
+            controlsHintText.fontSize = 20f;
+            controlsHintText.alignment = TextAlignmentOptions.Center;
+            controlsHintText.color = new Color(0.75f, 0.82f, 0.88f, 0.75f);
+            controlsHintText.raycastTarget = false;
+            controlsHintText.textWrappingMode = TextWrappingModes.NoWrap;
+        }
+        if (controlsHintText != null) controlsHintText.text = controlsHint;
+
+        // 경고 글이 씬에 연결돼 있지 않으면 조작 안내 바로 위에 생성 (이전엔 NEXT ROUND가 막혀도 아무 표시가 없었음)
+        if (warningText == null && maintenancePanel != null)
+        {
+            GameObject obj = new GameObject("NextRoundWarning", typeof(RectTransform), typeof(TextMeshProUGUI));
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.SetParent(maintenancePanel.transform, false);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = controlsHintPosition + new Vector2(0f, 38f);
+            rect.sizeDelta = new Vector2(1400f, 36f);
+            warningText = obj.GetComponent<TextMeshProUGUI>();
+            UITheme.Current.ApplyFont(warningText, UIFontRole.Body);
+            warningText.fontSize = 26f;
+            warningText.fontStyle = FontStyles.Bold;
+            warningText.alignment = TextAlignmentOptions.Center;
+            warningText.color = new Color(1f, 0.4f, 0.35f, 1f);
+            warningText.raycastTarget = false;
+            warningText.textWrappingMode = TextWrappingModes.NoWrap;
+        }
     }
 
     private void Start()
@@ -246,7 +294,8 @@ public class MaintenanceUI : MonoBehaviour
     {
         if (warningText == null) return;
 
-        warningText.text = "무기를 1개 이상 장착하세요";
+        string reason = MaintenanceManager.Instance != null ? MaintenanceManager.Instance.LastBlockReason : null;
+        warningText.text = string.IsNullOrEmpty(reason) ? "무기를 1개 이상 장착하세요" : reason;
         warningText.gameObject.SetActive(show);
     }
 

@@ -112,6 +112,14 @@ public class AlertBanner : MonoBehaviour
         else banner.Begin("MISSION FAILED", $"LIVES REMAINING  {livesLeft}  —  RETRY THIS FLOOR", banner.failColor, hold, null);
     }
 
+    // 직접 문구 지정 (튜토리얼 등) — success면 탈출 성공 색, 아니면 라운드 색. hold 0 이하면 라운드 배너 유지 시간
+    public static void ShowCustom(string title, string subtitle, bool success, float hold = 0f)
+    {
+        AlertBanner banner = GetInstance();
+        banner.Begin(title, subtitle, success ? banner.successColor : banner.roundColor,
+            hold > 0f ? hold : banner.roundHoldTime, success ? null : AudioManager.Library.roundStart);
+    }
+
     public static void ShowElite()
     {
         GetInstance().BeginElite();

@@ -115,6 +115,11 @@ public class WaveManager : MonoBehaviour
     public int CurrentRound => currentRound;
     public int MaxRound => maxRound;
 
+    // 튜토리얼(TutorialDirector)용: 끄면 일반 적 자동 스폰·엘리트 등장을 멈추고 SpawnEnemy로만 생성
+    public bool AutoSpawnEnabled { get; set; } = true;
+    // 끄면 라운드 시작 경고 띠(DEPTH 표시)를 띄우지 않음 (튜토리얼은 자체 배너)
+    public bool ShowRoundBanner { get; set; } = true;
+
     // 탈출 성공 시 호출 (사망 시에는 호출하지 않아 실패한 라운드를 다시 시도, GDD 6-4)
     public void AdvanceRound()
     {
@@ -170,7 +175,7 @@ public class WaveManager : MonoBehaviour
 
         // 스폰 루틴 시작
         StartCoroutine(SpawnEnemyRoutine());
-        AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2)
+        if (ShowRoundBanner) AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2)
     }
 
     // 스테이지 시작 시 엘리트 카운터 초기화
@@ -187,7 +192,7 @@ public class WaveManager : MonoBehaviour
     // 엘리트 스폰 규칙: 시간 기반 + 처치 기반을 따로 세고, 유예·동시 최대·연출 중이면 보류 (GDD 8-6 #4, 8-4 #15)
     private void Update()
     {
-        if (!isWaveActive || Time.timeScale <= 0f) return;
+        if (!isWaveActive || !AutoSpawnEnabled || Time.timeScale <= 0f) return;
 
         stageTime += Time.deltaTime;
 
@@ -234,7 +239,7 @@ public class WaveManager : MonoBehaviour
         while (isWaveActive)
         {
             // 필드에 동시 존재하는 적 수가 최대 동시 스폰 제한 수보다 적으면 영구 지속 스폰
-            if (currentEnemiesAlive < MaxConcurrentEnemies)
+            if (AutoSpawnEnabled && currentEnemiesAlive < MaxConcurrentEnemies)
             {
                 SpawnRandomNormalEnemy();
             }
@@ -262,6 +267,29 @@ public class WaveManager : MonoBehaviour
         // 3. 적 생성
         Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
         currentEnemiesAlive++;
+    }
+
+    // 지정 종류 적 1마리를 지정 위치(NavMesh 보정)에 생성 — 튜토리얼 등 스크립트 진행용. 실패하면 null
+    public EnemyBase SpawnEnemy(EnemyType type, Vector3 position)
+    {
+        GameObject prefab = normalEnemyPrefabs.Find(p => p != null && GetPrefabType(p) == type);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"WaveManager: {type} 프리팹이 일반 적 목록에 없습니다.");
+            return null;
+        }
+        if (!NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas)) return null;
+
+        GameObject enemy = Instantiate(prefab, hit.position, Quaternion.identity);
+        currentEnemiesAlive++;
+        return enemy.GetComponent<EnemyBase>();
+    }
+
+    // 지정 종류 적 1마리를 화면 밖 무작위 위치에 생성 (일반 스폰과 같은 위치 규칙). 실패하면 null
+    public EnemyBase SpawnEnemyOffscreen(EnemyType type)
+    {
+        if (!TryGetOffscreenSpawnPosition(out Vector3 position)) return null;
+        return SpawnEnemy(type, position);
     }
 
     // 엘리트 적 무작위 스폰
@@ -546,7 +574,7 @@ public class WaveManager : MonoBehaviour
 
         StopAllCoroutines();
         StartCoroutine(SpawnEnemyRoutine()); // 무한 적 스폰 코루틴 재가동
-        AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2, 정비 중 호출되면 전투 재개 후 표시)
+        if (ShowRoundBanner) AlertBanner.ShowRound(currentRound, maxRound); // 라운드 시작 경고 띠 (D2, 정비 중 호출되면 전투 재개 후 표시)
         Debug.Log($"WaveManager: Restarted wave spawning. Round {currentRound}");
     }
 }
