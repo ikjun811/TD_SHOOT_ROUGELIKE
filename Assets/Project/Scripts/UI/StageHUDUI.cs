@@ -227,7 +227,7 @@ public class StageHUDUI : MonoBehaviour
 
         if (roundText != null)
         {
-            roundText.text = $"ROUND {round:00} / {max:00}";
+            roundText.text = DepthDisplay.Label(DepthDisplay.FromRound(round, max)); // 깊이 표시 D-2: ROUND 03 / 15 → DEPTH 13
             roundText.color = round >= max ? finalRoundColor : hudLabelColor;
         }
 
@@ -472,6 +472,26 @@ public class StageHUDUI : MonoBehaviour
         extractLabel.text = "EXTRACT";
         Place(extractLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(labelX, lineY), new Vector2(200f, 30f));
         // EXTRACT 앞 ship 아이콘은 제거 (사용자 2026-10-30)
+
+        // 깊이 표시 D-2: 눈금 오른쪽 끝 = 지상 → 눈금이 지상을 향해 차오르는 게이지로 읽힘 ([▲] SURFACE, ▲ = ▼ 스프라이트 뒤집음)
+        float surfaceX = rowWidth * 0.5f + hudLabelGap;
+        Color surfaceColor = new Color(hudLabelColor.r, hudLabelColor.g, hudLabelColor.b, hudLabelColor.a * 0.75f);
+        if (theme.hudMarkerSprite != null)
+        {
+            Image arrow = CreateImage("SurfaceArrow", root, surfaceColor);
+            SetSprite(arrow, theme.hudMarkerSprite);
+            Rect r = theme.hudMarkerSprite.rect;
+            Vector2 arrowSize = new Vector2(r.width, r.height) * theme.hudPixelScale;
+            Place(arrow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(surfaceX + arrowSize.x * 0.5f, -34f), arrowSize);
+            arrow.rectTransform.localEulerAngles = new Vector3(0f, 0f, 180f);
+            surfaceX += arrowSize.x + 8f;
+        }
+        TextMeshProUGUI surfaceText = CreateText("SurfaceLabel", root, hudLabelTextSize, TextAlignmentOptions.Left);
+        surfaceText.fontStyle = FontStyles.Bold;
+        surfaceText.characterSpacing = 4f;
+        surfaceText.color = surfaceColor;
+        surfaceText.text = "SURFACE";
+        Place(surfaceText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(surfaceX, -34f), new Vector2(200f, 30f));
     }
 
     private void RebuildTicks(int maxRound)

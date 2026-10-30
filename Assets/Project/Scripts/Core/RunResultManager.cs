@@ -209,7 +209,8 @@ public class RunResultManager : MonoBehaviour
         int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
         int maxRound = WaveManager.Instance != null ? WaveManager.Instance.MaxRound : 15;
 
-        string text = $"도달 라운드   {round} / {maxRound}{(RunResultData.NewBestRound ? "  <color=#FFD040>NEW</color>" : "")}\n" +
+        int depth = RunResultData.Cleared ? 0 : DepthDisplay.FromRound(round, maxRound); // 깊이 표시 (DEPTH ZERO 컨셉)
+        string text = $"도달 깊이     {DepthDisplay.Label(depth)}{(RunResultData.NewBestRound ? "  <color=#FFD040>NEW</color>" : "")}\n" +
                       $"전투 시간     {FormatTime(combatTime)}{(RunResultData.NewBestClearTime ? "  <color=#FFD040>NEW</color>" : "")}\n" +
                       $"처치 수       일반 {normalKills}  /  엘리트 {eliteKills}\n" +
                       $"총 피해량     {totalDamage:N0}   최고 한 방 {maxHit:N0}\n" +

@@ -75,27 +75,33 @@ public class AlertBanner : MonoBehaviour
     private int eliteCount;
     private bool pendingEliteSound;
 
+    // 라운드 = 깊이 표시 (DEPTH ZERO 컨셉, 2026-10-30): 숫자가 줄어드는 이유를 보조줄이 매번 설명
+    //   첫 라운드 = 상황 브리핑, 일반 = 지상까지 남은 층 + 위로 갈수록 적이 많아짐(사용자 채택 문구), 최종 = 지상 바로 아래
     public static void ShowRound(int round, int maxRound)
     {
         bool isFinal = maxRound > 0 && round >= maxRound;
+        int depth = DepthDisplay.FromRound(round, maxRound);
         AlertBanner banner = GetInstance();
         if (isFinal)
         {
-            banner.Begin("FINAL ROUND", $"ROUND {round:00} / {maxRound:00}  —  SURVIVE AND EXTRACT", banner.finalRoundColor, banner.roundHoldTime, AudioManager.Library.roundStart);
+            banner.Begin(DepthDisplay.Label(depth), "SURFACE AHEAD  —  SURVIVE AND EXTRACT", banner.finalRoundColor, banner.roundHoldTime, AudioManager.Library.roundStart);
+        }
+        else if (round <= 1)
+        {
+            banner.Begin(DepthDisplay.Label(depth), "FACILITY BREACHED  —  CLIMB TO THE SURFACE", banner.roundColor, banner.roundHoldTime, AudioManager.Library.roundStart);
         }
         else
         {
-            string total = maxRound > 0 ? $" / {maxRound:00}" : "";
-            banner.Begin($"ROUND {round:00}", $"HOSTILES INBOUND  —  {round:00}{total}", banner.roundColor, banner.roundHoldTime, AudioManager.Library.roundStart);
+            banner.Begin(DepthDisplay.Label(depth), $"{depth} FLOORS TO SURFACE  —  MORE HOSTILES AHEAD", banner.roundColor, banner.roundHoldTime, AudioManager.Library.roundStart);
         }
     }
 
-    // 탈출 성공 (ExtractionZone, 슬로모션·암전 동안 유지) — 최종 라운드면 임무 완료
+    // 탈출 성공 (ExtractionZone, 슬로모션·암전 동안 유지) — 최종 라운드면 지상 도달 (제목 회수)
     public static void ShowExtractionSuccess(int round, bool isGameClear, float hold)
     {
         AlertBanner banner = GetInstance();
-        if (isGameClear) banner.Begin("MISSION COMPLETE", "ALL ROUNDS CLEARED  —  EXTRACTION SUCCESSFUL", banner.clearColor, hold, null);
-        else banner.Begin("EXTRACTION COMPLETE", $"ROUND {round:00} CLEARED  —  RETURNING TO BASE", banner.successColor, hold, null);
+        if (isGameClear) banner.Begin(DepthDisplay.Label(0), "SURFACE REACHED", banner.clearColor, hold, null);
+        else banner.Begin("FLOOR CLEARED", $"ASCENDING TO {DepthDisplay.Label(DepthDisplay.FromRound(round) - 1)}", banner.successColor, hold, null);
     }
 
     // 사망 (PlayerDeathHandler) — 남은 목숨이 없으면 게임 오버
@@ -103,7 +109,7 @@ public class AlertBanner : MonoBehaviour
     {
         AlertBanner banner = GetInstance();
         if (livesLeft <= 0) banner.Begin("GAME OVER", "NO LIVES REMAINING", banner.failColor, hold, null);
-        else banner.Begin("MISSION FAILED", $"LIVES REMAINING  {livesLeft}  —  RETRY ROUND", banner.failColor, hold, null);
+        else banner.Begin("MISSION FAILED", $"LIVES REMAINING  {livesLeft}  —  RETRY THIS FLOOR", banner.failColor, hold, null);
     }
 
     public static void ShowElite()

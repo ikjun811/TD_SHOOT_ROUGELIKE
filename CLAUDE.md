@@ -3,6 +3,7 @@
 ## 프로젝트
 - Unity 6 (6000.5.5f1), URP 3D, 졸업작품
 - 탑다운 3D 슈팅 로그라이크 + 탈출 루프 + 테트리스 인벤토리
+- 게임 제목: **DEPTH ZERO** (2026-10-30 채택 — 컨셉: 괴물이 침입한 지하 시설에서 지상(깊이 0)까지 한 층씩 탈출, 지상에 가까울수록 적 증가, 15라운드 = 15층)
 - 전체 기획: docs/GDD.md (기준 문서, 코드와 다르면 알려줄 것)
 
 ## 구조
@@ -19,7 +20,7 @@
 
 ## ▶ 이어서 할 일 (2026-10-29 작업 종료 시점 — 다음 세션은 여기부터)
 - 최근 완료·확인: 빌드 점검(FPS 60 제한, 바닥 안개 사각형 → 전용 셰이더로 해결 후 효과 약해 끔), 인게임 일시정지 메뉴(UI/PauseMenuUI)
-- **진행 중 (2026-10-30): 폰트·UI 디자인** — 사용자 채택: 제목 갈무리11 + 본문 Pretendard (OFL, Assets/Project/UI/Fonts/Galmuri·Pretendard, 불필요 파일 정리함). 맑은 고딕은 배포 라이선스 문제로 교체. 순서 F1 폰트 에셋·기본 폰트 → F2 코드 UI 제목 폰트 지정 → F3 씬 텍스트 교체 도구 → F4 화면별 디자인
+- **완료 (2026-10-30): 폰트·UI 디자인 (F1~F4c, DEPTH ZERO 제목·깊이 표시 포함)** — 사용자 채택: 제목 갈무리11 + 본문 Pretendard (OFL, Assets/Project/UI/Fonts/Galmuri·Pretendard, 불필요 파일 정리함). 맑은 고딕은 배포 라이선스 문제로 교체. 순서 F1 폰트 에셋·기본 폰트 → F2 코드 UI 제목 폰트 지정 → F3 씬 텍스트 교체 도구 → F4 화면별 디자인
   - **F1(구현, 실행 대기 — Editor/GameFontTools: Tools > TD Shoot > Create Game Font Assets → UI/Fonts/FontAssets에 동적 SDF 5개(갈무리 샘플링 48·여백 6, Pretendard 64·7, 아틀라스 2048 멀티), 굵게 = 무게 표(갈무리 7 → Bold, Pretendard 6 SemiBold·7 Bold), 대체 갈무리 → Pretendard → MALGUN, TMP 기본 폰트 Pretendard·전역 대체 MALGUN, UITheme.headingFont 갈무리·bodyFont Pretendard + UIFontRole·GetFont·ApplyFont, 기호(·×–—→─▼★•) 누락 로그. MALGUN은 기호 확인 후 제거 예정) — 확인됨**
   - **F2(구현, 확인 대기 — 코드 UI 제목 폰트: 텍스트 생성 직후(외곽선·재질 설정 전) UITheme.Current.ApplyFont(Heading). 갈무리 = AlertBanner 전체·StageHUDUI 전체(라운드·EXTRACT·남은 초·드랍률·배너)·KillStreakUI·WorldAmmoRing 장탄 숫자·DamageNumberManager·SlotContentView 빈 슬롯 번호·PauseMenuUI 창 제목·버튼·RunResultManager 제목·버튼. 본문 Pretendard 유지 = PauseMenuUI 설정 이름·값·확인 문구, RunResultManager 기록, PickupNoticeUI, ActiveEffectsPanelUI. 프리팹·씬 텍스트(전리품 버튼·정비 슬롯·툴팁)는 F3) — 확인됨**
   - **피해 숫자 개별 표시로 롤백(구현, 확인 대기 — 사용자 결정 2026-10-30: 대상별 합계 → 맞을 때마다 숫자 1개(맞은 위치 ±0.3m, 1.5m/s 상승, 0.8초, 처음 1.3배 → 1, 후반 절반 페이드). 외형(갈무리·크기 3.5·뼈색/호박빛 빨강/핏빛·외곽선 0.12) 유지, 치명타 1.35배 + 처음 흰빛, "!" 없음) — 확인됨**
@@ -35,11 +36,19 @@
   - **F4c-4 툴팁 가독성(구현, 확인 대기 — ItemTooltipUI: 이름 = 갈무리, 레어도 줄 = 레어도 이름만 레어도 색 + "  ·  종류"(대괄호·모듈 WxH 제거 → 크기 줄로), 수치 = Row(항목 이름 흐린 tooltipLabelColor + <pos=tooltipValueColumn 38%> 값 밝은 tooltipValueColor) 두 열, "•" 제거, lineSpacing 14, 기본 → 최종은 기본·화살표 흐리게 + 최종 초록/빨강(tooltipBetterColor·WorseColor), 산탄 "× N발" 흐리게, 사격·치명타·작동 각각 한 줄, 모듈 = 효과·크기("N칸 (WxH)") 줄, 충돌·중복 경고 tooltipWarningColor. 값은 UITheme Tooltip 칸) — 스크린샷 확인, 값 열 38→30%**
   - **F4c-5 전리품 모듈 가로 카드(구현, 확인 대기 — 사용자 지적: 80x80 정사각 카드가 작고 모양이 "…"처럼 뭉개짐. MaintenanceUI ModuleSection GridLayout 3열 → VerticalLayout 한 줄(무기와 같은 폭, 높이 76). LootItemButtonUI.BuildModuleCard: 레어도 테두리 + 왼쪽 정사각 ShapeBox(SlotContentView.ShowModule(module, showStatIcon false) — 모양·계열 띠) + 오른쪽 이름(Pretendard 굵게 20, 레어도 색, 넘치면 …) / 계열(계열 색) · 효과(스탯) 또는 대상(작동·특수) 16 흐리게. ItemTooltipUI.GetCategoryName 공개)**
   - F4c-5 전리품 카드·HUD 드랍률 확인됨(모양 그림 크기는 이대로 충분 — 사용자)
-  - **F4c-6 메인 화면 미니멀(구현, 실행 대기 — 사용자: 기본·정석 느낌이 강함 → 깔끔·심플, A안 "글자 목록" 채택(B 번호 목록 미채택). UI/MenuItemHighlight(버튼에 부착: 평소 흐린 흰 (0.72,0.78,0.84), 마우스 올리면 청록 + 왼쪽 막대 세로로 펼침 + 글자 14 오른쪽, 비활성 아주 흐리게, 실제 시간). Editor/MainMenuStyleTools: Tools > TD Shoot > Restyle Main Menu (Minimal) = 열린 MainMenu 씬: 제목 84·자간 6 + 아래 청록 선 120x3 + 부제 "TOP-DOWN EXTRACTION ROGUELIKE"(갈무리 24·자간 12·흐림), 메뉴 버튼 6개 UIThemeSkin 제거·투명 클릭 영역·왼쪽 정렬 갈무리 36·간격 8, 튜토리얼 "튜토리얼 SOON", 패널 3개 UIThemeSkin 창 → 반투명 남색 (0.02,0.035,0.05,0.92) + 왼쪽 청록 세로선 3px + 제목 아래 흐린 선 + 본문 Pretendard 줄 간격 12, 닫기 = 글자 버튼 "닫기 ESC", 오른쪽 아래 "v버전 · 졸업작품". 이름으로 찾아 재사용(여러 번 실행 가능), Undo, 씬 저장은 직접. 환경설정 드롭다운·슬라이더는 Unity 기본 모양 그대로)**
+  - **F4c-6 메인 화면 미니멀(구현, 실행 대기 — 사용자: 기본·정석 느낌이 강함 → 깔끔·심플, A안 "글자 목록" 채택(B 번호 목록 미채택). UI/MenuItemHighlight(버튼에 부착: 평소 흐린 흰 (0.72,0.78,0.84), 마우스 올리면 청록 + 왼쪽 막대 세로로 펼침 + 글자 14 오른쪽, 비활성 아주 흐리게, 실제 시간). Editor/MainMenuStyleTools: Tools > TD Shoot > Restyle Main Menu (Minimal) = 열린 MainMenu 씬: 제목 84·자간 6 + 아래 청록 선 120x3 + 부제 "TOP-DOWN EXTRACTION ROGUELIKE"(갈무리 24·자간 12·흐림), 메뉴 버튼 6개 UIThemeSkin 제거·투명 클릭 영역·왼쪽 정렬 갈무리 36·간격 8, 튜토리얼 "튜토리얼 SOON", 패널 3개(제목과 겹쳐 (300,-70) 1100x640으로 이동) UIThemeSkin 창 → 반투명 남색 (0.02,0.035,0.05,0.92) + 왼쪽 청록 세로선 3px + 제목 아래 흐린 선 + 본문 Pretendard 줄 간격 12, 닫기 = 글자 버튼 "닫기 ESC". 오른쪽 아래 버전·졸업작품 표시는 제거(사용자 — 필요하면 추후 기입). 이름으로 찾아 재사용(여러 번 실행 가능), Undo, 씬 저장은 직접. 환경설정 드롭다운·슬라이더는 Unity 기본 모양 그대로)**
+  - F4c-6 메인 화면 확인됨(버전·졸업작품 표시 제거, 패널 위치 조정 반영)
+  - **게임 제목 DEPTH ZERO(구현, 실행 대기 — 사용자 채택 2026-10-30, 후보 GRIDLOCK·15 BELOW·BREACH 등 중. MainMenuSceneBuilder.GameTitle = "DEPTH ZERO"(internal), Restyle Main Menu가 제목 글자도 설정. Tools > TD Shoot > Apply Game Title = Player Settings Product Name 변경(확인 창 — PlayerPrefs 저장 위치가 바뀌어 최고 기록·환경설정 초기화) + 열린 MainMenu 씬 제목. GDD 1장·CLAUDE.md 표기. 미적용 선택 연출(제안만): 라운드 배너 ROUND → 층 표시(B13·DEPTH 13), 최종 "SURFACE AHEAD", 부제 "ESCAPE TO THE SURFACE")**
+  - **깊이 표시 (사용자 채택 2026-10-30 — 숫자가 줄어드는 이유를 설득력 있게: 숫자 = 깊이, 0 = 지상 = 제목. 1라운드 DEPTH 15 … 최종 DEPTH 1, 클리어 DEPTH 0. 내부 라운드·기록은 그대로, 표시만). 순서: D-1 배너 → D-2 HUD(DEPTH 13 + 눈금 끝 ▲ SURFACE) → D-3 결과 화면(지상 도달 / DEPTH N에서 작전 실패 · 지상까지 N층, 최고 도달 DEPTH) → D-4 메인 부제 ESCAPE TO THE SURFACE + 조작 정보 목표 문단(사용자 채택 문구 "지상에 가까워질수록 더 많은 적을 상대해야 할 것입니다")**
+    - **D-1 배너(구현, 확인 대기 — Core/DepthDisplay(FromRound(round, max) = max - round + 1, Label: DEPTH N / 0이면 DEPTH ZERO). AlertBanner.ShowRound: 1라운드 "DEPTH 15" / "FACILITY BREACHED — CLIMB TO THE SURFACE", 일반 "DEPTH 13" / "13 FLOORS TO SURFACE — MORE HOSTILES AHEAD"(사용자 선택 — THE HIGHER, THE MORE OF THEM·EXPECT HEAVIER RESISTANCE 대신), 최종 "DEPTH 1" / "SURFACE AHEAD — SURVIVE AND EXTRACT". 탈출 성공 "FLOOR CLEARED" / "ASCENDING TO DEPTH 12", 클리어 "DEPTH ZERO" / "SURFACE REACHED", 사망 보조줄 RETRY THIS FLOOR) — 확인됨**
+    - D-2·D-3·D-4 확인됨
+    - **D-2 HUD(구현, 확인됨 — StageHUDUI: 눈금 왼쪽 "ROUND 03 / 15" → "DEPTH 13"(최종 DEPTH 1 붉게), 눈금 오른쪽 끝 [▲(hudMarkerSprite 180° 회전)] "SURFACE" 흐리게 → 눈금이 지상을 향해 차오르는 게이지)**
+    - **D-3 결과 화면(구현, 확인 대기 — ResultSceneUI: 부제 "지상 도달 — DEPTH ZERO" / "DEPTH 13에서 작전 실패"(지상까지 N층은 중복이라 제거 — 사용자), 도달 값 DEPTH N(클리어 DEPTH ZERO) + 씬 이름표 RoundLabel "도달 라운드" → "도달 깊이"(실행 시), 최고 기록 "최고 도달 DEPTH N"(한 번이라도 클리어했으면 DEPTH ZERO). 대체 결과 화면(RunResultManager)도 "도달 깊이". 저장 키·값은 라운드 그대로)**
+    - **D-4 메인 화면·조작 정보(구현, 실행 대기 — MainMenuStyleTools 부제 "ESCAPE TO THE SURFACE", MainMenuSceneBuilder.GoalText(목표 문단: 지하 시설 DEPTH 15 → 지상 DEPTH 0, 층마다 탈출 구역에서 버티기·정비, "지상에 가까워질수록 더 많은 적을 상대해야 할 것입니다"), Restyle Main Menu가 조작 정보 Body의 "<b>목표</b>"부터 끝까지만 교체(앞의 조작 설명 유지). Restyle Main Menu 재실행 + 씬 저장 필요)**
   - **HUD 드랍률 설명(구현, 확인 대기 — 사용자: 처음 보는 사람이 무슨 정보인지 모름. StageHUDUI 드랍률 = "MODULE DROP  30%"(라벨 같은 크기·흐리게, dropLabel 필드로 문구 변경·비우면 숫자만), 글자 상자 140→360)**
   - **NEXT ROUND 글자 안 보임 수정(구현, 확인 대기 — 원인: 씬 버튼 글자 색이 Unity 기본 짙은 회색 (0.2,0.2,0.2). UIThemeSkin Button 역할이 자식 TMP 글자 색을 UITheme.buttonTextColor (0.85,0.95,1)로(applyLabelColor, 기본 켬) — 메인 메뉴 등 테마 버튼 전체 통일)**
-- **그 다음: 조준점(크로스헤어)** — 사용자 요청. 구현 전 계획(모양·위치·사격/장전 시 변화·커서 처리) 먼저 설명할 것
-- 그 뒤 순서 (사용자 채택): 2 튜토리얼 → 3 한 판 플레이 + 밸런스 → 메인 화면 3D 배경·결과 화면 최고 연속 처치·에디터 남은 일, 에셋 생기면 배경음·효과음·폰트
+- **조준점(완료, 확인됨 2026-10-30 — 조사: 전투 중 시스템 커서만 보였음(JU Crosshair 미표시, JUCharacterController.BlockFireModeOnCursorVisible false라 커서 숨겨도 사격 무관). UI/CrosshairUI(GameplayBootstrap 생성, 오버레이 순서 80): 마우스 위치에 가운데 점 4px + 상하좌우 선 3x10 (흰색 + 검정 외곽 1.5), 간격 = 기본 8(산탄총 FireMode Shotgun 20) + JU 무기 ShotErrorProbability x 28px(최대 36, 실제 탄 퍼짐) + 사격마다 6px 반동(OnAnyPlayerShot, 40px/초 복귀), 부드럽게. 커서 아래 살아 있는 적(SphereCast 0.35m, EnemyBase) → 붉게. 보일 때 시스템 커서 숨김, 숨김 조건 = timeScale 0(정비·결과)·일시정지·사망·탈출 연출·결과 화면 → 커서 보임, 씬 떠날 때 커서 복구. 사용자 결정: 장전 원호·탄창 빈 표시 없음(장탄 링이 담당))**
+- 그 뒤 순서 (사용자 채택, 폰트·UI 디자인·DEPTH ZERO 적용은 2026-10-30 완료): 2 튜토리얼 → 3 한 판 플레이 + 밸런스 → 메인 화면 3D 배경·결과 화면 최고 연속 처치·에디터 남은 일, 에셋 생기면 배경음·효과음·폰트
 - 사용자 할 일: WaveManager Inspector에서 Log Rejected Spawns 끄기
 - 참고: 씬 ExtractionZone.requiredExtractionTime 3초는 시험용 — 사용자 결정(2026-10-29): 빠른 점검을 위해 완성 때까지 3초 유지, 완성 후 40초로 (되돌리라고 다시 안내하지 말 것), WaveManager 등장 라운드를 시험용으로 낮췄다면 복구(차저 10R·봄버 7R·브루트 5R·슈터 3R)
 

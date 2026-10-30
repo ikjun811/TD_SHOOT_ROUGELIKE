@@ -60,11 +60,13 @@ public class ResultSceneUI : MonoBehaviour
             titleText.text = cleared ? "GAME CLEAR" : "GAME OVER";
             titleText.color = cleared ? clearColor : failColor;
         }
+        // 깊이 표시 D-3: 라운드 → 깊이 (클리어 = 지상 = DEPTH ZERO)
+        int depth = cleared ? 0 : DepthDisplay.FromRound(RunResultData.Round, RunResultData.MaxRound);
         if (subtitleText != null)
         {
             subtitleText.text = cleared
-                ? $"{RunResultData.MaxRound}라운드 탈출 성공"
-                : $"{RunResultData.Round}라운드에서 작전 실패";
+                ? "지상 도달  —  DEPTH ZERO"
+                : $"{DepthDisplay.Label(depth)}에서 작전 실패";
         }
 
         SetText(totalDamageText, $"{RunResultData.TotalDamage:N0}");
@@ -72,14 +74,19 @@ public class ResultSceneUI : MonoBehaviour
         SetText(deathsText, $"{RunResultData.Deaths}");
         SetText(modulesText, $"{RunResultData.ModulesCollected}");
 
-        SetText(roundText, $"{RunResultData.Round} / {RunResultData.MaxRound}");
+        SetText(roundText, DepthDisplay.Label(depth));
+        // 씬의 이름표 "도달 라운드"(RoundLabel, 같은 부모)도 깊이로
+        if (roundText != null && roundText.transform.parent.Find("RoundLabel") is Transform roundLabel
+            && roundLabel.TryGetComponent(out TextMeshProUGUI roundLabelText)) roundLabelText.text = "도달 깊이";
         SetText(timeText, RunResultData.FormatTime(RunResultData.CombatTime));
         SetText(killsText, $"{RunResultData.NormalKills + RunResultData.EliteKills}  (엘리트 {RunResultData.EliteKills})");
         if (newRoundBadge != null) newRoundBadge.SetActive(RunResultData.NewBestRound);
         if (newTimeBadge != null) newTimeBadge.SetActive(RunResultData.NewBestClearTime);
 
         string bestClear = RunResultData.BestClearTime > 0f ? RunResultData.FormatTime(RunResultData.BestClearTime) : "-";
-        SetText(bestRecordText, $"최고 기록   라운드 {RunResultData.BestRound}   ·   최단 클리어 {bestClear}");
+        // 한 번이라도 클리어했으면 최고 도달 = 지상
+        int bestDepth = RunResultData.BestClearTime > 0f ? 0 : DepthDisplay.FromRound(RunResultData.BestRound, RunResultData.MaxRound);
+        SetText(bestRecordText, $"최고 도달   {DepthDisplay.Label(bestDepth)}   ·   최단 클리어 {bestClear}");
 
         ShowWeapons();
         BuildGridPreview();

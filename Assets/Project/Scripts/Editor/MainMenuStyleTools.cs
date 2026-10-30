@@ -6,14 +6,14 @@ using UnityEngine.UI;
 
 // 메인 화면 미니멀 스타일 (사용자 채택 2026-10-30 A안 "글자 목록" — 기본·정석 느낌 대신 깔끔·심플, 전투 HUD처럼 선과 글자만)
 //   Tools > TD Shoot > Restyle Main Menu (Minimal): 열린 MainMenu 씬을 바꿈 (Undo 가능, 씬 저장은 직접)
-//   - 제목: 84·자간, 아래 청록 선 + 부제 "TOP-DOWN EXTRACTION ROGUELIKE"
+//   - 제목: 84·자간, 아래 청록 선 + 부제 "ESCAPE TO THE SURFACE", 조작 정보의 목표 문단을 DEPTH ZERO 컨셉 글로 교체
 //   - 메뉴 버튼 6개: 테두리 스킨 제거 → 왼쪽 정렬 글자만 + MenuItemHighlight(마우스 올리면 청록·왼쪽 막대·살짝 밀림), 튜토리얼 "SOON"
 //   - 패널 3개: 테두리 창 → 테두리 없는 반투명 남색 + 왼쪽 청록 세로선 + 제목 아래 흐린 선, 닫기도 글자 버튼
-//   - 오른쪽 아래 버전·졸업작품 표시
+//   - 패널은 제목과 겹치지 않게 오른쪽 아래(300,-70) 1100x640, 버전·졸업작품 표시는 넣지 않음(사용자, 있으면 제거)
 //   여러 번 실행해도 같은 결과 (이미 만든 선·막대는 이름으로 찾아 재사용)
 public static class MainMenuStyleTools
 {
-    private const string Subtitle = "TOP-DOWN EXTRACTION ROGUELIKE";
+    private const string Subtitle = "ESCAPE TO THE SURFACE"; // 깊이 표시 D-4 (이전 TOP-DOWN EXTRACTION ROGUELIKE)
     private static readonly Color PanelColor = new Color(0.02f, 0.035f, 0.05f, 0.92f);
     private static readonly Color DimText = new Color(0.55f, 0.6f, 0.66f);
 
@@ -38,6 +38,7 @@ public static class MainMenuStyleTools
         if (titleTransform != null && titleTransform.TryGetComponent(out TextMeshProUGUI title))
         {
             theme.ApplyFont(title, UIFontRole.Heading);
+            title.text = MainMenuSceneBuilder.GameTitle;
             title.fontSize = 84f;
             title.characterSpacing = 6f;
             title.color = Color.white;
@@ -78,6 +79,17 @@ public static class MainMenuStyleTools
             GameObject panel = so.FindProperty(field).objectReferenceValue as GameObject;
             if (panel != null) StylePanel(panel, theme, accent);
         }
+
+        // 조작 정보의 '목표' 문단만 DEPTH ZERO 컨셉 글로 교체 (그 앞의 조작 설명은 사용자가 고친 그대로 유지)
+        GameObject controlsPanel = so.FindProperty("controlsPanel").objectReferenceValue as GameObject;
+        Transform controlsBody = controlsPanel != null ? controlsPanel.transform.Find("Body") : null;
+        if (controlsBody != null && controlsBody.TryGetComponent(out TextMeshProUGUI controlsText))
+        {
+            int goalIndex = controlsText.text.IndexOf("<b>목표</b>", System.StringComparison.Ordinal);
+            controlsText.text = goalIndex >= 0
+                ? controlsText.text.Substring(0, goalIndex) + MainMenuSceneBuilder.GoalText
+                : controlsText.text.TrimEnd() + "\n\n" + MainMenuSceneBuilder.GoalText;
+        }
         SerializedProperty closes = so.FindProperty("closeButtons");
         for (int i = 0; i < closes.arraySize; i++)
         {
@@ -88,17 +100,40 @@ public static class MainMenuStyleTools
         }
         so.ApplyModifiedProperties();
 
-        // 4. 오른쪽 아래 버전
-        TextMeshProUGUI footer = GetOrCreateText(canvas, "Footer");
-        theme.ApplyFont(footer, UIFontRole.Body);
-        footer.text = $"v{PlayerSettings.bundleVersion}  ·  졸업작품";
-        footer.fontSize = 20f;
-        footer.color = new Color(DimText.r, DimText.g, DimText.b, 0.7f);
-        footer.alignment = TextAlignmentOptions.BottomRight;
-        MainMenuSceneBuilder.SetRect(footer.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-48f, 36f), new Vector2(600f, 30f), new Vector2(1f, 0f));
+        // 4. 오른쪽 아래 버전·졸업작품 표시는 넣지 않음 (사용자 2026-10-30 — 필요하면 추후 기입). 이전 실행으로 생긴 것은 제거
+        Transform footer = canvas.Find("Footer");
+        if (footer != null) Undo.DestroyObjectImmediate(footer.gameObject);
 
         EditorSceneManager.MarkSceneDirty(menuUI.gameObject.scene);
-        Debug.Log("[MainMenu] 미니멀 스타일 적용 (제목·글자 메뉴·패널·버전 표시). 씬 저장은 직접, Undo로 되돌리기 가능");
+        Debug.Log("[MainMenu] 미니멀 스타일 적용 (제목·글자 메뉴·패널). 씬 저장은 직접, Undo로 되돌리기 가능");
+    }
+
+    // 게임 제목 적용 (사용자 채택 2026-10-30 "DEPTH ZERO"): Player Settings > Product Name(빌드 실행 파일·창 제목) + 열린 MainMenu 씬 제목
+    //   주의: Product Name이 바뀌면 PlayerPrefs 저장 위치도 바뀌어 최고 기록·환경설정이 처음 값으로 돌아감
+    [MenuItem("Tools/TD Shoot/Apply Game Title")]
+    public static void ApplyGameTitle()
+    {
+        string title = MainMenuSceneBuilder.GameTitle;
+        if (PlayerSettings.productName != title)
+        {
+            if (!EditorUtility.DisplayDialog("게임 제목",
+                    $"Product Name을 '{PlayerSettings.productName}' → '{title}'(으)로 바꿉니다.\n\n" +
+                    "PlayerPrefs 저장 위치가 바뀌어 최고 기록·환경설정이 처음 값으로 돌아갑니다.", "바꾸기", "취소"))
+                return;
+            PlayerSettings.productName = title;
+            AssetDatabase.SaveAssets();
+        }
+
+        MainMenuUI menuUI = Object.FindAnyObjectByType<MainMenuUI>(FindObjectsInactive.Include);
+        Transform titleTransform = menuUI != null ? menuUI.transform.Find("Title") : null;
+        if (titleTransform != null && titleTransform.TryGetComponent(out TextMeshProUGUI text) && text.text != title)
+        {
+            Undo.RecordObject(text, "Apply Game Title");
+            text.text = title;
+            EditorSceneManager.MarkSceneDirty(menuUI.gameObject.scene);
+        }
+
+        Debug.Log($"[MainMenu] 게임 제목 '{title}' 적용 — Product Name" + (titleTransform != null ? " + 메인 화면 제목 (씬 저장은 직접)" : " (메인 화면 제목은 MainMenu 씬을 열고 다시 실행)"));
     }
 
     // 테두리 스킨을 떼고 글자만 남김 (클릭 영역은 투명 Image 유지) + MenuItemHighlight
@@ -146,6 +181,8 @@ public static class MainMenuStyleTools
     private static void StylePanel(GameObject panel, UITheme theme, Color accent)
     {
         RectTransform rect = panel.GetComponent<RectTransform>();
+        // 제목·부제와 겹치지 않게 오른쪽 아래로 (이전 1100x760 가운데는 제목 뒤를 덮음)
+        MainMenuSceneBuilder.SetRect(rect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(300f, -70f), new Vector2(1100f, 640f), new Vector2(0.5f, 0.5f));
         if (panel.TryGetComponent(out UIThemeSkin skin)) Undo.DestroyObjectImmediate(skin);
         if (panel.TryGetComponent(out Image image))
         {

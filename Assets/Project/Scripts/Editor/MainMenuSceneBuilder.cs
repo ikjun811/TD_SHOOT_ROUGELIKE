@@ -13,7 +13,7 @@ using UnityEngine.UI;
 public static class MainMenuSceneBuilder
 {
     private const string ScenePath = "Assets/Scenes/MainMenu.unity";
-    private const string GameTitle = "TD SHOOT ROGUELIKE"; // 임시 제목
+    internal const string GameTitle = "DEPTH ZERO"; // 사용자 채택 2026-10-30 (지하 시설에서 지상(깊이 0)까지 한 층씩 탈출)
 
     private const string InfoText =
         "<b>졸업작품 정보</b>\n\n" +
@@ -39,9 +39,14 @@ public static class MainMenuSceneBuilder
         "모듈 회전  R\n" +
         "들고 있는 아이템 되돌리기  마우스 오른쪽\n" +
         "상세 정보  아이템 위에 마우스 올리기\n\n" +
+        GoalText;
+
+    // 조작 정보의 '목표' 문단 (깊이 표시 D-4, DEPTH ZERO 컨셉 — 마지막 문장은 사용자 채택 문구). MainMenuStyleTools가 기존 씬 글의 목표 문단도 이것으로 교체
+    internal const string GoalText =
         "<b>목표</b>\n" +
-        "적을 처치하며 모듈·무기를 모으고, 탈출 구역에서 버텨 탈출하세요.\n" +
-        "정비 시간에 그리드에 모듈을 배치해 무기를 강화하고, 15라운드 탈출 시 클리어.";
+        "괴물이 침입한 지하 시설(DEPTH 15)에서 한 층씩 올라가 지상(DEPTH 0)에 도달하세요.\n" +
+        "각 층의 탈출 구역에서 버티면 다음 층으로 올라갑니다. 정비 시간에는 그리드에 모듈을 배치해 무기를 강화하세요.\n" +
+        "지상에 가까워질수록 더 많은 적을 상대해야 할 것입니다.";
 
     [MenuItem("Tools/TD Shoot/Create Main Menu Scene")]
     public static void Create()

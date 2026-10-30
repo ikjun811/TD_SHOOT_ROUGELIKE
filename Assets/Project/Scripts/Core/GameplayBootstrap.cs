@@ -31,6 +31,7 @@ public static class GameplayBootstrap
         KillStreakUI.EnsureCreated();
         AtmosphereLighting.EnsureCreated();
         PauseMenuUI.EnsureCreated();
+        CrosshairUI.EnsureCreated();
         // KillEffects.EnsureCreated(); // B4 처치 연출(피) — 너무 잔인해 비활성 (사용자 2026-10-29), 다시 켜려면 주석 해제
         PlayerPositionGuard.EnsureOnPlayer();
         DashAfterimage.EnsureOnPlayer();
