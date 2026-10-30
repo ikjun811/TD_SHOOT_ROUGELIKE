@@ -1,4 +1,8 @@
+using TMPro;
 using UnityEngine;
+
+// 글자 역할: 제목·배너·HUD 숫자(갈무리) / 본문·툴팁(Pretendard)
+public enum UIFontRole { Body, Heading }
 
 // 정비 UI·월드 아이템 공용 외형 값 (색·스프라이트) — 디자인 에셋 적용 시 이 에셋만 바꾸면 됨
 // Resources/UITheme 에셋을 자동으로 불러옴 (없으면 기본값으로 동작, 컴포넌트 연결 불필요)
@@ -20,6 +24,12 @@ public class UITheme : ScriptableObject
     public Color mechanismColor = new Color(1f, 0.6f, 0.25f);
     public Color specialColor = new Color(0.35f, 0.8f, 1f);
     public Color uniqueColor = new Color(1f, 0.35f, 0.45f);
+
+    [Header("Fonts (비우면 TMP 기본 폰트 — Tools > TD Shoot > Create Game Font Assets)")]
+    [Tooltip("제목·배너·HUD 숫자 (갈무리11, 굵게는 Galmuri11-Bold로 연결됨). 크기는 12의 배수일 때 가장 선명")]
+    public TMP_FontAsset headingFont;
+    [Tooltip("본문·툴팁·설명 (Pretendard, 굵게는 SemiBold·Bold로 연결됨)")]
+    public TMP_FontAsset bodyFont;
 
     [Header("Pixel Art (PixelUISciFiFree 등 픽셀 에셋)")]
     [Tooltip("그림 1픽셀을 캔버스 몇 단위로 그릴지 (9-slice 테두리 두께). 1920x1080 캔버스 기준 3")]
@@ -91,6 +101,35 @@ public class UITheme : ScriptableObject
     [Tooltip("모듈 경계선 색 (다른 모듈·빈 칸과 맞닿은 변에만 그림). 밝은 채움과 대비되는 어두운 색")]
     public Color gridModuleBorderColor = new Color(5f / 255f, 11f / 255f, 18f / 255f);
     [Min(1f)] public float gridModuleBorderWidth = 3f;
+    [Tooltip("모듈 경계선 안쪽 픽셀 베벨 두께 (0이면 끔). 위·왼쪽 밝게, 아래·오른쪽 어둡게 → 볼록한 블록처럼")]
+    [Min(0f)] public float gridBevelWidth = 3f;
+    [Tooltip("베벨 밝은 쪽: 채움 색을 흰색 쪽으로 섞는 비율")]
+    [Range(0f, 1f)] public float gridBevelLight = 0.4f;
+    [Tooltip("베벨 어두운 쪽: 채움 색을 어둡게 하는 비율")]
+    [Range(0f, 1f)] public float gridBevelShadow = 0.35f;
+
+    [Header("Module Grid — 외곽선 스타일 (주변 패널·슬롯과 통일, 끄면 위의 채움 스타일)")]
+    [Tooltip("모듈 = 짙은 레어도 색 바탕 + 레어도 색 외곽선 + 안쪽 흐린 두 번째 선 / 빈 칸 = 흐린 청록 격자")]
+    public bool gridOutlinedStyle = true;
+    [Tooltip("빈 칸 색 (흰 테두리 칸 스프라이트에 곱함) — 주변 패널 테두리와 같은 청록을 흐리게")]
+    public Color gridOutlinedEmptyColor = new Color(0.25f, 0.55f, 0.65f, 0.35f);
+    [Tooltip("모듈 바탕의 기준 색 (주변 패널 남색) — 여기에 레어도 색을 섞음")]
+    public Color gridOutlinedBaseColor = new Color(0.03f, 0.06f, 0.09f);
+    [Tooltip("모듈 바탕에 섞는 레어도 색 비율")]
+    [Range(0f, 1f)] public float gridOutlinedFill = 0.2f;
+    [Tooltip("효과 패널에서 강조된 모듈 바탕의 레어도 색 비율")]
+    [Range(0f, 1f)] public float gridOutlinedFillHighlight = 0.45f;
+    [Range(0f, 1f)] public float gridOutlinedFillAlpha = 0.95f;
+    [Min(1f)] public float gridOutlinedBorderWidth = 2f;
+    [Tooltip("안쪽 두 번째 선 두께 (0이면 끔)")]
+    [Min(0f)] public float gridOutlinedInnerWidth = 2f;
+    [Tooltip("외곽선과 안쪽 선 사이 간격")]
+    [Min(0f)] public float gridOutlinedInnerGap = 3f;
+    [Range(0f, 1f)] public float gridOutlinedInnerAlpha = 0.4f;
+
+    [Header("Button Label (UIThemeSkin Button 역할의 글자)")]
+    [Tooltip("버튼 안 글자 색 (씬 기본값 짙은 회색이라 어두운 버튼에서 안 보이던 문제)")]
+    public Color buttonTextColor = new Color(0.85f, 0.95f, 1f);
 
     [Header("Combat HUD (전투 화면 — 비우면 단색 선 모양, StageHUDUI)")]
     [Tooltip("HUD 스프라이트 픽셀 배율 (눈금·탈출 막대·▼). 배너 괄호는 pixelScale")]
@@ -102,7 +141,6 @@ public class UITheme : ScriptableObject
     public Sprite hudMarkerSprite;       // 현재 라운드 ▼ (arrow)
     public Sprite hudLifeIcon;           // 목숨 (heart)
     public Sprite hudBannerFrameSprite;  // 알림 배너 모서리 괄호 (focus)
-    public Sprite hudExtractIcon;        // 탈출 막대 앞 아이콘 (ship)
 
     [Header("Active Effects Panel (적용 효과 목록)")]
     [Tooltip("효과 줄에 마우스를 올렸을 때 해당 모듈 경계선 색")]
@@ -129,6 +167,16 @@ public class UITheme : ScriptableObject
     public Color tooltipSubTextColor = new Color(0.65f, 0.7f, 0.75f);
     [Tooltip("마우스에서 떨어진 거리")]
     public Vector2 tooltipCursorOffset = new Vector2(18f, 18f);
+    [Tooltip("수치 줄: 항목 이름 색 (흐리게) / 값 색 (밝게)")]
+    public Color tooltipLabelColor = new Color(0.6f, 0.66f, 0.72f);
+    public Color tooltipValueColor = new Color(0.92f, 0.95f, 1f);
+    [Tooltip("값이 시작하는 위치 (툴팁 폭 대비 %) — 항목 이름과 값을 두 열로 정렬")]
+    [Range(20f, 80f)] public float tooltipValueColumn = 30f;
+    [Tooltip("수치 줄 사이 추가 간격 (TMP lineSpacing)")]
+    public float tooltipLineSpacing = 14f;
+    public Color tooltipBetterColor = new Color(0.49f, 0.99f, 0.6f);
+    public Color tooltipWorseColor = new Color(1f, 0.44f, 0.44f);
+    public Color tooltipWarningColor = new Color(1f, 0.33f, 0.33f);
 
     private static UITheme current;
     private static bool loadedFromAsset;
@@ -180,6 +228,20 @@ public class UITheme : ScriptableObject
     public bool ApplySprite(UnityEngine.UI.Image image, Sprite sprite)
     {
         return ApplySprite(image, sprite, pixelScale);
+    }
+
+    public TMP_FontAsset GetFont(UIFontRole role)
+    {
+        return role == UIFontRole.Heading ? headingFont : bodyFont;
+    }
+
+    // 역할별 폰트 적용. 테마 폰트가 비어 있으면 아무것도 바꾸지 않음 (TMP 기본 폰트 유지)
+    public bool ApplyFont(TMP_Text text, UIFontRole role)
+    {
+        TMP_FontAsset font = GetFont(role);
+        if (text == null || font == null) return false;
+        text.font = font;
+        return true;
     }
 
     public Sprite GetStatIcon(ModuleStatType statType)

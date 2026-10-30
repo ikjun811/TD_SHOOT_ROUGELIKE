@@ -12,6 +12,7 @@ public class GridPanelUI : MonoBehaviour
 
     private Image[,] slotImages;
     private Image[,,] slotEdges; // 칸마다 위·아래·왼쪽·오른쪽 경계선 (모듈 경계에만 켬)
+    private Image[,,] slotBevels; // 경계선 안쪽 픽셀 베벨 (위·왼쪽 밝게, 아래·오른쪽 어둡게 — 블록처럼 보이게)
     private Color defaultSlotColor = new Color(0.18f, 0.18f, 0.22f, 0.95f); // 깔끔한 회색톤 바닥
     private Sprite defaultSlotSprite; // 테마에 빈 칸 스프라이트가 없을 때 쓰는 프리팹 원래 스프라이트
     private float defaultSlotPpuMultiplier = 1f;
@@ -67,6 +68,7 @@ public class GridPanelUI : MonoBehaviour
         int height = GridInventorySystem.Instance.gridHeight; // 8
         slotImages = new Image[width, height];
         slotEdges = new Image[width, height, 4];
+        slotBevels = new Image[width, height, 4];
         cellOwners = new GridInventorySystem.PlacedModule[width, height];
 
         for (int y = 0; y < height; y++)
@@ -98,6 +100,11 @@ public class GridPanelUI : MonoBehaviour
                 for (int e = 0; e < 4; e++)
                 {
                     slotEdges[x, y, e] = CreateEdge(slot.transform, e);
+                }
+                for (int e = 0; e < 4; e++)
+                {
+                    slotBevels[x, y, e] = CreateEdge(slot.transform, e);
+                    slotBevels[x, y, e].name = $"Bevel_{e}";
                 }
             }
         }
@@ -192,7 +199,9 @@ public class GridPanelUI : MonoBehaviour
         }
 
         // 2. 칸 그리기
-        float borderWidth = theme.gridModuleBorderWidth;
+        bool outlined = theme.gridOutlinedStyle;
+        float borderWidth = outlined ? theme.gridOutlinedBorderWidth : theme.gridModuleBorderWidth;
+        float bevelWidth = outlined ? theme.gridOutlinedInnerWidth : theme.gridBevelWidth;
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -201,6 +210,10 @@ public class GridPanelUI : MonoBehaviour
                 if (tile == null) continue;
 
                 var owner = cellOwners[x, y];
+                Color fill = Color.clear;
+                Color rarity = Color.clear;
+                bool highlighted = owner != null && highlightedModules.Contains(owner);
+                bool dimmed = owner != null && highlightedModules.Count > 0 && !highlighted;
                 if (owner == null)
                 {
                     if (!theme.ApplySprite(tile, theme.gridEmptySprite, theme.gridPixelScale))
@@ -212,7 +225,7 @@ public class GridPanelUI : MonoBehaviour
                     }
                     else
                     {
-                        tile.color = theme.gridEmptyColor;
+                        tile.color = outlined ? theme.gridOutlinedEmptyColor : theme.gridEmptyColor;
                     }
                 }
                 else
@@ -220,21 +233,94 @@ public class GridPanelUI : MonoBehaviour
                     // 채움은 스프라이트 없이 단색 (칸 테두리가 생기면 모듈 모양이 다시 안 보임)
                     tile.sprite = null;
                     tile.type = Image.Type.Simple;
-                    float brightness = highlightedModules.Count == 0 ? theme.gridFillBrightness
-                        : (highlightedModules.Contains(owner) ? 1f : theme.gridDimBrightness);
-                    Color fill = GetRarityColor(owner.moduleData.rarity) * brightness;
-                    fill.a = 1f;
+                    rarity = GetRarityColor(owner.moduleData.rarity);
+                    if (outlined)
+                    {
+                        // 외곽선 스타일: 패널 남색에 레어도 색을 섞은 바탕 (흰색 일반 모듈도 회색이 아닌 남색 계열로)
+                        fill = Color.Lerp(theme.gridOutlinedBaseColor, rarity, highlighted ? theme.gridOutlinedFillHighlight : theme.gridOutlinedFill);
+                        fill.a = theme.gridOutlinedFillAlpha * (dimmed ? theme.gridDimBrightness : 1f);
+                    }
+                    else
+                    {
+                        float brightness = highlightedModules.Count == 0 ? theme.gridFillBrightness
+                            : (highlighted ? 1f : theme.gridDimBrightness);
+                        fill = rarity * brightness;
+                        fill.a = 1f;
+                    }
                     tile.color = fill;
                 }
 
                 // 경계선: 모듈 칸이고 이웃이 다른 모듈·빈 칸·그리드 밖이면 그 변에 선
                 // 그리드 Y는 위에서 아래로 증가 (y - 1 = 위쪽 칸)
-                Color edgeColor = owner != null && highlightedModules.Contains(owner) ? theme.gridHighlightBorderColor : theme.gridModuleBorderColor;
-                SetEdge(x, y, EdgeTop, owner != null && GetOwner(x, y - 1, width, height) != owner, borderWidth, edgeColor);
-                SetEdge(x, y, EdgeBottom, owner != null && GetOwner(x, y + 1, width, height) != owner, borderWidth, edgeColor);
-                SetEdge(x, y, EdgeLeft, owner != null && GetOwner(x - 1, y, width, height) != owner, borderWidth, edgeColor);
-                SetEdge(x, y, EdgeRight, owner != null && GetOwner(x + 1, y, width, height) != owner, borderWidth, edgeColor);
+                bool top = owner != null && GetOwner(x, y - 1, width, height) != owner;
+                bool bottom = owner != null && GetOwner(x, y + 1, width, height) != owner;
+                bool left = owner != null && GetOwner(x - 1, y, width, height) != owner;
+                bool right = owner != null && GetOwner(x + 1, y, width, height) != owner;
+
+                Color edgeColor;
+                Color light, shadow;
+                float bevelInset = borderWidth;
+                if (outlined)
+                {
+                    // 외곽선 = 레어도 색 (강조 시 흰빛 쪽으로), 안쪽에 간격을 두고 흐린 두 번째 선 (장비 슬롯 테두리 느낌)
+                    edgeColor = highlighted ? Color.Lerp(rarity, Color.white, 0.5f) : rarity;
+                    edgeColor.a = dimmed ? theme.gridDimBrightness : 1f;
+                    light = shadow = new Color(rarity.r, rarity.g, rarity.b, theme.gridOutlinedInnerAlpha * (dimmed ? theme.gridDimBrightness : 1f));
+                    bevelInset = borderWidth + theme.gridOutlinedInnerGap;
+                }
+                else
+                {
+                    edgeColor = highlighted ? theme.gridHighlightBorderColor : theme.gridModuleBorderColor;
+                    // 픽셀 베벨: 경계선 바로 안쪽, 채움 색 기준 (강조·어둡게도 따라감)
+                    light = Color.Lerp(fill, Color.white, theme.gridBevelLight);
+                    shadow = fill * (1f - theme.gridBevelShadow);
+                    light.a = shadow.a = 1f;
+                }
+                SetEdge(x, y, EdgeTop, top, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeBottom, bottom, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeLeft, left, borderWidth, edgeColor);
+                SetEdge(x, y, EdgeRight, right, borderWidth, edgeColor);
+
+                bool bevel = bevelWidth > 0f;
+                SetBevel(x, y, EdgeTop, bevel && top, left, right, bevelInset, bevelWidth, light);
+                SetBevel(x, y, EdgeLeft, bevel && left, top, bottom, bevelInset, bevelWidth, light);
+                SetBevel(x, y, EdgeBottom, bevel && bottom, left, right, bevelInset, bevelWidth, shadow);
+                SetBevel(x, y, EdgeRight, bevel && right, top, bottom, bevelInset, bevelWidth, shadow);
             }
+        }
+    }
+
+    // 베벨 1개: 해당 변 경계선 안쪽에 붙임. 길이 방향 양 끝은 그쪽 경계선이 있으면 그만큼 비켜 감
+    private void SetBevel(int x, int y, int edge, bool visible, bool startBorder, bool endBorder, float borderWidth, float bevelWidth, Color color)
+    {
+        Image line = slotBevels[x, y, edge];
+        if (line == null) return;
+
+        line.enabled = visible;
+        if (!visible) return;
+
+        line.color = color;
+        RectTransform rect = line.rectTransform;
+        float start = startBorder ? borderWidth : 0f;
+        float end = endBorder ? borderWidth : 0f;
+        switch (edge)
+        {
+            case EdgeTop:
+                rect.offsetMin = new Vector2(start, -borderWidth - bevelWidth);
+                rect.offsetMax = new Vector2(-end, -borderWidth);
+                break;
+            case EdgeBottom:
+                rect.offsetMin = new Vector2(start, borderWidth);
+                rect.offsetMax = new Vector2(-end, borderWidth + bevelWidth);
+                break;
+            case EdgeLeft: // 길이 방향 = 아래(end) → 위(start)
+                rect.offsetMin = new Vector2(borderWidth, end);
+                rect.offsetMax = new Vector2(borderWidth + bevelWidth, -start);
+                break;
+            default:
+                rect.offsetMin = new Vector2(-borderWidth - bevelWidth, end);
+                rect.offsetMax = new Vector2(-borderWidth, -start);
+                break;
         }
     }
 

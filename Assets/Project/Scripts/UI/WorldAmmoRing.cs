@@ -88,6 +88,7 @@ public class WorldAmmoRing : MonoBehaviour
         textRect.offsetMax = Vector2.zero;
 
         ammoText = textObj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(ammoText, UIFontRole.Heading); // WorldUIOverlay가 재질을 바꾸기 전에
         ammoText.alignment = TextAlignmentOptions.Center;
         ammoText.fontSize = 36f;
         ammoText.fontStyle = FontStyles.Bold;

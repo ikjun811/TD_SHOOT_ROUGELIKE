@@ -12,6 +12,8 @@ public class UIThemeSkin : MonoBehaviour
     public Role role = Role.Panel;
     [Tooltip("스프라이트 고유 색을 그대로 보이게 Image 색을 흰색으로 (끄면 기존 색으로 물들임)")]
     public bool resetColor = true;
+    [Tooltip("Button 역할: 안의 글자 색을 테마 buttonTextColor로")]
+    public bool applyLabelColor = true;
 
     private void Awake()
     {
@@ -66,6 +68,18 @@ public class UIThemeSkin : MonoBehaviour
                 state.pressedSprite = theme.buttonPressed;
                 state.disabledSprite = theme.buttonDisabled;
                 selectable.spriteState = state;
+            }
+
+            if (applyLabelColor)
+            {
+                foreach (TMPro.TMP_Text label in GetComponentsInChildren<TMPro.TMP_Text>(true))
+                {
+                    if (label.color == theme.buttonTextColor) continue;
+                    label.color = theme.buttonTextColor;
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) UnityEditor.EditorUtility.SetDirty(label);
+#endif
+                }
             }
         }
 

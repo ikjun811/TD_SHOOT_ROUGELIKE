@@ -235,7 +235,7 @@ public class PauseMenuUI : MonoBehaviour
         };
         for (int i = 0; i < labels.Length; i++)
         {
-            Button button = CreateButton(labels[i], panel, labels[i], 32f);
+            Button button = CreateButton(labels[i], panel, labels[i], 36f);
             Place(button.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -150f - i * 92f), new Vector2(380f, 72f));
             System.Action action = actions[i];
             button.onClick.AddListener(() => action());
@@ -289,7 +289,7 @@ public class PauseMenuUI : MonoBehaviour
         SettingsPanelUI settings = settingsPanel.AddComponent<SettingsPanelUI>();
         settings.Configure(dropdown, sliders[0], sliders[1], sliders[2], values[0], values[1], values[2]);
 
-        Button back = CreateButton("Back", panel, "뒤로", 28f);
+        Button back = CreateButton("Back", panel, "뒤로", 24f);
         Place(back.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0f, 90f), new Vector2(220f, 64f));
         back.onClick.AddListener(() => ShowPanel(mainPanel));
     }
@@ -303,11 +303,11 @@ public class PauseMenuUI : MonoBehaviour
         confirmText.textWrappingMode = TextWrappingModes.Normal;
         Place(confirmText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(560f, 110f));
 
-        Button yes = CreateButton("Yes", panel, "확인", 28f);
+        Button yes = CreateButton("Yes", panel, "확인", 24f);
         Place(yes.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(-130f, 80f), new Vector2(220f, 64f));
         yes.onClick.AddListener(() => confirmAction?.Invoke());
 
-        Button no = CreateButton("No", panel, "취소", 28f);
+        Button no = CreateButton("No", panel, "취소", 24f);
         Place(no.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(130f, 80f), new Vector2(220f, 64f));
         no.onClick.AddListener(() => ShowPanel(mainPanel));
     }
@@ -326,7 +326,7 @@ public class PauseMenuUI : MonoBehaviour
         skin.role = UIThemeSkin.Role.Window;
         skin.Apply();
 
-        TextMeshProUGUI titleText = CreateText("Title", rect, 42f, TextAlignmentOptions.Center);
+        TextMeshProUGUI titleText = CreateText("Title", rect, 48f, TextAlignmentOptions.Center, UIFontRole.Heading); // 갈무리 12배수 (F4a)
         titleText.text = title;
         titleText.fontStyle = FontStyles.Bold;
         Place(titleText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(size.x - 80f, 60f));
@@ -342,7 +342,7 @@ public class PauseMenuUI : MonoBehaviour
         skin.role = UIThemeSkin.Role.Button;
         skin.Apply();
 
-        TextMeshProUGUI text = CreateText("Label", obj.GetComponent<RectTransform>(), fontSize, TextAlignmentOptions.Center);
+        TextMeshProUGUI text = CreateText("Label", obj.GetComponent<RectTransform>(), fontSize, TextAlignmentOptions.Center, UIFontRole.Heading);
         text.text = label;
         text.fontStyle = FontStyles.Bold;
         Stretch(text.rectTransform);
@@ -379,11 +379,13 @@ public class PauseMenuUI : MonoBehaviour
         return image;
     }
 
-    private static TextMeshProUGUI CreateText(string name, RectTransform parent, float size, TextAlignmentOptions alignment)
+    private static TextMeshProUGUI CreateText(string name, RectTransform parent, float size, TextAlignmentOptions alignment,
+                                              UIFontRole role = UIFontRole.Body)
     {
         GameObject obj = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
         obj.transform.SetParent(parent, false);
         TextMeshProUGUI text = obj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(text, role);
         text.fontSize = size;
         text.alignment = alignment;
         text.color = Color.white;

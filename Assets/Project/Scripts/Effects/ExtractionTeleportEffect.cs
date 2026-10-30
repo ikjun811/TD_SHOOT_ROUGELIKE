@@ -242,6 +242,8 @@ public class ExtractionTeleportEffect : MonoBehaviour
         velocity.enabled = true;
         velocity.space = ParticleSystemSimulationSpace.Local;
         velocity.radial = new ParticleSystem.MinMaxCurve(-2.6f, -1.6f);
+        velocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f); // 공전 x·y·z도 같은 모드여야 함 (아니면 매 프레임 경고)
+        velocity.orbitalY = new ParticleSystem.MinMaxCurve(0f, 0f);
         velocity.orbitalZ = new ParticleSystem.MinMaxCurve(2f, 3.5f);
         velocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);  // x·y·z는 같은 모드여야 함
         velocity.y = new ParticleSystem.MinMaxCurve(0f, 0f);

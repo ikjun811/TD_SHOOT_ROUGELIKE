@@ -65,6 +65,8 @@ public class ItemTooltipUI : MonoBehaviour
         dividerObj.GetComponent<LayoutElement>().preferredHeight = 2f;
         dividerObj.SetActive(theme.tooltipDividerColor.a > 0f);
 
+        // F4c-4 가독성: 이름은 제목 폰트(갈무리), 수치는 "항목 이름 | 값" 두 열 + 줄 간격
+        theme.ApplyFont(itemNameText, UIFontRole.Heading);
         SetupText(itemNameText, theme.tooltipTitleFontSize, 0);
         SetupText(itemRarityText, theme.tooltipBodyFontSize, 1);
         dividerObj.transform.SetSiblingIndex(2);
@@ -72,6 +74,27 @@ public class ItemTooltipUI : MonoBehaviour
         SetupText(itemDescriptionText, theme.tooltipBodyFontSize, 4);
         if (itemRarityText != null) itemRarityText.color = theme.tooltipSubTextColor;
         if (itemDescriptionText != null) itemDescriptionText.color = theme.tooltipSubTextColor;
+        if (itemStatsText != null)
+        {
+            itemStatsText.color = theme.tooltipValueColor;
+            itemStatsText.lineSpacing = theme.tooltipLineSpacing;
+            itemStatsText.richText = true;
+        }
+    }
+
+    // 수치 한 줄: 흐린 항목 이름 + 값 열 위치부터 밝은 값
+    private static string Row(string label, string value)
+    {
+        UITheme theme = UITheme.Current;
+        return $"<color=#{ColorUtility.ToHtmlStringRGB(theme.tooltipLabelColor)}>{label}</color><pos={theme.tooltipValueColumn:0}%>{value}";
+    }
+
+    private static string Hex(Color color) => "#" + ColorUtility.ToHtmlStringRGB(color);
+
+    // [레어도] 부분만 레어도 색
+    private static string RarityTag(RarityType rarity)
+    {
+        return $"<color={Hex(UITheme.Current.GetRarityColor(rarity))}>{GetRarityName(rarity)}</color>";
     }
 
     private void SetupText(TextMeshProUGUI text, float fontSize, int order)
@@ -151,31 +174,31 @@ public class ItemTooltipUI : MonoBehaviour
             itemNameText.text = weapon.weaponName;
             itemNameText.color = weapon.GetRarityColor();
         }
-        if (itemRarityText != null) itemRarityText.text = $"[{GetRarityName(weapon.rarity)}] {GetWeaponTypeName(weapon.weaponType)}";
+        if (itemRarityText != null) itemRarityText.text = $"{RarityTag(weapon.rarity)}  ·  {GetWeaponTypeName(weapon.weaponType)}";
 
         if (itemStatsText != null)
         {
             // 지금 그리드 기준 최종 수치 (실제 적용과 같은 계산). 플레이어가 없으면 기본값만
             if (PlayerStatAndWeaponSync.Instance != null && PlayerStatAndWeaponSync.Instance.TryPreviewWeaponStats(weapon, out WeaponStatCalculator.Result stats))
             {
-                string pellets = stats.pellets > 1 ? $" × {stats.pellets}발" : "";
-                string text = StatLine("발당 피해", weapon.GetFinalDamage(), stats.damage, "0.#", "", true) + pellets + "\n"
+                string pellets = stats.pellets > 1 ? $"  × {stats.pellets}발" : "";
+                string text = StatLine("발당 피해", weapon.GetFinalDamage(), stats.damage, "0.#", "", true, pellets) + "\n"
                             + StatLine("연사 간격", weapon.fireRate, stats.FireInterval, "0.###", "초", false) + "\n"
                             + StatLine("탄창", weapon.maxAmmo, stats.magazine, "0", "발", true) + "\n"
                             + StatLine("장전", weapon.reloadTime, stats.FinalReloadTime, "0.##", "초", false) + "\n"
-                            + $"• 사격: {GetFireModeName(stats.fireMode)}";
-                if (stats.critChance > 0f) text += $" · 치명타 {stats.critChance * 100f:0.#}%";
+                            + Row("사격", GetFireModeName(stats.fireMode));
+                if (stats.critChance > 0f) text += "\n" + Row("치명타", $"{stats.critChance * 100f:0.#}%");
                 if (stats.mechanisms.Count > 0)
                 {
-                    text += "\n• 작동: " + string.Join(", ", stats.mechanisms.ConvertAll(m => m.moduleName));
+                    text += "\n" + Row("작동", string.Join(", ", stats.mechanisms.ConvertAll(m => m.moduleName)));
                 }
                 itemStatsText.text = text;
             }
             else
             {
-                itemStatsText.text = $"• 공격력: {weapon.GetFinalDamage():0.#}\n" +
-                                     $"• 연사 간격: {weapon.fireRate}초\n" +
-                                     $"• 탄창: {weapon.maxAmmo}발";
+                itemStatsText.text = Row("공격력", $"{weapon.GetFinalDamage():0.#}") + "\n" +
+                                     Row("연사 간격", $"{weapon.fireRate}초") + "\n" +
+                                     Row("탄창", $"{weapon.maxAmmo}발");
             }
         }
 
@@ -194,7 +217,7 @@ public class ItemTooltipUI : MonoBehaviour
             itemNameText.text = module.moduleName;
             itemNameText.color = GetRarityColor(module.rarity);
         }
-        if (itemRarityText != null) itemRarityText.text = $"[{GetRarityName(module.rarity)}] {GetModuleTypeText(module)} ({module.width}x{module.height})";
+        if (itemRarityText != null) itemRarityText.text = $"{RarityTag(module.rarity)}  ·  {GetModuleTypeText(module)}";
 
         // 모양에서 실제로 채워진 칸 수 (L자 등은 가로x세로보다 작음)
         int cellCount = 0;
@@ -211,9 +234,9 @@ public class ItemTooltipUI : MonoBehaviour
             string text = "";
             if (module.category == ModuleCategory.Stat)
             {
-                text += $"• 스탯 효과: {GetModuleStatText(module.statType, module.GetFinalStatValue())}\n";
+                text += Row("효과", GetModuleStatText(module.statType, module.GetFinalStatValue())) + "\n";
             }
-            text += $"• 점유 공간: {cellCount} 칸";
+            text += Row("크기", $"{cellCount}칸  ({module.width}x{module.height})");
             text += GetPlacementStatusText(module, placed);
             itemStatsText.text = text;
         }
@@ -232,35 +255,42 @@ public class ItemTooltipUI : MonoBehaviour
         var grid = GridInventorySystem.Instance;
         if (grid == null) return "";
 
+        string warn = Hex(UITheme.Current.tooltipWarningColor);
         if (placed != null)
         {
             // 배치된 모듈: 같은 효과 중 적용되지 않는 쪽이면 표시
             if (grid.FindSameEffect(module, placed) != null && !grid.IsEffectActive(placed))
-                return "\n<color=#FF5555>• 중복 – 효과 없음 (레어도 높은 1개만 적용)</color>";
+                return $"\n<color={warn}>중복 – 효과 없음 (레어도 높은 1개만 적용)</color>";
             return "";
         }
 
         var conflict = grid.FindConflict(module);
         if (conflict != null)
-            return $"\n<color=#FF5555>• 충돌: 배치된 {conflict.moduleData.moduleName} (같은 {GetSlotName(module.mechanismSlot)} 칸) – 배치 불가</color>";
+            return $"\n<color={warn}>충돌: 배치된 {conflict.moduleData.moduleName} (같은 {GetSlotName(module.mechanismSlot)} 칸) – 배치 불가</color>";
 
         if (grid.FindSameEffect(module) != null)
-            return "\n<color=#FF5555>• 중복: 같은 효과가 이미 배치됨 (레어도 높은 1개만 적용)</color>";
+            return $"\n<color={warn}>중복: 같은 효과가 이미 배치됨 (레어도 높은 1개만 적용)</color>";
 
         return "";
     }
 
     // 예: "스탯 모듈", "작동 · UMP 전용 · 사격 방식", "특수 · 공용"
-    private static string GetModuleTypeText(ModuleDataSO module)
+    // 전리품 모듈 카드(LootItemButtonUI)도 사용
+    public static string GetCategoryName(ModuleCategory category)
     {
-        string category = module.category switch
+        return category switch
         {
             ModuleCategory.Stat => "스탯",
             ModuleCategory.Mechanism => "작동",
             ModuleCategory.Special => "특수",
             ModuleCategory.Unique => "★ 유니크",
-            _ => module.category.ToString()
+            _ => category.ToString()
         };
+    }
+
+    private static string GetModuleTypeText(ModuleDataSO module)
+    {
+        string category = GetCategoryName(module.category);
         if (module.category == ModuleCategory.Stat) return $"{category} 모듈";
 
         string text = $"{category} · {GetTargetName(module.target)}";
@@ -324,14 +354,17 @@ public class ItemTooltipUI : MonoBehaviour
     }
 
     // 값이 바뀌었으면 "기본 → 최종" (좋아지면 초록, 나빠지면 빨강), 같으면 최종값만
-    private static string StatLine(string label, float baseValue, float finalValue, string format, string unit, bool higherIsBetter)
+    // suffix: 값 뒤에 붙는 보조 글 (산탄 "× 12발" 등, 흐린 색)
+    private static string StatLine(string label, float baseValue, float finalValue, string format, string unit, bool higherIsBetter, string suffix = "")
     {
+        UITheme theme = UITheme.Current;
         string finalText = finalValue.ToString(format) + unit;
-        if (Mathf.Abs(finalValue - baseValue) < 0.0005f) return $"• {label}: {finalText}";
+        string extra = string.IsNullOrEmpty(suffix) ? "" : $"<color={Hex(theme.tooltipLabelColor)}>{suffix}</color>";
+        if (Mathf.Abs(finalValue - baseValue) < 0.0005f) return Row(label, finalText + extra);
 
         bool better = higherIsBetter ? finalValue > baseValue : finalValue < baseValue;
-        string color = better ? "#7CFC9A" : "#FF7070";
-        return $"• {label}: {baseValue.ToString(format)}{unit} → <color={color}>{finalText}</color>";
+        string color = Hex(better ? theme.tooltipBetterColor : theme.tooltipWorseColor);
+        return Row(label, $"<color={Hex(theme.tooltipLabelColor)}>{baseValue.ToString(format)}{unit} →</color> <color={color}>{finalText}</color>{extra}");
     }
 
     private static string GetFireModeName(JUTPS.WeaponSystem.Weapon.WeaponFireMode mode)

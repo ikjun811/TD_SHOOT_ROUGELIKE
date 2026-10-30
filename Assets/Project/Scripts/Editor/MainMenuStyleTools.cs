@@ -1,0 +1,212 @@
+using TMPro;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.UI;
+
+// 메인 화면 미니멀 스타일 (사용자 채택 2026-10-30 A안 "글자 목록" — 기본·정석 느낌 대신 깔끔·심플, 전투 HUD처럼 선과 글자만)
+//   Tools > TD Shoot > Restyle Main Menu (Minimal): 열린 MainMenu 씬을 바꿈 (Undo 가능, 씬 저장은 직접)
+//   - 제목: 84·자간, 아래 청록 선 + 부제 "TOP-DOWN EXTRACTION ROGUELIKE"
+//   - 메뉴 버튼 6개: 테두리 스킨 제거 → 왼쪽 정렬 글자만 + MenuItemHighlight(마우스 올리면 청록·왼쪽 막대·살짝 밀림), 튜토리얼 "SOON"
+//   - 패널 3개: 테두리 창 → 테두리 없는 반투명 남색 + 왼쪽 청록 세로선 + 제목 아래 흐린 선, 닫기도 글자 버튼
+//   - 오른쪽 아래 버전·졸업작품 표시
+//   여러 번 실행해도 같은 결과 (이미 만든 선·막대는 이름으로 찾아 재사용)
+public static class MainMenuStyleTools
+{
+    private const string Subtitle = "TOP-DOWN EXTRACTION ROGUELIKE";
+    private static readonly Color PanelColor = new Color(0.02f, 0.035f, 0.05f, 0.92f);
+    private static readonly Color DimText = new Color(0.55f, 0.6f, 0.66f);
+
+    [MenuItem("Tools/TD Shoot/Restyle Main Menu (Minimal)")]
+    public static void Restyle()
+    {
+        MainMenuUI menuUI = Object.FindAnyObjectByType<MainMenuUI>(FindObjectsInactive.Include);
+        if (menuUI == null)
+        {
+            EditorUtility.DisplayDialog("Main Menu", "열린 씬에서 MainMenuUI를 찾지 못했습니다. MainMenu 씬을 열어 주세요.", "확인");
+            return;
+        }
+
+        UITheme theme = UIThemeTools.GetOrCreateTheme();
+        Color accent = theme.gridHighlightBorderColor;
+        RectTransform canvas = menuUI.GetComponent<RectTransform>();
+        SerializedObject so = new SerializedObject(menuUI);
+        Undo.RegisterFullObjectHierarchyUndo(menuUI.gameObject, "Restyle Main Menu");
+
+        // 1. 제목 + 선 + 부제
+        Transform titleTransform = canvas.Find("Title");
+        if (titleTransform != null && titleTransform.TryGetComponent(out TextMeshProUGUI title))
+        {
+            theme.ApplyFont(title, UIFontRole.Heading);
+            title.fontSize = 84f;
+            title.characterSpacing = 6f;
+            title.color = Color.white;
+            MainMenuSceneBuilder.SetRect(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(160f, -150f), new Vector2(1400f, 110f), new Vector2(0f, 1f));
+
+            Image line = GetOrCreateImage(canvas, "TitleLine");
+            line.color = accent;
+            MainMenuSceneBuilder.SetRect(line.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(164f, -272f), new Vector2(120f, 3f), new Vector2(0f, 1f));
+
+            TextMeshProUGUI sub = GetOrCreateText(canvas, "Subtitle");
+            theme.ApplyFont(sub, UIFontRole.Heading);
+            sub.text = Subtitle;
+            sub.fontSize = 24f;
+            sub.characterSpacing = 12f;
+            sub.color = DimText;
+            sub.alignment = TextAlignmentOptions.Left;
+            MainMenuSceneBuilder.SetRect(sub.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(164f, -292f), new Vector2(1200f, 36f), new Vector2(0f, 1f));
+        }
+
+        // 2. 메뉴: 글자 목록
+        string[] buttonFields = { "startButton", "tutorialButton", "infoButton", "controlsButton", "settingsButton", "quitButton" };
+        Button first = so.FindProperty(buttonFields[0]).objectReferenceValue as Button;
+        if (first != null && first.transform.parent is RectTransform menu)
+        {
+            MainMenuSceneBuilder.SetRect(menu, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(150f, -90f), new Vector2(520f, 6 * 64f + 5 * 8f), new Vector2(0f, 0.5f));
+            if (menu.TryGetComponent(out VerticalLayoutGroup layout)) layout.spacing = 8f;
+        }
+        foreach (string field in buttonFields)
+        {
+            Button button = so.FindProperty(field).objectReferenceValue as Button;
+            if (button != null) StyleTextButton(button, theme, 36f, TextAlignmentOptions.Left, 28f);
+        }
+        so.FindProperty("tutorialUnavailableLabel").stringValue = "튜토리얼   <size=24><alpha=#99>SOON</size>";
+
+        // 3. 패널: 테두리 없는 반투명 + 왼쪽 세로선 + 제목 아래 선
+        foreach (string field in new[] { "infoPanel", "controlsPanel", "settingsPanel" })
+        {
+            GameObject panel = so.FindProperty(field).objectReferenceValue as GameObject;
+            if (panel != null) StylePanel(panel, theme, accent);
+        }
+        SerializedProperty closes = so.FindProperty("closeButtons");
+        for (int i = 0; i < closes.arraySize; i++)
+        {
+            Button close = closes.GetArrayElementAtIndex(i).objectReferenceValue as Button;
+            if (close == null) continue;
+            StyleTextButton(close, theme, 24f, TextAlignmentOptions.Right, 0f);
+            if (close.GetComponentInChildren<TextMeshProUGUI>(true) is TextMeshProUGUI label) label.text = "닫기  <alpha=#88>ESC";
+        }
+        so.ApplyModifiedProperties();
+
+        // 4. 오른쪽 아래 버전
+        TextMeshProUGUI footer = GetOrCreateText(canvas, "Footer");
+        theme.ApplyFont(footer, UIFontRole.Body);
+        footer.text = $"v{PlayerSettings.bundleVersion}  ·  졸업작품";
+        footer.fontSize = 20f;
+        footer.color = new Color(DimText.r, DimText.g, DimText.b, 0.7f);
+        footer.alignment = TextAlignmentOptions.BottomRight;
+        MainMenuSceneBuilder.SetRect(footer.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-48f, 36f), new Vector2(600f, 30f), new Vector2(1f, 0f));
+
+        EditorSceneManager.MarkSceneDirty(menuUI.gameObject.scene);
+        Debug.Log("[MainMenu] 미니멀 스타일 적용 (제목·글자 메뉴·패널·버전 표시). 씬 저장은 직접, Undo로 되돌리기 가능");
+    }
+
+    // 테두리 스킨을 떼고 글자만 남김 (클릭 영역은 투명 Image 유지) + MenuItemHighlight
+    private static void StyleTextButton(Button button, UITheme theme, float fontSize, TextAlignmentOptions alignment, float textInset)
+    {
+        if (button.TryGetComponent(out UIThemeSkin skin)) Undo.DestroyObjectImmediate(skin);
+        if (button.TryGetComponent(out Image image))
+        {
+            image.sprite = null;
+            image.color = new Color(0f, 0f, 0f, 0f);
+            image.raycastTarget = true;
+        }
+        button.transition = Selectable.Transition.None;
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+        {
+            theme.ApplyFont(label, UIFontRole.Heading);
+            label.fontSize = fontSize;
+            label.fontStyle = FontStyles.Normal;
+            label.alignment = alignment;
+            label.characterSpacing = 2f;
+            label.richText = true;
+            MainMenuSceneBuilder.Stretch(label.rectTransform, 0f);
+            label.rectTransform.offsetMin = new Vector2(textInset, 0f);
+        }
+
+        Image bar = null;
+        if (textInset > 0f)
+        {
+            bar = GetOrCreateImage(button.GetComponent<RectTransform>(), "HoverBar");
+            MainMenuSceneBuilder.SetRect(bar.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(4f, fontSize), new Vector2(0f, 0.5f));
+            bar.enabled = false;
+        }
+
+        MenuItemHighlight highlight = button.GetComponent<MenuItemHighlight>();
+        if (highlight == null) highlight = button.gameObject.AddComponent<MenuItemHighlight>();
+        highlight.label = label;
+        highlight.bar = bar;
+        highlight.hoverColor = theme.gridHighlightBorderColor;
+        highlight.hoverShift = textInset > 0f ? 14f : 0f;
+        if (label != null) label.color = highlight.normalColor;
+    }
+
+    private static void StylePanel(GameObject panel, UITheme theme, Color accent)
+    {
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        if (panel.TryGetComponent(out UIThemeSkin skin)) Undo.DestroyObjectImmediate(skin);
+        if (panel.TryGetComponent(out Image image))
+        {
+            image.sprite = null;
+            image.type = Image.Type.Simple;
+            image.color = PanelColor;
+        }
+
+        Image edge = GetOrCreateImage(rect, "AccentEdge");
+        edge.color = accent;
+        edge.rectTransform.anchorMin = new Vector2(0f, 0f);
+        edge.rectTransform.anchorMax = new Vector2(0f, 1f);
+        edge.rectTransform.pivot = new Vector2(0f, 0.5f);
+        edge.rectTransform.anchoredPosition = Vector2.zero;
+        edge.rectTransform.sizeDelta = new Vector2(3f, 0f);
+        edge.transform.SetAsFirstSibling();
+
+        Transform titleTransform = rect.Find("Title");
+        if (titleTransform != null && titleTransform.TryGetComponent(out TextMeshProUGUI title))
+        {
+            theme.ApplyFont(title, UIFontRole.Heading);
+            title.fontSize = 48f;
+            title.characterSpacing = 4f;
+            title.color = Color.white;
+        }
+
+        Image rule = GetOrCreateImage(rect, "TitleRule");
+        rule.color = new Color(accent.r, accent.g, accent.b, 0.35f);
+        rule.rectTransform.anchorMin = new Vector2(0f, 1f);
+        rule.rectTransform.anchorMax = new Vector2(1f, 1f);
+        rule.rectTransform.pivot = new Vector2(0.5f, 1f);
+        rule.rectTransform.anchoredPosition = new Vector2(0f, -118f);
+        rule.rectTransform.sizeDelta = new Vector2(-120f, 1f);
+
+        Transform body = rect.Find("Body");
+        if (body != null && body.TryGetComponent(out TextMeshProUGUI bodyText))
+        {
+            theme.ApplyFont(bodyText, UIFontRole.Body);
+            bodyText.color = new Color(0.85f, 0.88f, 0.92f);
+            bodyText.lineSpacing = 12f;
+        }
+    }
+
+    private static Image GetOrCreateImage(RectTransform parent, string name)
+    {
+        Transform found = parent.Find(name);
+        if (found != null && found.TryGetComponent(out Image existing)) return existing;
+        GameObject obj = new GameObject(name, typeof(RectTransform), typeof(Image));
+        Undo.RegisterCreatedObjectUndo(obj, "Restyle Main Menu");
+        obj.transform.SetParent(parent, false);
+        Image image = obj.GetComponent<Image>();
+        image.raycastTarget = false;
+        return image;
+    }
+
+    private static TextMeshProUGUI GetOrCreateText(RectTransform parent, string name)
+    {
+        Transform found = parent.Find(name);
+        if (found != null && found.TryGetComponent(out TextMeshProUGUI existing)) return existing;
+        TextMeshProUGUI text = MainMenuSceneBuilder.CreateText(name, parent, "", 24f, FontStyles.Normal, TextAlignmentOptions.Left);
+        Undo.RegisterCreatedObjectUndo(text.gameObject, "Restyle Main Menu");
+        return text;
+    }
+}

@@ -94,7 +94,8 @@ public class MaintenanceUI : MonoBehaviour
 
         if (moduleSection == null)
         {
-            GameObject mObj = new GameObject("ModuleSection", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
+            // F4c-5: 모듈도 무기처럼 한 줄에 하나씩 가로 카드 (이전: 80x80 정사각 3열)
+            GameObject mObj = new GameObject("ModuleSection", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
             mObj.transform.SetParent(lootContainer, false);
             moduleSection = mObj.transform;
 
@@ -104,11 +105,12 @@ public class MaintenanceUI : MonoBehaviour
             mRect.pivot = new Vector2(0.5f, 1f);
             mRect.anchoredPosition = Vector2.zero;
 
-            GridLayoutGroup glg = mObj.GetComponent<GridLayoutGroup>();
-            glg.cellSize = new Vector2(80f, 80f);
-            glg.spacing = new Vector2(6f, 6f);
-            glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            glg.constraintCount = 3;
+            VerticalLayoutGroup mvlg = mObj.GetComponent<VerticalLayoutGroup>();
+            mvlg.spacing = 6f;
+            mvlg.childControlWidth = true;
+            mvlg.childForceExpandWidth = true;
+            mvlg.childControlHeight = false;
+            mvlg.childForceExpandHeight = false;
 
             ContentSizeFitter csf = mObj.GetComponent<ContentSizeFitter>();
             csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -186,6 +188,8 @@ public class MaintenanceUI : MonoBehaviour
         hoverUI.Setup(weapon);
     }
 
+    private const float ModuleCardHeight = 76f;
+
     private void CreateModuleSquareButton(ModuleDataSO module, Transform parent)
     {
         if (lootItemButtonPrefab == null || parent == null) return;
@@ -194,7 +198,7 @@ public class MaintenanceUI : MonoBehaviour
         RectTransform rect = btnObj.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.sizeDelta = new Vector2(80f, 80f);
+            rect.sizeDelta = new Vector2(260f, ModuleCardHeight); // 폭은 레이아웃이 패널에 맞춤
         }
 
         Image bgImage = btnObj.GetComponent<Image>();

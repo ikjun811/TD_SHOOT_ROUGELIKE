@@ -138,7 +138,11 @@ public class ResultSceneUI : MonoBehaviour
         Vector2 area = gridContainer.rect.size;
         float cell = Mathf.Floor(Mathf.Min(area.x / w, area.y / h));
         Vector2 origin = new Vector2(-cell * w / 2f, cell * h / 2f); // 왼쪽 위 (y는 위 → 아래 증가)
-        float border = Mathf.Max(1f, theme.gridModuleBorderWidth * cell / 60f);
+        float scale = cell / 60f; // 정비 화면 칸 크기 기준으로 선 두께 비례
+        bool outlined = theme.gridOutlinedStyle;
+        float border = Mathf.Max(1f, (outlined ? theme.gridOutlinedBorderWidth : theme.gridModuleBorderWidth) * scale);
+        float innerWidth = outlined && theme.gridOutlinedInnerWidth > 0f ? Mathf.Max(1f, theme.gridOutlinedInnerWidth * scale) : 0f;
+        float innerInset = border + theme.gridOutlinedInnerGap * scale;
 
         for (int x = 0; x < w; x++)
         {
@@ -150,19 +154,47 @@ public class ResultSceneUI : MonoBehaviour
                 if (id < 0)
                 {
                     if (!theme.ApplySprite(image, theme.gridEmptySprite, theme.gridPixelScale)) image.sprite = null;
-                    image.color = theme.gridEmptyColor;
+                    image.color = outlined ? theme.gridOutlinedEmptyColor : theme.gridEmptyColor;
                     continue;
                 }
 
+                // 정비 화면(GridPanelUI)과 같은 스타일: 외곽선 = 남색에 레어도 색을 섞은 바탕 + 레어도 색 외곽선 + 안쪽 흐린 선
+                Color rarity = theme.GetRarityColor(RunResultData.Modules[id].module.rarity);
+                Color edgeColor;
                 image.sprite = null;
-                image.color = theme.GetRarityColor(RunResultData.Modules[id].module.rarity) * theme.gridFillBrightness;
-                image.color = new Color(image.color.r, image.color.g, image.color.b, 1f);
+                if (outlined)
+                {
+                    Color fill = Color.Lerp(theme.gridOutlinedBaseColor, rarity, theme.gridOutlinedFill);
+                    fill.a = theme.gridOutlinedFillAlpha;
+                    image.color = fill;
+                    edgeColor = rarity;
+                }
+                else
+                {
+                    Color fill = rarity * theme.gridFillBrightness;
+                    fill.a = 1f;
+                    image.color = fill;
+                    edgeColor = theme.gridModuleBorderColor;
+                }
 
                 // 위·아래·왼·오른쪽 이웃이 다른 모듈·빈 칸·그리드 밖이면 경계선
-                if (Owner(owner, x, y - 1, w, h) != id) CreateEdge(pos + new Vector2(0f, cell / 2f - border / 2f), new Vector2(cell, border), theme);
-                if (Owner(owner, x, y + 1, w, h) != id) CreateEdge(pos - new Vector2(0f, cell / 2f - border / 2f), new Vector2(cell, border), theme);
-                if (Owner(owner, x - 1, y, w, h) != id) CreateEdge(pos - new Vector2(cell / 2f - border / 2f, 0f), new Vector2(border, cell), theme);
-                if (Owner(owner, x + 1, y, w, h) != id) CreateEdge(pos + new Vector2(cell / 2f - border / 2f, 0f), new Vector2(border, cell), theme);
+                bool top = Owner(owner, x, y - 1, w, h) != id;
+                bool bottom = Owner(owner, x, y + 1, w, h) != id;
+                bool left = Owner(owner, x - 1, y, w, h) != id;
+                bool right = Owner(owner, x + 1, y, w, h) != id;
+                CreateCellLine(pos, cell, 0, top, 0f, border, 0f, 0f, edgeColor);
+                CreateCellLine(pos, cell, 1, bottom, 0f, border, 0f, 0f, edgeColor);
+                CreateCellLine(pos, cell, 2, left, 0f, border, 0f, 0f, edgeColor);
+                CreateCellLine(pos, cell, 3, right, 0f, border, 0f, 0f, edgeColor);
+
+                if (innerWidth > 0f)
+                {
+                    Color inner = new Color(rarity.r, rarity.g, rarity.b, theme.gridOutlinedInnerAlpha);
+                    CreateCellLine(pos, cell, 0, top, innerInset, innerWidth, left ? innerInset : 0f, right ? innerInset : 0f, inner);
+                    CreateCellLine(pos, cell, 1, bottom, innerInset, innerWidth, left ? innerInset : 0f, right ? innerInset : 0f, inner);
+                    CreateCellLine(pos, cell, 2, left, innerInset, innerWidth, top ? innerInset : 0f, bottom ? innerInset : 0f, inner);
+                    CreateCellLine(pos, cell, 3, right, innerInset, innerWidth, top ? innerInset : 0f, bottom ? innerInset : 0f, inner);
+                }
             }
         }
 
@@ -199,10 +231,25 @@ public class ResultSceneUI : MonoBehaviour
         return image;
     }
 
-    private void CreateEdge(Vector2 pos, Vector2 size, UITheme theme)
+    // 칸 안쪽 선 1개. edge 0 위·1 아래·2 왼쪽·3 오른쪽, inset = 칸 가장자리에서 떨어진 거리,
+    // start·end = 길이 방향 양 끝을 비키는 거리 (가로선은 왼쪽·오른쪽, 세로선은 위·아래)
+    private void CreateCellLine(Vector2 pos, float cell, int edge, bool visible, float inset, float thickness, float start, float end, Color color)
     {
-        Image edge = CreateCell("Edge", pos, size);
-        edge.color = theme.gridModuleBorderColor;
+        if (!visible) return;
+
+        float half = cell / 2f;
+        float length = cell - start - end;
+        Vector2 center, size;
+        switch (edge)
+        {
+            case 0: center = new Vector2((start - end) / 2f, half - inset - thickness / 2f); size = new Vector2(length, thickness); break;
+            case 1: center = new Vector2((start - end) / 2f, -half + inset + thickness / 2f); size = new Vector2(length, thickness); break;
+            case 2: center = new Vector2(-half + inset + thickness / 2f, (end - start) / 2f); size = new Vector2(thickness, length); break;
+            default: center = new Vector2(half - inset - thickness / 2f, (end - start) / 2f); size = new Vector2(thickness, length); break;
+        }
+
+        Image line = CreateCell("Edge", pos + center, size);
+        line.color = color;
     }
 
     private static void SetText(TextMeshProUGUI text, string value)

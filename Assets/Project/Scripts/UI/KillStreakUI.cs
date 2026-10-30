@@ -15,8 +15,8 @@ public class KillStreakUI : MonoBehaviour
     public int minStreak = 2;
     public float fadeTime = 0.4f;
     public Vector2 anchoredPosition = new Vector2(-60f, -40f); // 화면 오른쪽 위 기준 (1920x1080)
-    public float countFontSize = 52f;
-    public float labelFontSize = 20f;
+    public float countFontSize = 48f;   // 갈무리 12배수 (F4a)
+    public float labelFontSize = 24f;
     public Vector2 barSize = new Vector2(150f, 4f);
     public float popScale = 1.3f;
     public float popTime = 0.15f;
@@ -191,6 +191,7 @@ public class KillStreakUI : MonoBehaviour
         GameObject obj = new GameObject(objName, typeof(RectTransform), typeof(TextMeshProUGUI));
         obj.transform.SetParent(parent, false);
         TextMeshProUGUI text = obj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(text, UIFontRole.Heading); // 외곽선(재질) 설정 전에 폰트부터
         text.fontSize = size;
         text.alignment = alignment;
         text.textWrappingMode = TextWrappingModes.NoWrap;

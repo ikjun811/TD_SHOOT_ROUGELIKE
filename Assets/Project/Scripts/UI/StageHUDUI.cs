@@ -10,7 +10,7 @@ using TMPro;
 //   픽셀 스킨(사용자 채택 A안 — 배치 그대로, 부품만 교체): UITheme의 HUD 스프라이트가 있으면
 //     눈금·탈출 막대 = 테두리 칸(progress_bg) + 채움(progress_fill / 최종 bar_red / 구역 안 bar_green), 현재 라운드 위 ▼ 표시,
 //     목숨 = 하트 아이콘, 배너 = 모서리 괄호(focus). 스프라이트가 없으면 위 단색 모양
-//   상단 보강: 눈금 왼쪽 "ROUND 03 / 15"·현재 칸 맥박, 막대 왼쪽 [ship] "EXTRACT"·남은 초 "12s"·구역 안 초록 맥박(90%+ 빠르게), 드랍률 앞 L 블록
+//   상단 보강: 눈금 왼쪽 "ROUND 03 / 15"·현재 칸 맥박, 막대 왼쪽 "EXTRACT"(ship 아이콘은 2026-10-30 제거)·남은 초 "12s"·구역 안 초록 맥박(90%+ 빠르게), 드랍률 앞 L 블록
 //   씬 텍스트 5개는 실행 시 숨김, 외부 API(ShowNoticeBanner·HideNoticeBanner·ShowTimedNotice·SetHUDActive)는 그대로
 public class StageHUDUI : MonoBehaviour
 {
@@ -40,10 +40,10 @@ public class StageHUDUI : MonoBehaviour
     [SerializeField] private Vector2 tickSize = new Vector2(26f, 5f);   // 현재 라운드는 높이 x2.6
     [SerializeField] private float tickGap = 7f;
     [SerializeField] private float lineThickness = 4f;
-    [SerializeField] private float timeFontSize = 30f;
+    [SerializeField] private float timeTextSize = 36f;   // 갈무리 12배수 (F4a, 필드 이름 변경으로 씬 옛 값 무시)
     [SerializeField] private float lifeSize = 15f;
-    [SerializeField] private float dropFontSize = 22f;
-    [SerializeField] private float bannerFontSize = 44f;
+    [SerializeField] private float dropTextSize = 24f;
+    [SerializeField] private float bannerTextSize = 48f;
     [SerializeField] private Color edgeColor = new Color(0f, 0f, 0f, 0.75f);          // 선·마름모 테두리 (밝은 바닥 대비)
 
     [Header("픽셀 스킨 (UITheme HUD 스프라이트가 있을 때 — Tools > TD Shoot > Apply PixelUISciFi to Theme)")]
@@ -62,15 +62,16 @@ public class StageHUDUI : MonoBehaviour
     [SerializeField] private Vector4 fillSpriteBorder = new Vector4(2f, 2f, 3f, 3f);
 
     [Header("상단 UI 보강 (사용자 채택 2026-10-29: A 라운드 글자·현재 칸 맥박 / B 탈출 아이콘·EXTRACT·초 s / D 드랍률 아이콘 / E 탈출 중 맥박)")]
-    [SerializeField] private float hudLabelFontSize = 20f;
+    [SerializeField] private float hudLabelTextSize = 24f;
     [SerializeField] private Color hudLabelColor = new Color(1f, 1f, 1f, 0.85f);
     [SerializeField] private float hudLabelGap = 16f;            // 눈금·막대 왼쪽 끝과 글자 사이
-    [SerializeField] private float extractIconSize = 28f;        // ship 16px x 1.75
     [SerializeField] private float currentTickPulseSpeed = 1.2f; // 현재 라운드 칸 맥박 (회/초)
     [SerializeField] private float extractPulseSpeed = 1.6f;     // 탈출 중 초록 맥박
     [SerializeField] private float extractPulseFastSpeed = 4.5f; // 진행 90% 이상
     [Range(0f, 1f)] [SerializeField] private float extractFastThreshold = 0.9f;
     [SerializeField] private float dropIconCell = 6f;            // 드랍률 앞 테트리스 L 블록 한 칸 (px)
+    [Tooltip("드랍률 숫자 앞 설명 글자 (비우면 숫자만)")]
+    [SerializeField] private string dropLabel = "MODULE DROP";
 
     private RectTransform root;
     private RectTransform tickRow;
@@ -84,7 +85,6 @@ public class StageHUDUI : MonoBehaviour
     private TextMeshProUGUI dropText;
     private TextMeshProUGUI roundText;
     private TextMeshProUGUI extractLabel;
-    private Image extractIcon;
     private GameObject bannerRoot;
     private TextMeshProUGUI bannerText;
     private Image bannerLineLeft;
@@ -335,7 +335,10 @@ public class StageHUDUI : MonoBehaviour
     private void UpdateDropChance()
     {
         if (dropText == null || StageDifficultyManager.Instance == null) return;
-        dropText.text = $"{StageDifficultyManager.Instance.currentDropChance * 100f:F0}%";
+        // 숫자만으로는 무슨 값인지 알기 어려움 (사용자 2026-10-30) → 앞에 작은 설명 글자 (EXTRACT·ROUND와 같은 영문 라벨)
+        // 같은 크기(갈무리 12배수 유지)·흐리게
+        string label = string.IsNullOrEmpty(dropLabel) ? "" : $"<alpha=#99>{dropLabel}<alpha=#FF>  ";
+        dropText.text = $"{label}{StageDifficultyManager.Instance.currentDropChance * 100f:F0}%";
     }
 
     private void UpdateExtraction()
@@ -354,7 +357,6 @@ public class StageHUDUI : MonoBehaviour
         extractionTimeText.text = Mathf.CeilToInt(extractionZone.RemainingTime) + "s";
         extractionTimeText.color = pulsedColor;
         if (extractLabel != null) extractLabel.color = inside ? pulsedColor : hudLabelColor;
-        if (extractIcon != null) extractIcon.color = inside ? pulsedColor : hudLabelColor;
 
         if (pixelSkin)
         {
@@ -451,34 +453,25 @@ public class StageHUDUI : MonoBehaviour
             extractionFill.fillOrigin = (int)Image.OriginHorizontal.Left;
         }
 
-        extractionTimeText = CreateText("ExtractionTime", root, timeFontSize, TextAlignmentOptions.Left);
+        extractionTimeText = CreateText("ExtractionTime", root, timeTextSize, TextAlignmentOptions.Left);
         extractionTimeText.fontStyle = FontStyles.Bold;
         Place(extractionTimeText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(rowWidth * 0.5f + 14f, lineY), new Vector2(90f, 36f));
 
         // A·B: 눈금·막대 왼쪽 끝에 오른쪽 정렬 글자 "ROUND 03 / 15", [아이콘] "EXTRACT"
         float labelX = -rowWidth * 0.5f - hudLabelGap;
-        roundText = CreateText("RoundLabel", root, hudLabelFontSize, TextAlignmentOptions.Right);
+        roundText = CreateText("RoundLabel", root, hudLabelTextSize, TextAlignmentOptions.Right);
         roundText.fontStyle = FontStyles.Bold;
         roundText.characterSpacing = 4f;
         roundText.color = hudLabelColor;
         Place(roundText.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(labelX, -34f), new Vector2(260f, 30f));
 
-        extractLabel = CreateText("ExtractLabel", root, hudLabelFontSize, TextAlignmentOptions.Right);
+        extractLabel = CreateText("ExtractLabel", root, hudLabelTextSize, TextAlignmentOptions.Right);
         extractLabel.fontStyle = FontStyles.Bold;
         extractLabel.characterSpacing = 4f;
         extractLabel.color = hudLabelColor;
         extractLabel.text = "EXTRACT";
         Place(extractLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(labelX, lineY), new Vector2(200f, 30f));
-
-        if (theme.hudExtractIcon != null)
-        {
-            extractLabel.ForceMeshUpdate();
-            float iconX = labelX - extractLabel.preferredWidth - 8f;
-            extractIcon = CreateImage("ExtractIcon", root, hudLabelColor);
-            theme.ApplySprite(extractIcon, theme.hudExtractIcon, 1f);
-            extractIcon.preserveAspect = true;
-            Place(extractIcon.rectTransform, new Vector2(0.5f, 1f), new Vector2(1f, 0.5f), new Vector2(iconX, lineY), new Vector2(extractIconSize, extractIconSize));
-        }
+        // EXTRACT 앞 ship 아이콘은 제거 (사용자 2026-10-30)
     }
 
     private void RebuildTicks(int maxRound)
@@ -558,9 +551,10 @@ public class StageHUDUI : MonoBehaviour
             AddEdge(c);
         }
 
-        dropText = CreateText("DropChance", root, dropFontSize, TextAlignmentOptions.Left);
+        dropText = CreateText("DropChance", root, dropTextSize, TextAlignmentOptions.Left);
         dropText.color = dropColor;
-        Place(dropText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(32f + cell * 2f + 10f, dropY), new Vector2(140f, 30f));
+        dropText.richText = true;
+        Place(dropText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(32f + cell * 2f + 10f, dropY), new Vector2(360f, 30f));
     }
 
     private void RebuildLifeIcons(int maxLives)
@@ -612,7 +606,7 @@ public class StageHUDUI : MonoBehaviour
             theme.ApplySprite(bannerFrame, theme.hudBannerFrameSprite);
         }
 
-        bannerText = CreateText("Text", rect, bannerFontSize, TextAlignmentOptions.Center);
+        bannerText = CreateText("Text", rect, bannerTextSize, TextAlignmentOptions.Center);
         bannerText.fontStyle = FontStyles.Bold;
         bannerText.characterSpacing = 18f;
         Stretch(bannerText.rectTransform);
@@ -702,6 +696,7 @@ public class StageHUDUI : MonoBehaviour
         GameObject obj = new GameObject(objName, typeof(RectTransform), typeof(TextMeshProUGUI));
         obj.transform.SetParent(parent, false);
         TextMeshProUGUI text = obj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(text, UIFontRole.Heading); // 외곽선(재질) 설정 전에 폰트부터
         text.fontSize = size;
         text.alignment = alignment;
         text.textWrappingMode = TextWrappingModes.NoWrap;

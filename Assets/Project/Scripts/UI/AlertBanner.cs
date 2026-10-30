@@ -25,8 +25,8 @@ public class AlertBanner : MonoBehaviour
     public float stripeHeight = 14f;
     public float stripeTileSize = 28f;             // 줄무늬 한 칸 크기 (캔버스 단위)
     public float stripeScrollSpeed = 0.6f;         // 초당 칸 수
-    public float titleFontSize = 58f;
-    public float subFontSize = 22f;
+    public float titleFontSize = 60f;   // 갈무리 12배수 (F4a)
+    public float subFontSize = 24f;
     public float iconSize = 54f;
     public Color backgroundColor = new Color(0.02f, 0.02f, 0.03f, 0.72f);
     public Color roundColor = new Color(1f, 0.8f, 0.15f);
@@ -38,7 +38,7 @@ public class AlertBanner : MonoBehaviour
 
     [Header("엘리트 한 줄 알림")]
     public float eliteTopOffset = 112f;            // 화면 위에서 아래로 (HUD 라운드 눈금·탈출 막대 아래)
-    public float eliteFontSize = 26f;
+    public float eliteFontSize = 24f;
     public float eliteIconSize = 26f;
     public float eliteLineLength = 70f;
     public float eliteFadeIn = 0.15f;
@@ -411,6 +411,7 @@ public class AlertBanner : MonoBehaviour
         rect.anchoredPosition = position;
         rect.sizeDelta = new Vector2(1400f, size * 1.4f);
         TextMeshProUGUI text = obj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(text, UIFontRole.Heading); // 외곽선(재질) 설정 전에 폰트부터
         text.fontSize = size;
         text.alignment = TextAlignmentOptions.Center;
         text.textWrappingMode = TextWrappingModes.NoWrap;

@@ -50,7 +50,8 @@ public class SlotContentView : MonoBehaviour
         return true;
     }
 
-    public bool ShowModule(ModuleDataSO module)
+    // showStatIcon false: 전리품 가로 카드처럼 스탯을 글자로 따로 보여 줄 때 (모양이 칸 전체를 씀)
+    public bool ShowModule(ModuleDataSO module, bool showStatIcon = true)
     {
         Clear();
         if (module == null || module.shapeGrid == null) return false;
@@ -64,7 +65,7 @@ public class SlotContentView : MonoBehaviour
         categoryBar.rectTransform.sizeDelta = new Vector2(0f, theme.categoryBarHeight);
 
         // 스탯 아이콘 (오른쪽 위)
-        Sprite icon = module.category == ModuleCategory.Stat ? theme.GetStatIcon(module.statType) : null;
+        Sprite icon = showStatIcon && module.category == ModuleCategory.Stat ? theme.GetStatIcon(module.statType) : null;
         if (icon != null)
         {
             statIcon.gameObject.SetActive(true);
@@ -214,7 +215,8 @@ public class SlotContentView : MonoBehaviour
         labelRect.anchoredPosition = new Vector2(pad + 2f, -(pad + 1f));
         labelRect.sizeDelta = new Vector2(40f, 24f);
         emptyLabel = labelObj.GetComponent<TextMeshProUGUI>();
-        emptyLabel.fontSize = 18f;
+        UITheme.Current.ApplyFont(emptyLabel, UIFontRole.Heading);
+        emptyLabel.fontSize = 12f; // 갈무리 12배수 (F4a)
         emptyLabel.alignment = TextAlignmentOptions.TopLeft;
         emptyLabel.textWrappingMode = TextWrappingModes.NoWrap;
         emptyLabel.raycastTarget = false;

@@ -134,6 +134,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd63d75c494a45c40b4dbd14e76bdf9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LootItemButtonUI
+  miniShapeParent: {fileID: 0}
 --- !u!1 &6903775426064508674
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,8 +202,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Button
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

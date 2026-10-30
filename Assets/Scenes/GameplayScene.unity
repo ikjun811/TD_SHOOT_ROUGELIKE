@@ -267,6 +267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 5
   resetColor: 1
+  applyLabelColor: 1
 --- !u!1 &13404479
 GameObject:
   m_ObjectHideFlags: 0
@@ -326,8 +327,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -636,6 +637,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 1
   resetColor: 1
+  applyLabelColor: 1
 --- !u!1 &151054620
 GameObject:
   m_ObjectHideFlags: 0
@@ -695,8 +697,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -907,8 +909,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1188,8 +1190,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1307,8 +1309,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uAE08\uACE0 \uBCF4\uAD00\uD568 (Vault)"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1332,7 +1334,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22.55
+  m_fontSize: 25.1
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1478,8 +1480,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uC7A5\uCC29 \uBB34\uAE30"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1503,7 +1505,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22.55
+  m_fontSize: 25.1
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1884,8 +1886,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: '"Empty Slot 2"'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1909,7 +1911,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 72
+  m_fontSize: 61.95
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2052,8 +2054,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2220,8 +2222,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2580,8 +2582,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2826,6 +2828,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 1
   resetColor: 1
+  applyLabelColor: 1
 --- !u!1001 &846252572
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3078,15 +3081,15 @@ MonoBehaviour:
       m_Calls: []
   m_text: NEXT ROUND
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4294963929
+  m_fontColor: {r: 0.85, g: 0.95, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -3215,8 +3218,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3346,6 +3349,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 1
   resetColor: 1
+  applyLabelColor: 1
 --- !u!114 &1013545043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3437,8 +3441,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3816,8 +3820,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4037,6 +4041,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 0
   resetColor: 1
+  applyLabelColor: 1
 --- !u!1 &1114023196
 GameObject:
   m_ObjectHideFlags: 0
@@ -4077,8 +4082,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4449,8 +4454,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
-  m_sharedMaterial: {fileID: -8272975459512479139, guid: e0fae13f7ff41754c803cd96f19472f9, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
+  m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4761,6 +4766,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 3
   resetColor: 1
+  applyLabelColor: 1
 --- !u!1 &1362691747
 GameObject:
   m_ObjectHideFlags: 0
@@ -5003,8 +5009,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
+  m_sharedMaterial: {fileID: -6626099461632326826, guid: 881d8211a74048440b2cbbdd43725ed8, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5028,8 +5034,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -6265,6 +6271,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIThemeSkin
   role: 0
   resetColor: 1
+  applyLabelColor: 1
 --- !u!114 &1873019194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6475,10 +6482,10 @@ MonoBehaviour:
   tickSize: {x: 26, y: 5}
   tickGap: 7
   lineThickness: 4
-  timeFontSize: 30
+  timeTextSize: 36
   lifeSize: 15
-  dropFontSize: 22
-  bannerFontSize: 44
+  dropTextSize: 24
+  bannerTextSize: 48
   edgeColor: {r: 0, g: 0, b: 0, a: 0.75}
   pixelTickSize: {x: 28, y: 16}
   pixelLineHeight: 16
@@ -6489,15 +6496,15 @@ MonoBehaviour:
   lostHeartColor: {r: 1, g: 1, b: 1, a: 0.25}
   bannerFramePadding: {x: 48, y: 16}
   fillSpriteBorder: {x: 2, y: 2, z: 3, w: 3}
-  hudLabelFontSize: 20
+  hudLabelTextSize: 24
   hudLabelColor: {r: 1, g: 1, b: 1, a: 0.85}
   hudLabelGap: 16
-  extractIconSize: 28
   currentTickPulseSpeed: 1.2
   extractPulseSpeed: 1.6
   extractPulseFastSpeed: 4.5
   extractFastThreshold: 0.9
   dropIconCell: 6
+  dropLabel: MODULE DROP
 --- !u!114 &2004680689
 MonoBehaviour:
   m_ObjectHideFlags: 0

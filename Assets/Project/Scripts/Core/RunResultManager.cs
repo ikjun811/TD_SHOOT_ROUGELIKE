@@ -191,8 +191,8 @@ public class RunResultManager : MonoBehaviour
         RectTransform panel = CreateImage("Panel", root, PanelColor);
         panel.sizeDelta = new Vector2(760f, 640f);
 
-        CreateText("Title", panel, cleared ? "GAME CLEAR" : "GAME OVER", 64f, cleared ? ClearColor : GameOverColor,
-                   new Vector2(0f, 250f), new Vector2(700f, 90f), FontStyles.Bold);
+        CreateText("Title", panel, cleared ? "GAME CLEAR" : "GAME OVER", 60f, cleared ? ClearColor : GameOverColor,
+                   new Vector2(0f, 250f), new Vector2(700f, 90f), FontStyles.Bold, role: UIFontRole.Heading);
 
         CreateText("Stats", panel, BuildStatsText(), 30f, Color.white,
                    new Vector2(0f, 20f), new Vector2(660f, 340f), FontStyles.Normal, TextAlignmentOptions.TopLeft);
@@ -289,7 +289,8 @@ public class RunResultManager : MonoBehaviour
 
     private static TextMeshProUGUI CreateText(string objName, RectTransform parent, string content, float size, Color color,
                                               Vector2 position, Vector2 boxSize, FontStyles style,
-                                              TextAlignmentOptions alignment = TextAlignmentOptions.Center)
+                                              TextAlignmentOptions alignment = TextAlignmentOptions.Center,
+                                              UIFontRole role = UIFontRole.Body)
     {
         GameObject obj = new GameObject(objName, typeof(RectTransform), typeof(TextMeshProUGUI));
         RectTransform rect = obj.GetComponent<RectTransform>();
@@ -298,6 +299,7 @@ public class RunResultManager : MonoBehaviour
         rect.sizeDelta = boxSize;
 
         TextMeshProUGUI tmp = obj.GetComponent<TextMeshProUGUI>();
+        UITheme.Current.ApplyFont(tmp, role);
         tmp.text = content;
         tmp.fontSize = size;
         tmp.color = color;
@@ -321,7 +323,7 @@ public class RunResultManager : MonoBehaviour
         button.colors = colors;
         button.onClick.AddListener(onClick);
 
-        CreateText("Label", rect, label, 32f, Color.white, Vector2.zero, rect.sizeDelta, FontStyles.Bold);
+        CreateText("Label", rect, label, 36f, Color.white, Vector2.zero, rect.sizeDelta, FontStyles.Bold, role: UIFontRole.Heading);
     }
 
     #endregion
