@@ -172,7 +172,7 @@ public class TutorialDirector : MonoBehaviour
         if (grenade != null) grenade.RefillCharges();
 
         ui.ShowObjective("STEP 07", "모듈 효과", "그리드에 배치한 다중 투척이 적용되었습니다. 수류탄이 한 번에 여러 개 날아갑니다.",
-            new TutorialUI.ObjectiveItem("휠클릭", "수류탄 던지기"),
+            new TutorialUI.ObjectiveItem("우클릭", "수류탄 던지기"),
             new TutorialUI.ObjectiveItem("", "무리 처치"));
 
         List<EnemyBase> pack = SpawnOffscreen(EnemyType.Runner, 9, true);
@@ -434,7 +434,7 @@ public class TutorialDirector : MonoBehaviour
     private IEnumerator StepGrenade()
     {
         yield return Popup("수류탄",
-            $"<color={Accent}>마우스 휠 클릭</color>으로 마우스 위치에 수류탄을 던집니다.\n" +
+            $"<color={Accent}>마우스 오른쪽 클릭</color>으로 마우스 위치에 수류탄을 던집니다.\n" +
             "쓴 수류탄은 시간이 지나면 다시 충전됩니다. (장탄 링 오른쪽 막대)\n\n" +
             "적이 뭉쳐 있을 때 던지면 한 번에 처리할 수 있습니다.");
 
@@ -446,7 +446,7 @@ public class TutorialDirector : MonoBehaviour
         }
 
         ui.ShowObjective("STEP 03", "수류탄", "한쪽에서 적 무리가 몰려옵니다.",
-            new TutorialUI.ObjectiveItem("휠클릭", "수류탄 던지기"),
+            new TutorialUI.ObjectiveItem("우클릭", "수류탄 던지기"),
             new TutorialUI.ObjectiveItem("", "무리 처치"));
 
         List<EnemyBase> pack = SpawnOffscreen(EnemyType.Runner, 6, true);

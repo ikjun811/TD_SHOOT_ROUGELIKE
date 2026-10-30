@@ -567,6 +567,7 @@ public class WaveManager : MonoBehaviour
     public void RestartWaveSpawning()
     {
         DespawnAllActiveEnemies(); // 잔여 적 제거
+        RoundCleanup.ClearAll();   // 지난 라운드 수류탄·폭발 이펙트 (탈출 직전 것이 새 맵에 보이던 문제)
         currentKillsCount = 0;
         currentEnemiesAlive = 0;
         ResetEliteState();

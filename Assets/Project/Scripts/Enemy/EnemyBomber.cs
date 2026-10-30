@@ -101,17 +101,18 @@ public class EnemyBomber : MonoBehaviour
 
     private void SelfDestruct()
     {
-        Explode();
+        Explode(true);
         enemy.RemoveWithoutReward();
     }
 
     // 처치당함 (EnemyBase.OnEnemyDeath와 별개로 JUHealth.OnDeath 구독)
+    // 처치당한 봄버의 폭발은 플레이어에게 피해 없음 (사용자 2026-10-31: 잡았는데 맞는 불쾌함) — 주변 적에게는 그대로 (연쇄)
     private void OnKilled()
     {
-        Explode();
+        Explode(false);
     }
 
-    private void Explode()
+    private void Explode(bool damagePlayer)
     {
         if (exploded) return;
         exploded = true;
@@ -125,7 +126,7 @@ public class EnemyBomber : MonoBehaviour
         CameraShake.AddExplosion(center, explosionRadius / 4f);
 
         // 플레이어 (수평 거리)
-        if (playerHealth != null && !playerHealth.IsDead)
+        if (damagePlayer && playerHealth != null && !playerHealth.IsDead)
         {
             Vector3 toPlayer = player.position - center;
             toPlayer.y = 0f;

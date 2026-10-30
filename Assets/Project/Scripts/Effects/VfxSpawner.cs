@@ -26,6 +26,7 @@ public static class VfxSpawner
     private static void Spawn(VfxEntry entry, GameObject prefab, float prefabScale, Vector3 position, float scale, Quaternion? rotation)
     {
         GameObject vfx = Object.Instantiate(prefab, position + Vector3.up * entry.yOffset, rotation ?? prefab.transform.rotation);
+        RoundCleanup.Register(vfx); // 탈출 슬로모션·정비(시간 정지)를 지나 다음 라운드에 보이지 않게
         vfx.transform.localScale = prefab.transform.localScale * (entry.scale * prefabScale * scale);
 
         // 프리팹에 든 소리는 끔 — Vefects 데모 프리팹은 반복(Loop) AudioSource라 효과음(SoundLibrary)과 겹치고,

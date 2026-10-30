@@ -90,8 +90,9 @@ public static class MainMenuStyleTools
                 ? controlsText.text.Substring(0, goalIndex) + MainMenuSceneBuilder.GoalText
                 : controlsText.text.TrimEnd() + "\n\n" + MainMenuSceneBuilder.GoalText;
 
-            // 조작 변경 반영 (2026-10-30): 수류탄 G → 마우스 휠 클릭, 정비 휠 클릭 즉시 해제 추가
-            controlsText.text = controlsText.text.Replace("수류탄  G\n", "수류탄  마우스 휠 클릭\n");
+            // 조작 변경 반영: 수류탄 G → 휠 클릭(2026-10-30) → 마우스 오른쪽 클릭(2026-10-31), 정비 휠 클릭 즉시 해제 추가
+            controlsText.text = controlsText.text.Replace("수류탄  G\n", "수류탄  마우스 오른쪽 클릭\n")
+                                                 .Replace("수류탄  마우스 휠 클릭\n", "수류탄  마우스 오른쪽 클릭\n");
             const string revertLine = "들고 있는 아이템 되돌리기  마우스 오른쪽\n";
             const string quickLine = "장착 즉시 해제(가방으로)  마우스 휠 클릭\n";
             if (!controlsText.text.Contains(quickLine) && controlsText.text.Contains(revertLine))

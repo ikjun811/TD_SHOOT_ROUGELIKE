@@ -215,9 +215,11 @@ public class CharacterModuleRuntime : MonoBehaviour
         marker.transform.SetPositionAndRotation(position + Vector3.up * visualSize * 0.3f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
         if (grenadeSkill != null) grenadeSkill.CreateGrenadeVisual(marker.transform);
         GrenadeBeacon.Attach(marker, dashBombFuse, visualSize * 0.5f);
+        RoundCleanup.Register(marker);
 
         yield return new WaitForSeconds(dashBombFuse); // 정비 중(timeScale 0)엔 함께 정지
 
+        if (marker == null) yield break; // 다음 라운드 시작 때 정리됨 (예전 위치에서 터지지 않게)
         Destroy(marker);
         float baseDamage = grenadeSkill != null ? grenadeSkill.ScaledCenterDamage : 80f;
         BulletHitEffects.ExplodeAt(position + Vector3.up * 0.5f, dashBombRadius, baseDamage * dashBombRatio, null, gameObject, dashBombVfxScale);

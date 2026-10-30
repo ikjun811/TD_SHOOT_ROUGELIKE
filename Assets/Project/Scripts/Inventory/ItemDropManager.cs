@@ -40,10 +40,6 @@ public class ItemDropManager : MonoBehaviour
         new RarityTier(13, 10f, 35f, 40f, 15f),
     };
 
-    [Header("Supply Crate Weapon (GDD 8-6 #13)")]
-    [Tooltip("장착 슬롯·금고에 이미 있는 무기군이 뽑힐 가중치 (1 = 억제 없음)")]
-    [Range(0f, 1f)][SerializeField] private float ownedWeaponTypeWeight = 0.3f;
-
     [Header("Module Drop Weights (GDD 8-6 #17 A5, 계열 합계 기준 스탯:기능 = 2:1)")]
     [SerializeField] private float statCategoryWeight = 67f;
     [SerializeField] private float mechanismCategoryWeight = 13f;
@@ -180,7 +176,7 @@ public class ItemDropManager : MonoBehaviour
         return RarityType.Common;
     }
 
-    // 보급 상자 무기 드랍: 레어도 표 기준, 장착·금고에 있는 무기군은 낮은 가중치 (중복 억제)
+    // 보급 상자 무기 드랍: 레어도 표 기준, 그 레어도의 무기 중 같은 확률 (보유 무기군 억제는 2026-10-31 제거)
     // 드랍한 무기 반환 (상자 열림 연출 색, 없으면 null)
     public WeaponDataSO DropCrateWeapon(Vector3 position, int currentRound)
     {
@@ -196,21 +192,9 @@ public class ItemDropManager : MonoBehaviour
         if (candidates.Count == 0) candidates = allWeapons.FindAll(w => w != null);
         if (candidates.Count == 0) return null;
 
-        HashSet<WeaponType> ownedTypes = GetOwnedWeaponTypes();
-
-        float totalWeight = 0f;
-        foreach (WeaponDataSO w in candidates) totalWeight += ownedTypes.Contains(w.weaponType) ? ownedWeaponTypeWeight : 1f;
-
-        WeaponDataSO picked = candidates[candidates.Count - 1];
-        if (totalWeight > 0f)
-        {
-            float rand = Random.value * totalWeight;
-            foreach (WeaponDataSO w in candidates)
-            {
-                rand -= ownedTypes.Contains(w.weaponType) ? ownedWeaponTypeWeight : 1f;
-                if (rand <= 0f) { picked = w; break; }
-            }
-        }
+        // 모든 무기군 같은 확률 (사용자 2026-10-31: 이전엔 장착·금고 무기군을 0.3배로 덜 뽑았는데,
+        //   빌드 완성 후 같은 무기의 높은 레어도를 얻는 데 방해가 됨)
+        WeaponDataSO picked = candidates[Random.Range(0, candidates.Count)];
 
         SpawnDrop(position, picked, null);
         Debug.Log($"ItemDropManager: Supply crate -> {picked.weaponName} [{picked.rarity}]");

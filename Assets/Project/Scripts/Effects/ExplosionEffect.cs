@@ -70,6 +70,7 @@ public class ExplosionEffect : MonoBehaviour
         GameObject go = new GameObject(name);
         go.transform.position = center;
         ExplosionEffect effect = go.AddComponent<ExplosionEffect>();
+        RoundCleanup.Register(go);
         effect.lifetime = lifetime;
         return effect;
     }

@@ -30,6 +30,11 @@ public class GrenadeProjectile : MonoBehaviour
     private float timer;
     private bool exploded;
 
+    private void Awake()
+    {
+        RoundCleanup.Register(gameObject); // 다음 라운드까지 남지 않게 (탈출 직전 던진 수류탄·소형 폭탄)
+    }
+
     private void Update()
     {
         timer += Time.deltaTime;
@@ -49,6 +54,7 @@ public class GrenadeProjectile : MonoBehaviour
         if (!libraryVfx && explosionVFX != null)
         {
             GameObject vfx = Instantiate(explosionVFX, center, Quaternion.identity);
+            RoundCleanup.Register(vfx);
 
             // JU Explosion은 Start에서 피해·물리 힘을 주므로 Start 전에 꺼 둠 (이펙트·사운드·흔들림은 유지)
             foreach (Explosion juExplosion in vfx.GetComponentsInChildren<Explosion>(true))

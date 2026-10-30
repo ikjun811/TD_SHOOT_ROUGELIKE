@@ -181,6 +181,7 @@ public class BulletHitEffects : MonoBehaviour
         if (ExplosionVFX == null) return;
 
         GameObject vfx = Instantiate(ExplosionVFX, center, Quaternion.identity);
+        RoundCleanup.Register(vfx);
         foreach (Explosion juExplosion in vfx.GetComponentsInChildren<Explosion>(true))
         {
             juExplosion.enabled = false;

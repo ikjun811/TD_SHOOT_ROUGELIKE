@@ -33,7 +33,7 @@ public static class MainMenuSceneBuilder
         "대시  Space\n" +
         "재장전  R\n" +
         "무기 교체  E\n" +
-        "수류탄  마우스 휠 클릭\n\n" +
+        "수류탄  마우스 오른쪽 클릭\n\n" +
         "<b>정비</b>\n" +
         "아이템 집기·놓기  마우스 왼쪽 클릭\n" +
         "모듈 회전  R\n" +

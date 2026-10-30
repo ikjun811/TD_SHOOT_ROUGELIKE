@@ -1,14 +1,14 @@
 using UnityEngine;
 using JU;
 
-// 수류탄 스킬 (마우스 휠 클릭, 무기 슬롯과 별개, GDD 3-3) — 플레이어 루트에 부착
+// 수류탄 스킬 (마우스 오른쪽 클릭, 무기 슬롯과 별개, GDD 3-3) — 플레이어 루트에 부착
 // 마우스가 가리키는 바닥 지점으로 포물선 투척, fuse 후 범위 피해 (GrenadeProjectile)
 // 모듈(A4b): 공격력 % 공유, 자동 투척(직접 투척 불가·적중 시 확률), 다중 투척, 집속탄, 충전 +1, 처치 시 쿨감
 public class GrenadeSkill : MonoBehaviour
 {
     [Header("Grenade Skill Settings")]
-    [Tooltip("투척 입력 (2026-10-30 사용자: 자주 쓰는데 G키는 조작이 어려워 휠 클릭으로, G키 제거)")]
-    [SerializeField] private KeyCode throwButton = KeyCode.Mouse2;
+    [Tooltip("투척 입력 (사용자: G키 → 휠 클릭(2026-10-30) → 휠 클릭도 피로도가 높아 오른쪽 클릭(2026-10-31). JU 오른쪽 클릭 조준은 UnusedInputBlocker가 끔)")]
+    [SerializeField] private KeyCode throwButton = KeyCode.Mouse1;
     [SerializeField] private float cooldown = 10f;       // 쿨타임 (초)
     [SerializeField] private int maxCharges = 2;         // 최대 충전 횟수
     [SerializeField] private float maxCooldownReduction = 0.7f; // 쿨감 상한 (임시값, GDD 8-4)
