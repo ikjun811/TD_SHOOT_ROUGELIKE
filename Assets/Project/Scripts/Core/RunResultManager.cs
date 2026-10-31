@@ -121,6 +121,7 @@ public class RunResultManager : MonoBehaviour
         RunResultData.MaxHit = maxHit;
         RunResultData.Deaths = deaths;
         RunResultData.ModulesCollected = modulesCollected;
+        RunResultData.BestStreak = KillStreakUI.Instance != null ? KillStreakUI.Instance.BestStreak : 0;
 
         GridInventorySystem grid = GridInventorySystem.Instance;
         RunResultData.Modules.Clear();
@@ -212,7 +213,7 @@ public class RunResultManager : MonoBehaviour
         int depth = RunResultData.Cleared ? 0 : DepthDisplay.FromRound(round, maxRound); // 깊이 표시 (DEPTH ZERO 컨셉)
         string text = $"도달 깊이     {DepthDisplay.Label(depth)}{(RunResultData.NewBestRound ? "  <color=#FFD040>NEW</color>" : "")}\n" +
                       $"전투 시간     {FormatTime(combatTime)}{(RunResultData.NewBestClearTime ? "  <color=#FFD040>NEW</color>" : "")}\n" +
-                      $"처치 수       일반 {normalKills}  /  엘리트 {eliteKills}\n" +
+                      $"처치 수       일반 {normalKills}  /  엘리트 {eliteKills}   최고 연속 ×{RunResultData.BestStreak}\n" +
                       $"총 피해량     {totalDamage:N0}   최고 한 방 {maxHit:N0}\n" +
                       $"사망 {deaths}회   획득 모듈 {modulesCollected}개\n\n" +
                       "<b>최종 빌드</b>\n";

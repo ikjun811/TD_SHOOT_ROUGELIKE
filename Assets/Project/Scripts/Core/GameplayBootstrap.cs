@@ -33,7 +33,7 @@ public static class GameplayBootstrap
         PauseMenuUI.EnsureCreated();
         CrosshairUI.EnsureCreated();
         if (GameSession.IsTutorial) TutorialDirector.EnsureCreated(); // 튜토리얼 모드: 매니저 잠금·단계 진행
-        else BalanceLogger.EnsureCreated();                           // 본 게임: 층마다 밸런스 기록 (Logs/BalanceLog_*.txt)
+        else if (Debug.isDebugBuild) BalanceLogger.EnsureCreated();   // 본 게임: 층마다 밸런스 기록 (Logs/BalanceLog_*.txt) — 에디터·Development Build만 (최적화 ③)
         // KillEffects.EnsureCreated(); // B4 처치 연출(피) — 너무 잔인해 비활성 (사용자 2026-10-29), 다시 켜려면 주석 해제
         PlayerPositionGuard.EnsureOnPlayer();
         DashAfterimage.EnsureOnPlayer();

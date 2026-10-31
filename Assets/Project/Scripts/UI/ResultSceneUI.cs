@@ -27,6 +27,11 @@ public class ResultSceneUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timeText;
     [SerializeField] private TextMeshProUGUI killsText;
     [SerializeField] private TextMeshProUGUI bestRecordText;
+    [Tooltip("처치 수 줄 오른쪽 최고 연속 처치 (실행 시 생성)")]
+    [SerializeField] private Color streakLabelColor = new Color(0.62f, 0.7f, 0.78f, 0.85f);
+    [SerializeField] private Color streakColor = new Color(1f, 0.55f, 0.15f); // 연속 처치 카운터 10연속 색과 같은 주황
+    [SerializeField] private float streakGap = 36f;
+    private TextMeshProUGUI bestStreakText;
     [SerializeField] private GameObject newRoundBadge;
     [SerializeField] private GameObject newTimeBadge;
 
@@ -119,6 +124,7 @@ public class ResultSceneUI : MonoBehaviour
             && roundLabel.TryGetComponent(out TextMeshProUGUI roundLabelText)) roundLabelText.text = "도달 깊이";
         SetText(timeText, RunResultData.FormatTime(RunResultData.CombatTime));
         SetText(killsText, $"{RunResultData.NormalKills + RunResultData.EliteKills}  (엘리트 {RunResultData.EliteKills})");
+        CreateBestStreakText();
         if (newRoundBadge != null) newRoundBadge.SetActive(RunResultData.NewBestRound);
         if (newTimeBadge != null) newTimeBadge.SetActive(RunResultData.NewBestClearTime);
 
@@ -130,6 +136,30 @@ public class ResultSceneUI : MonoBehaviour
         ShowWeapons();
         BuildGridPreview();
         if (playReveal) BeginReveal();
+    }
+
+    // 처치 수 줄 오른쪽에 "최고 연속 ×N" (이번 판 최고 연속 처치, 2연속부터 — 씬 수정 없이 처치 수 글자를 복제해 생성)
+    private void CreateBestStreakText()
+    {
+        if (killsText == null || RunResultData.BestStreak < 2) return;
+        bestStreakText = Instantiate(killsText, killsText.transform.parent);
+        bestStreakText.name = "BestStreakValue";
+        bestStreakText.fontSize = killsText.fontSize * 0.8f;
+        bestStreakText.fontStyle = FontStyles.Normal;
+        bestStreakText.textWrappingMode = TextWrappingModes.NoWrap;
+        bestStreakText.alignment = TextAlignmentOptions.Left;
+        bestStreakText.color = Color.white;
+        bestStreakText.text = $"<color=#{ColorUtility.ToHtmlStringRGBA(streakLabelColor)}>최고 연속</color>  "
+                            + $"<color=#{ColorUtility.ToHtmlStringRGB(streakColor)}><b>×{RunResultData.BestStreak}</b></color>";
+
+        // 처치 수 글자 왼쪽 끝 + 글자 폭 + 간격
+        RectTransform source = killsText.rectTransform;
+        RectTransform rect = bestStreakText.rectTransform;
+        float killsWidth = killsText.GetPreferredValues(killsText.text).x;
+        float left = source.anchoredPosition.x - source.pivot.x * source.rect.width;
+        rect.pivot = new Vector2(0f, source.pivot.y);
+        rect.sizeDelta = new Vector2(320f, source.sizeDelta.y);
+        rect.anchoredPosition = new Vector2(left + killsWidth + streakGap, source.anchoredPosition.y);
     }
 
     #region 등장 연출 (R2)
@@ -164,6 +194,7 @@ public class ResultSceneUI : MonoBehaviour
             Add(value, t, 0.25f);
             t += 0.1f;
         }
+        Add(bestStreakText, t - 0.05f, 0.3f);
         Add(newRoundBadge != null && newRoundBadge.activeSelf ? newRoundBadge.transform : null, t, 0.35f, pop: true);
         Add(newTimeBadge != null && newTimeBadge.activeSelf ? newTimeBadge.transform : null, t + 0.1f, 0.35f, pop: true);
 

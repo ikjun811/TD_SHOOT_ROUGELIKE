@@ -55,7 +55,11 @@ public class EnemyDissolve : MonoBehaviour
             foreach (Renderer r in renderers)
             {
                 Material[] mats = r.sharedMaterials;
-                for (int i = 0; i < mats.Length; i++) mats[i] = GetDissolveMaterial(mats[i]);
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] != null && mats[i].shader != null && mats[i].shader.name.StartsWith("TDShoot/")) continue; // 덧붙인 실루엣 재질
+                    mats[i] = GetDissolveMaterial(mats[i]);
+                }
                 r.sharedMaterials = mats;
             }
         }

@@ -23,6 +23,7 @@ public static class RunResultData
     public static float MaxHit;
     public static int Deaths;
     public static int ModulesCollected;
+    public static int BestStreak; // 이번 판 최고 연속 처치 (KillStreakUI)
 
     public static WeaponDataSO[] Weapons = new WeaponDataSO[0];
     public static List<ModuleEffect>[] WeaponMechanisms = new List<ModuleEffect>[0]; // 무기별 장착 작동 모듈 (변형 아이콘용)

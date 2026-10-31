@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 // 전투 씬 후처리 프로파일 생성
 //   Create Post Process Profile: Assets/Project/Resources/PostProcessProfile.asset을 기본값으로 생성 (이미 있으면 선택만)
 //   만든 뒤 Inspector에서 블룸·비네트·색 조정 값을 바꾸면 다음 플레이부터 반영 (플레이 중에도 바로 반영)
-//   Apply Render Quality Settings: SSAO 세기·반경 상향 (렌더러 에셋)
+//   Apply Render Quality Settings: SSAO 세기·반경 상향 + 반 해상도 계산 (렌더러 에셋)
 public static class PostProcessTools
 {
     private const string Folder = "Assets/Project/Resources";
@@ -41,6 +41,7 @@ public static class PostProcessTools
     //   톤매핑·SMAA·그림자 거리는 GameplayPostProcess가 실행 중 적용
     private const float SsaoIntensity = 0.9f;
     private const float SsaoRadius = 0.6f;
+    private const bool SsaoDownsample = true;
 
     [MenuItem("Tools/TD Shoot/Apply Render Quality Settings")]
     public static void ApplyRenderQuality()
@@ -64,13 +65,16 @@ public static class PostProcessTools
                 SerializedObject so = new SerializedObject(feature);
                 SerializedProperty intensity = so.FindProperty("m_Settings.Intensity");
                 SerializedProperty radius = so.FindProperty("m_Settings.Radius");
+                SerializedProperty downsample = so.FindProperty("m_Settings.Downsample");
                 if (intensity == null || radius == null) continue;
                 intensity.floatValue = SsaoIntensity;
                 radius.floatValue = SsaoRadius;
+                // 최적화 (2026-10-31): 반 해상도 계산 — 비용 약 1/4, 접촉 그림자 경계만 조금 부드러워짐
+                if (downsample != null) downsample.boolValue = SsaoDownsample;
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(feature);
                 changed++;
-                Debug.Log($"[PostProcessTools] {data.name} SSAO 세기 {SsaoIntensity}·반경 {SsaoRadius}");
+                Debug.Log($"[PostProcessTools] {data.name} SSAO 세기 {SsaoIntensity}·반경 {SsaoRadius}·반 해상도 {(downsample != null ? SsaoDownsample.ToString() : "칸 없음")}");
             }
         }
         AssetDatabase.SaveAssets();

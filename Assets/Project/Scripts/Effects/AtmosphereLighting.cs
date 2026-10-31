@@ -121,7 +121,6 @@ public class AtmosphereLighting : MonoBehaviour
     private Light playerLight;
     private SphericalHarmonicsL2 appliedProbe;
     private bool ambientApplied;
-    private bool ambientOverrideWarned;
     private Light extractionLight;
     private ExtractionZone extractionZone;
 
@@ -199,7 +198,7 @@ public class AtmosphereLighting : MonoBehaviour
         Light sun = RenderSettings.sun;
         if (sun == null)
         {
-            foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            foreach (Light l in FindObjectsByType<Light>())
             {
                 if (l.type == LightType.Directional) { sun = l; break; }
             }
@@ -632,7 +631,7 @@ public class AtmosphereLighting : MonoBehaviour
     }
 
     // 씬 조명 데이터(하늘 주변광)가 씬 로드 뒤 늦게 적용돼 어두운 주변광을 덮는 경우 대비 (사용자: 시작할 때마다 밝기가 다름)
-    //   우리가 정한 값에서 바뀌면 다시 적용, 처음 한 번은 경고로 남김
+    //   우리가 정한 값에서 바뀌면 다시 적용 (원인 확인 후 경고 로그 제거 2026-10-31 — Unity가 설정 색으로 주변광을 다시 계산하는 시점 차이)
     private void KeepAmbient()
     {
         if (!ambientApplied) return;
@@ -640,14 +639,6 @@ public class AtmosphereLighting : MonoBehaviour
                        || RenderSettings.ambientProbe != appliedProbe
                        || !Mathf.Approximately(RenderSettings.reflectionIntensity, reflectionIntensity);
         if (!changed) return;
-        if (!ambientOverrideWarned)
-        {
-            ambientOverrideWarned = true;
-            // 덮어쓴 주변광의 위·아래 밝기 (예전 '어두운 판'의 실제 값 — ambientColor 조정 참고용)
-            Color[] seen = new Color[2];
-            RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up, Vector3.down }, seen);
-            Debug.LogWarning($"[AtmosphereLighting] 주변광이 다른 곳에서 바뀌어 다시 적용 (시작 후 {Time.timeSinceLevelLoad:0.00}초, 모드 {RenderSettings.ambientMode}) — 덮어쓴 값 위 {seen[0]} / 아래 {seen[1]}, 현재 설정 {ambientColor}");
-        }
         ApplySunAndAmbient();
     }
 

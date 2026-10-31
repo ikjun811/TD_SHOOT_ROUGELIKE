@@ -29,6 +29,14 @@ public static class GameSession
         LoadScene(GameplaySceneName);
     }
 
+    // 정식 빌드(Development Build 아님)에서는 일반 로그를 끔 — 경고·오류는 Player.log에 남김 (최적화 ② 2026-10-31)
+    //   에디터·Development Build에서는 그대로 출력
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void ApplyReleaseLogFilter()
+    {
+        if (!Debug.isDebugBuild) Debug.unityLogger.filterLogType = LogType.Warning;
+    }
+
 #if UNITY_EDITOR
     // 에디터 확인용: Tools > TD Shoot > Tutorial Test Mode가 켜져 있으면 GameplayScene을 바로 실행해도 튜토리얼로 시작
     public const string EditorTutorialTestKey = "TDShoot.TutorialTestMode";

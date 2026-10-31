@@ -8,12 +8,13 @@ using UnityEngine.TextCore.LowLevel;
 // 게임 폰트 (사용자 채택 2026-10-30: 제목 갈무리11 + 본문 Pretendard, 둘 다 OFL)
 //   Create Game Font Assets: Assets/Project/UI/Fonts의 ttf·otf로 TMP 동적 SDF 에셋 5개 생성 (이미 있으면 재사용, 설정만 갱신)
 //     - 굵게(Bold) = 가짜 굵게 대신 실제 굵은 서체 (갈무리 → Galmuri11-Bold, Pretendard → SemiBold(600)·Bold(700))
-//     - 대체 순서: 갈무리 → Pretendard → MALGUN SDF / Pretendard → MALGUN SDF (MALGUN은 기호 확인 후 제거 예정 — 라이선스)
+//     - 대체 순서: 갈무리 → Pretendard / Pretendard → (TMP 전역 대체) 갈무리 — MALGUN은 라이선스 문제로 제거 (2026-10-31)
 //     - TMP 기본 폰트 = Pretendard Regular (폰트를 따로 정하지 않은 코드 UI가 전부 따라감)
 //     - UITheme.headingFont = 갈무리11, bodyFont = Pretendard
 //     - 게임에서 쓰는 기호가 각 폰트에 있는지 검사해 로그
 //   Apply Game Fonts To Open Scenes / To Project Prefabs: 배치된 텍스트의 MALGUN·LiberationSans를 테마 폰트로 (F3)
 //   Snap Heading Font Sizes In Open Scenes: 씬의 갈무리 글자 크기를 12배수로 (F4b)
+//   Remove MALGUN Fallback: 게임에서 쓰는 글자(씬·프리팹·에셋·코드 문자열)가 갈무리·Pretendard에 다 있는지 검사 → 대체 목록에서 MALGUN 제거 → 파일 휴지통
 public static class GameFontTools
 {
     private const string FontFolder = "Assets/Project/UI/Fonts";
@@ -48,19 +49,17 @@ public static class GameFontTools
             return;
         }
 
-        TMP_FontAsset legacy = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LegacyFontPath);
-
         // 굵게 = 실제 굵은 서체 (TMP는 Bold 스타일에 무게 표 7번(700)을 사용)
         SetWeight(galmuri, 7, galmuriBold);
         SetWeight(pretendard, 6, pretendardSemi);
         SetWeight(pretendard, 7, pretendardBold);
 
-        // 대체 폰트: 갈무리에 없는 글자는 같은 굵기의 Pretendard로, 그다음 MALGUN
-        SetFallbacks(galmuri, pretendard, legacy);
-        SetFallbacks(galmuriBold, pretendardBold, legacy);
-        SetFallbacks(pretendard, legacy);
-        SetFallbacks(pretendardSemi, legacy);
-        SetFallbacks(pretendardBold, legacy);
+        // 대체 폰트: 갈무리에 없는 글자는 같은 굵기의 Pretendard로, Pretendard에 없는 글자는 전역 대체(갈무리)로
+        SetFallbacks(galmuri, pretendard);
+        SetFallbacks(galmuriBold, pretendardBold);
+        SetFallbacks(pretendard);
+        SetFallbacks(pretendardSemi);
+        SetFallbacks(pretendardBold);
 
         // TMP 기본 폰트
         TMP_Settings settings = TMP_Settings.instance;
@@ -68,9 +67,7 @@ public static class GameFontTools
         {
             Undo.RecordObject(settings, "Set Default Game Font");
             TMP_Settings.defaultFontAsset = pretendard;
-            var globalFallbacks = new List<TMP_FontAsset>();
-            if (legacy != null) globalFallbacks.Add(legacy);
-            TMP_Settings.fallbackFontAssets = globalFallbacks;
+            TMP_Settings.fallbackFontAssets = new List<TMP_FontAsset> { galmuri };
             EditorUtility.SetDirty(settings);
         }
         else
@@ -87,8 +84,7 @@ public static class GameFontTools
 
         AssetDatabase.SaveAssets();
 
-        Debug.Log("[GameFontTools] 게임 폰트 적용 — 기본 폰트 Pretendard, 테마 제목 갈무리11 / 본문 Pretendard" +
-                  (legacy != null ? ", 마지막 대체 MALGUN SDF" : ", MALGUN SDF 없음(대체 없음)"));
+        Debug.Log("[GameFontTools] 게임 폰트 적용 — 기본 폰트 Pretendard, 테마 제목 갈무리11 / 본문 Pretendard, 전역 대체 갈무리11");
         ReportMissing(galmuri, "갈무리11");
         ReportMissing(pretendard, "Pretendard");
         AssetDatabase.SaveAssets(); // 검사 중 아틀라스에 추가된 글자 저장
@@ -301,6 +297,164 @@ public static class GameFontTools
         AssetDatabase.SaveAssets();
         Debug.Log($"[GameFontTools] 폰트 에셋 생성 -> {assetPath} (샘플링 {sampling}, 여백 {padding}, 아틀라스 {AtlasSize}, 동적·멀티 아틀라스)");
         return asset;
+    }
+
+    // ── MALGUN 대체 폰트 제거 (라이선스 정리 2026-10-31) ─────────────────
+    //   1. 게임에서 쓰는 글자 수집: 씬·Assets/Project의 프리팹·에셋(폰트 폴더 제외)의 문자열 + 런타임 코드의 문자열 리터럴(주석·Debug 로그 제외)
+    //   2. 갈무리11·Pretendard 어느 쪽에도 없는 글자 목록 (있으면 화면에서 빈 칸) → 확인 창
+    //   3. 폰트 에셋의 대체 목록·TMP 전역 대체에서 MALGUN 제거 (Pretendard → 전역 대체 갈무리)
+    //   4. MALGUN을 쓰는 곳이 더 없으면 Assets/Project/Font 폴더를 휴지통으로 (확인 창)
+    [MenuItem("Tools/TD Shoot/Remove MALGUN Fallback")]
+    public static void RemoveMalgunFallback()
+    {
+        TMP_FontAsset legacy = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(LegacyFontPath);
+        TMP_FontAsset galmuri = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetFolder + "/Galmuri11 SDF.asset");
+        TMP_FontAsset pretendard = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetFolder + "/Pretendard-Regular SDF.asset");
+        if (galmuri == null || pretendard == null)
+        {
+            EditorUtility.DisplayDialog("MALGUN 제거", "갈무리11·Pretendard 폰트 에셋을 찾지 못했습니다. Create Game Font Assets를 먼저 실행하세요.", "확인");
+            return;
+        }
+
+        // 1·2. 사용 글자 검사 (ASCII는 두 폰트 모두 있음 → 그 밖의 글자만)
+        string used = CollectUsedCharacters(out int fileCount);
+        galmuri.HasCharacters(used, out uint[] notInGalmuri, false, true);
+        pretendard.HasCharacters(used, out uint[] notInPretendard, false, true);
+        var missing = new List<uint>();
+        if (notInGalmuri != null && notInPretendard != null)
+        {
+            var galmuriMissing = new HashSet<uint>(notInGalmuri);
+            foreach (uint code in notInPretendard)
+                if (galmuriMissing.Contains(code)) missing.Add(code);
+        }
+        string missingText = ToText(missing.ToArray());
+        Debug.Log($"[GameFontTools] 사용 글자 검사 — 파일 {fileCount}개, ASCII 외 글자 {used.Length}개. " +
+                  $"Pretendard에 없음(갈무리로 표시) [{ToText(notInPretendard)}] / 두 폰트 모두 없음 [{missingText}]");
+
+        string message = missing.Count == 0
+            ? $"게임에서 쓰는 글자(ASCII 외 {used.Length}개)가 모두 갈무리11·Pretendard에 있습니다.\n\nMALGUN을 대체 폰트에서 제거할까요?"
+            : $"두 폰트 모두 없는 글자가 있습니다 (MALGUN을 빼면 빈 칸으로 보일 수 있음):\n{missingText}\n\n콘솔에 전체 목록. 그래도 제거할까요?";
+        if (!EditorUtility.DisplayDialog("MALGUN 제거", message, "제거", "취소")) return;
+
+        // 3. 대체 목록에서 제거
+        foreach (string guid in AssetDatabase.FindAssets("t:TMP_FontAsset", new[] { AssetFolder }))
+        {
+            TMP_FontAsset asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(guid));
+            if (asset == null || asset.fallbackFontAssetTable == null) continue;
+            if (asset.fallbackFontAssetTable.RemoveAll(f => f == null || f == legacy) > 0)
+            {
+                EditorUtility.SetDirty(asset);
+                Debug.Log($"[GameFontTools] {asset.name}: 대체 목록에서 MALGUN 제거");
+            }
+        }
+        TMP_Settings settings = TMP_Settings.instance;
+        if (settings != null)
+        {
+            Undo.RecordObject(settings, "Remove MALGUN Fallback");
+            TMP_Settings.fallbackFontAssets = new List<TMP_FontAsset> { galmuri };
+            EditorUtility.SetDirty(settings);
+        }
+        AssetDatabase.SaveAssets();
+
+        // 4. 남은 참조 확인 후 파일 삭제
+        if (legacy == null) return;
+        string legacyGuid = AssetDatabase.AssetPathToGUID(LegacyFontPath);
+        string legacyFolder = System.IO.Path.GetDirectoryName(LegacyFontPath).Replace('\\', '/');
+        var users = new List<string>();
+        foreach (string path in AssetDatabase.GetAllAssetPaths())
+        {
+            if (!path.StartsWith("Assets/") || path.StartsWith(legacyFolder + "/")) continue;
+            if (!(path.EndsWith(".unity") || path.EndsWith(".prefab") || path.EndsWith(".asset") || path.EndsWith(".mat"))) continue;
+            if (System.IO.File.ReadAllText(path).Contains(legacyGuid)) users.Add(path);
+        }
+        if (users.Count > 0)
+        {
+            Debug.LogWarning("[GameFontTools] MALGUN SDF를 아직 쓰는 파일 (폰트 파일은 남겨 둠 — 씬이면 Apply Game Fonts To Open Scenes 후 저장):\n" + string.Join("\n", users));
+            EditorUtility.DisplayDialog("MALGUN 제거", $"대체 목록에서는 제거했습니다.\nMALGUN을 아직 쓰는 파일이 {users.Count}개 있어 폰트 파일은 남겨 두었습니다 (콘솔 목록).", "확인");
+            return;
+        }
+        if (EditorUtility.DisplayDialog("MALGUN 제거", $"MALGUN을 쓰는 곳이 없습니다.\n{legacyFolder} 폴더(맑은 고딕 TTF 3개 + SDF)를 휴지통으로 옮길까요?", "휴지통으로", "남겨 두기"))
+        {
+            AssetDatabase.MoveAssetToTrash(legacyFolder);
+            Debug.Log($"[GameFontTools] {legacyFolder} 휴지통으로 이동");
+        }
+    }
+
+    // 게임 화면에 나올 수 있는 ASCII 외 글자 (중복 없이)
+    private static string CollectUsedCharacters(out int fileCount)
+    {
+        var chars = new SortedSet<int>();
+        fileCount = 0;
+        foreach (string path in AssetDatabase.GetAllAssetPaths())
+        {
+            bool data = (path.StartsWith("Assets/Scenes/") && path.EndsWith(".unity"))
+                        || (path.StartsWith("Assets/Project/") && (path.EndsWith(".prefab") || path.EndsWith(".asset") || path.EndsWith(".unity"))
+                            && !path.Contains("/Fonts/") && !path.StartsWith("Assets/Project/Font/"));
+            bool code = path.StartsWith("Assets/Project/Scripts/") && path.EndsWith(".cs") && !path.Contains("/Editor/");
+            if (!data && !code) continue;
+            fileCount++;
+            string text = System.IO.File.ReadAllText(path);
+            if (data) AddYamlCharacters(text, chars);
+            else AddCodeStringCharacters(text, chars);
+        }
+        var sb = new StringBuilder();
+        foreach (int c in chars) sb.Append(char.ConvertFromUtf32(c));
+        return sb.ToString();
+    }
+
+    // YAML: 비ASCII는 \uXXXX(·\UXXXXXXXX·\xXX)로 저장되거나 그대로 들어 있음
+    private static void AddYamlCharacters(string text, SortedSet<int> chars)
+    {
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8})|x([0-9A-Fa-f]{2}))"))
+        {
+            string hex = m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value;
+            AddCode(System.Convert.ToInt32(hex, 16), chars);
+        }
+        AddRaw(text, chars);
+    }
+
+    // 코드: 주석·Debug 로그 줄을 뺀 문자열 리터럴 안의 글자만 (주석의 기호는 화면에 안 나옴)
+    private static void AddCodeStringCharacters(string text, SortedSet<int> chars)
+    {
+        var literal = new StringBuilder();
+        foreach (string line in text.Split('\n'))
+        {
+            if (line.Contains("Debug.Log")) continue;
+            bool inString = false;
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (!inString)
+                {
+                    if (c == '/' && i + 1 < line.Length && line[i + 1] == '/') break;
+                    if (c == '"') inString = true;
+                    else if (c == '\'' && i + 2 < line.Length && line[i + 2] == '\'') { literal.Append(line[i + 1]); i += 2; }
+                    continue;
+                }
+                if (c == '\\') { i++; continue; }
+                if (c == '"') { inString = false; continue; }
+                literal.Append(c);
+            }
+        }
+        AddRaw(literal.ToString(), chars);
+    }
+
+    private static void AddRaw(string text, SortedSet<int> chars)
+    {
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] < 0x80) continue;
+            int code = char.IsHighSurrogate(text[i]) && i + 1 < text.Length ? char.ConvertToUtf32(text[i], text[++i]) : text[i];
+            AddCode(code, chars);
+        }
+    }
+
+    // 공백·제어 문자·이모지 변형 선택자 등 글리프가 필요 없는 것 제외
+    private static void AddCode(int code, SortedSet<int> chars)
+    {
+        if (code < 0xA1 || code == 0xFEFF || (code >= 0x200B && code <= 0x200F) || (code >= 0xFE00 && code <= 0xFE0F)) return;
+        if (code >= 0xD800 && code <= 0xDFFF) return;
+        chars.Add(code);
     }
 
     private static void SetWeight(TMP_FontAsset asset, int index, TMP_FontAsset typeface)
