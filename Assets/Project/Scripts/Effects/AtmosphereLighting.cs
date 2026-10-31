@@ -19,28 +19,28 @@ public class AtmosphereLighting : MonoBehaviour
     [Header("달빛·주변광")]
     public Color sunColor = new Color(0.55f, 0.65f, 0.95f);
     // 참고 분위기(사용자 제시 이미지): 빛 밖은 거의 검정, 따뜻한 호박색 조명, 누런 저채도·고대비
-    public float sunIntensity = 0.24f;                              // 이전 0.35 → 0.2 → 0.12 → 0.04 → 0.09 → 0.18 → 0.24 (재질 변환 후 너무 어두워 올림)
-    public Color ambientColor = new Color(0.14f, 0.14f, 0.16f);     // 이전 (0.12, 0.13, 0.18) → (0.07, 0.08, 0.11) → (0.018, 0.02, 0.025) → (0.045, 0.047, 0.055) → (0.1, 0.1, 0.115)
+    public float sunIntensity = 0.1f;                               // 사용자 2026-10-31: 어두운 통로 + 비추는 조명, 주변은 구분되게 (0.24 → 0.06 너무 어두움 → 0.12 → 빛 웅덩이 대비 위해) 이전 0.35 → 0.2 → 0.12 → 0.04 → 0.09 → 0.18 → 0.24 (재질 변환 후 너무 어두워 올림)
+    public Color ambientColor = new Color(0.02f, 0.02f, 0.026f);    // 2026-10-31 최종 후보: 0.006은 색감 변경과 겹쳐 너무 어두움 → 0.02 / 사용자 2026-10-31: 예전 어두운 판(Unity가 설정 0.07을 다시 계산한 값 약 0.006)과 같게 — 0.14 → 0.07 → 0.03 → 0.006 (SH에 직접 넣는 값이라 Unity 재계산보다 밝게 보였음 / 이전 0.14, 0.14, 0.16 — 그 전 (0.12, 0.13, 0.18) → (0.07, 0.08, 0.11) → (0.018, 0.02, 0.025) → (0.045, 0.047, 0.055) → (0.1, 0.1, 0.115))
     [Range(0f, 1f)] public float reflectionIntensity = 0.2f;        // 하늘 반사 (씬 기본 1)
 
     [Header("플레이어 빛")]
     public Color playerLightColor = new Color(1f, 0.8f, 0.55f);
-    public float playerLightRange = 14f;
-    public float playerLightIntensity = 4.5f;
+    public float playerLightRange = 8f;      // 사용자 2026-10-31: 발밑만 (이전 14, 앞쪽은 손전등)
+    public float playerLightIntensity = 2.2f; // 이전 4.5
     public float playerLightHeight = 2.5f;
 
     [Header("창고 조명 (구역마다)")]
     public Color lampColor = new Color(1f, 0.78f, 0.45f);  // 호박색 (이전 1, 0.88, 0.7)
-    public float lampRange = 10f;
-    public float lampIntensity = 12f;
-    public float bulbGlow = 4f;                           // 천장등 전구 HDR 밝기 (블룸으로 빛나는 점)
+    public float lampRange = 12f;            // 이전 10 (빛 웅덩이 가장자리까지)
+    public float lampIntensity = 22f;        // 이전 12 → 14 (어둠과 빛 웅덩이 대비, 웅덩이가 바닥과 비슷해 올림)
+    public float bulbGlow = 6f;                           // 천장등 전구 HDR 밝기 (블룸으로 빛나는 점)
     public float lampHeight = 5f;
     public float lampSpotAngle = 80f;                  // 아래로 비추는 각도 → 바닥 빛 웅덩이 반경 = 높이 x tan(각/2)
     [Range(0f, 1f)] public float lampLitChance = 0.7f; // 켜진 구역 비율 (나머지는 깜깜), 1라운드 기준 — 라운드가 오르면 lateLampLitChance 쪽으로
     [Range(0f, 1f)] public float flickerChance = 0.3f;
 
     [Header("빛줄기·먼지 (켜진 천장등마다)")]
-    public float shaftAlpha = 0.17f;
+    public float shaftAlpha = 0.22f;                   // 이전 0.17 (참고 이미지: 빛줄기·연기)
     public float shaftWidthRatio = 0.75f;              // 바닥 빛 웅덩이 대비 빛줄기 아래 폭
     public int dustPerLamp = 14;
 
@@ -50,11 +50,15 @@ public class AtmosphereLighting : MonoBehaviour
 
     [Header("분위기 색감 (전용 Volume, 기본 후처리 10 위·위기 화면 15 아래)")]
     public bool moodGrading = true;
+    // 사용자 2026-10-31: 색감 변경(노출 −0.35·대비 24·초록 기운 등)은 너무 어두워 되돌림 — 원하는 건 색감이 아니라 어둠과 조명의 대비
+    public float moodExposure = 0f;       // 화면 전체 노출 (조절용)
     public float moodContrast = 15f;      // 이전 22 (어두운 부분이 뭉개져 낮춤)
     public float moodSaturation = -25f;
     public float moodTemperature = 18f;   // 따뜻하게
     public float moodTint = 8f;           // 살짝 초록
     public float moodVignette = 0.3f;     // 이전 0.4
+    [Tooltip("어두운 부분을 더 가라앉힘 (LiftGammaGain lift w, 음수일수록 검정) — 0 = 끔")]
+    public float moodShadowLift = 0f;
 
     [Header("라운드 진행 분위기 (1라운드 → 최종 직전으로 갈수록, 맵 생성마다 적용)")]
     public Color lateLampColor = new Color(1f, 0.55f, 0.32f);      // 붉은 주황
@@ -115,6 +119,9 @@ public class AtmosphereLighting : MonoBehaviour
     private static float shaftMeshKey;
     private readonly List<Light> crateLights = new List<Light>();
     private Light playerLight;
+    private SphericalHarmonicsL2 appliedProbe;
+    private bool ambientApplied;
+    private bool ambientOverrideWarned;
     private Light extractionLight;
     private ExtractionZone extractionZone;
 
@@ -209,6 +216,8 @@ public class AtmosphereLighting : MonoBehaviour
         SphericalHarmonicsL2 probe = new SphericalHarmonicsL2();
         probe.AddAmbientLight(ambientColor);
         RenderSettings.ambientProbe = probe;
+        appliedProbe = probe;
+        ambientApplied = true;
 
         // 금속 재질에 비치는 하늘 반사도 줄임 (씬 기본 1)
         RenderSettings.reflectionIntensity = reflectionIntensity;
@@ -243,6 +252,14 @@ public class AtmosphereLighting : MonoBehaviour
         extractionLight.shadows = LightShadows.None;
     }
 
+    // 결과 화면 배경(MainMenuBackdrop)용 분위기 덮어쓰기 — 첫 맵 조명 배치(Start) 전에 설정
+    //   Emergency = 최종층 비상등(실패), Daylight = 차가운 흰빛·깜빡임 없음(지상 도달)
+    public enum MoodOverride { None, Emergency, Daylight }
+    [System.NonSerialized] public MoodOverride moodOverride = MoodOverride.None;
+    [Header("지상 도달 분위기 (결과 화면 클리어)")]
+    public Color daylightColor = new Color(0.82f, 0.92f, 1f);
+    [Range(0f, 1f)] public float daylightLitChance = 0.9f;
+
     private void BuildLamps(BspArenaGenerator generator)
     {
         foreach (Lamp lamp in lamps)
@@ -256,10 +273,17 @@ public class AtmosphereLighting : MonoBehaviour
         int round = WaveManager.Instance != null ? WaveManager.Instance.CurrentRound : 1;
         int maxRound = WaveManager.Instance != null ? WaveManager.Instance.MaxRound : 15;
         float t = Mathf.Clamp01((round - 1f) / Mathf.Max(1f, maxRound - 2f));
-        emergency = round >= maxRound;
+        emergency = moodOverride == MoodOverride.Emergency || (moodOverride == MoodOverride.None && round >= maxRound);
         currentLampColor = emergency ? emergencyColor : Color.Lerp(lampColor, lateLampColor, t);
         float litChance = emergency ? emergencyLitChance : Mathf.Lerp(lampLitChance, lateLampLitChance, t);
         float flicker = emergency ? 0f : Mathf.Lerp(flickerChance, lateFlickerChance, t);
+        if (moodOverride == MoodOverride.Daylight)
+        {
+            t = 0f;
+            currentLampColor = daylightColor;
+            litChance = daylightLitChance;
+            flicker = 0f;
+        }
         ApplyRoundMood(t);
 
         List<Vector3> centers = generator.GetZoneCenters();
@@ -274,13 +298,6 @@ public class AtmosphereLighting : MonoBehaviour
         }
 
         BuildFog(generator);
-    }
-
-    // 맵 없이 조명 하나만 직접 배치 (메인 화면 디오라마) — 바닥 지점 위 lampHeight에 천장등·빛줄기·전구·먼지
-    public void AddLamp(Vector3 groundPoint, bool flicker)
-    {
-        if (currentLampColor.a <= 0f) currentLampColor = lampColor; // 맵 생성(BuildLamps)을 거치지 않았으면 1층 색
-        CreateLamp(groundPoint, flicker);
     }
 
     private void CreateLamp(Vector3 center, bool flicker)
@@ -360,6 +377,7 @@ public class AtmosphereLighting : MonoBehaviour
         moodProfile.hideFlags = HideFlags.DontSave;
 
         ColorAdjustments color = moodProfile.Add<ColorAdjustments>(true);
+        color.postExposure.Override(moodExposure);
         color.contrast.Override(moodContrast);
         color.saturation.Override(moodSaturation);
         color.colorFilter.Override(Color.white);
@@ -367,6 +385,8 @@ public class AtmosphereLighting : MonoBehaviour
         WhiteBalance balance = moodProfile.Add<WhiteBalance>(true);
         balance.temperature.Override(moodTemperature);
         balance.tint.Override(moodTint);
+        LiftGammaGain lgg = moodProfile.Add<LiftGammaGain>(true);
+        lgg.lift.Override(new Vector4(1f, 1f, 1f, moodShadowLift));
         Vignette vignette = moodProfile.Add<Vignette>(true);
         vignette.color.Override(Color.black);
         vignette.intensity.Override(moodVignette);
@@ -611,8 +631,29 @@ public class AtmosphereLighting : MonoBehaviour
         return gradient;
     }
 
+    // 씬 조명 데이터(하늘 주변광)가 씬 로드 뒤 늦게 적용돼 어두운 주변광을 덮는 경우 대비 (사용자: 시작할 때마다 밝기가 다름)
+    //   우리가 정한 값에서 바뀌면 다시 적용, 처음 한 번은 경고로 남김
+    private void KeepAmbient()
+    {
+        if (!ambientApplied) return;
+        bool changed = RenderSettings.ambientMode != AmbientMode.Flat
+                       || RenderSettings.ambientProbe != appliedProbe
+                       || !Mathf.Approximately(RenderSettings.reflectionIntensity, reflectionIntensity);
+        if (!changed) return;
+        if (!ambientOverrideWarned)
+        {
+            ambientOverrideWarned = true;
+            // 덮어쓴 주변광의 위·아래 밝기 (예전 '어두운 판'의 실제 값 — ambientColor 조정 참고용)
+            Color[] seen = new Color[2];
+            RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up, Vector3.down }, seen);
+            Debug.LogWarning($"[AtmosphereLighting] 주변광이 다른 곳에서 바뀌어 다시 적용 (시작 후 {Time.timeSinceLevelLoad:0.00}초, 모드 {RenderSettings.ambientMode}) — 덮어쓴 값 위 {seen[0]} / 아래 {seen[1]}, 현재 설정 {ambientColor}");
+        }
+        ApplySunAndAmbient();
+    }
+
     private void Update()
     {
+        KeepAmbient();
         if (playerLight != null)
         {
             playerLight.color = playerLightColor;

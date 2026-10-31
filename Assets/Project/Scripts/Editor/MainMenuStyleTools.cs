@@ -14,8 +14,8 @@ using UnityEngine.UI;
 public static class MainMenuStyleTools
 {
     private const string Subtitle = "ESCAPE TO THE SURFACE"; // 깊이 표시 D-4 (이전 TOP-DOWN EXTRACTION ROGUELIKE)
-    private static readonly Color PanelColor = new Color(0.02f, 0.035f, 0.05f, 0.92f);
-    private static readonly Color DimText = new Color(0.55f, 0.6f, 0.66f);
+    internal static readonly Color PanelColor = new Color(0.02f, 0.035f, 0.05f, 0.92f);
+    internal static readonly Color DimText = new Color(0.55f, 0.6f, 0.66f);
 
     [MenuItem("Tools/TD Shoot/Restyle Main Menu (Minimal)")]
     public static void Restyle()
@@ -145,7 +145,7 @@ public static class MainMenuStyleTools
     }
 
     // 테두리 스킨을 떼고 글자만 남김 (클릭 영역은 투명 Image 유지) + MenuItemHighlight
-    private static void StyleTextButton(Button button, UITheme theme, float fontSize, TextAlignmentOptions alignment, float textInset)
+    internal static void StyleTextButton(Button button, UITheme theme, float fontSize, TextAlignmentOptions alignment, float textInset)
     {
         if (button.TryGetComponent(out UIThemeSkin skin)) Undo.DestroyObjectImmediate(skin);
         if (button.TryGetComponent(out Image image))
@@ -234,7 +234,26 @@ public static class MainMenuStyleTools
         }
     }
 
-    private static Image GetOrCreateImage(RectTransform parent, string name)
+    // 게임 정보 패널 글 전체를 MainMenuSceneBuilder.InfoText로 교체 (열린 MainMenu 씬, Undo 가능, 씬 저장은 직접)
+    [MenuItem("Tools/TD Shoot/Apply Game Info To Main Menu")]
+    public static void ApplyGameInfo()
+    {
+        MainMenuUI menuUI = Object.FindAnyObjectByType<MainMenuUI>(FindObjectsInactive.Include);
+        GameObject infoPanel = menuUI != null ? new SerializedObject(menuUI).FindProperty("infoPanel").objectReferenceValue as GameObject : null;
+        Transform body = infoPanel != null ? infoPanel.transform.Find("Body") : null;
+        if (body == null || !body.TryGetComponent(out TextMeshProUGUI bodyText))
+        {
+            EditorUtility.DisplayDialog("Main Menu", "열린 씬에서 게임 정보 패널(InfoPanel > Body)을 찾지 못했습니다. MainMenu 씬을 열어 주세요.", "확인");
+            return;
+        }
+        Undo.RecordObject(bodyText, "Apply Game Info");
+        bodyText.text = MainMenuSceneBuilder.InfoText;
+        EditorUtility.SetDirty(bodyText);
+        EditorSceneManager.MarkSceneDirty(bodyText.gameObject.scene);
+        Debug.Log("[MainMenu] 게임 정보 글 교체 — 씬 저장은 직접");
+    }
+
+    internal static Image GetOrCreateImage(RectTransform parent, string name)
     {
         Transform found = parent.Find(name);
         if (found != null && found.TryGetComponent(out Image existing)) return existing;
@@ -246,7 +265,7 @@ public static class MainMenuStyleTools
         return image;
     }
 
-    private static TextMeshProUGUI GetOrCreateText(RectTransform parent, string name)
+    internal static TextMeshProUGUI GetOrCreateText(RectTransform parent, string name)
     {
         Transform found = parent.Find(name);
         if (found != null && found.TryGetComponent(out TextMeshProUGUI existing)) return existing;

@@ -62,6 +62,34 @@ public static class SoundLibraryTools
         Debug.Log($"[SoundLibraryTools] 빈 칸 {filled}개에 Vefects 효과음 연결 (이미 채워진 칸은 그대로) -> {AssetPath}");
     }
 
+    // 수류탄 충전 알림 (사용자 2026-10-31: 차오르는 소리가 어색 → 알림 느낌). 합성음 2종 중 선택, 이 칸만 덮어씀
+    //   Chime = 두 음 상승 '띠링' 0.55초 / Beep = 짧은 '삑삑' 0.3초 (Assets/Project/Audio/SFX)
+    private const string SfxFolder = "Assets/Project/Audio/SFX/";
+
+    [MenuItem("Tools/TD Shoot/Grenade Ready Sound - Chime")]
+    public static void GrenadeReadyChime() => SetGrenadeReady("SFX_GrenadeReady_Chime.wav");
+
+    [MenuItem("Tools/TD Shoot/Grenade Ready Sound - Beep")]
+    public static void GrenadeReadyBeep() => SetGrenadeReady("SFX_GrenadeReady_Beep.wav");
+
+    private static void SetGrenadeReady(string fileName)
+    {
+        AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(SfxFolder + fileName);
+        if (clip == null)
+        {
+            Debug.LogWarning($"[SoundLibraryTools] 효과음 없음: {SfxFolder}{fileName}");
+            return;
+        }
+        SoundLibrary lib = LoadOrCreate();
+        lib.grenadeReady.clips = new[] { clip };
+        lib.grenadeReady.volume = 0.5f;
+        lib.grenadeReady.pitchRandom = 0f;
+        lib.grenadeReady.minInterval = 0.2f;
+        EditorUtility.SetDirty(lib);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[SoundLibraryTools] 수류탄 충전 알림 = {fileName}");
+    }
+
     // 배경음 연결: Assets/BGM/Loops (원본에서 루프 길이로 자르고 음량을 -16 LUFS로 맞춘 wav)
     //   가져오기 설정 = 스트리밍·Vorbis, 음악 칸은 덮어씀 (정비 칸은 비움 → 전투 곡을 먹먹하게)
     private const string BgmFolder = "Assets/BGM/Loops/";

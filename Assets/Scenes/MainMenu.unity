@@ -7587,11 +7587,16 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<b>\uC878\uC5C5\uC791\uD488 \uC815\uBCF4</b>\n\n\uD559\uAD50 / \uD559\uACFC:
-    \n\uC81C\uC791\uC790: \n\uC9C0\uB3C4\uAD50\uC218: \n\uC81C\uC791 \uAE30\uAC04:
-    \n\n\uC0AC\uC6A9 \uC5D4\uC9C4: Unity 6 (URP)\n\uC0AC\uC6A9 \uC5D0\uC14B: JU TPS
-    Controller, PixelUISciFiFree, SciFi Space Soldier, SciFi Warehouse Kit, RPG/FPS
-    Industrial Assets"
+  m_text: "<b>\uC878\uC5C5\uC791\uD488 \uC815\uBCF4</b>\n\uD64D\uC775\uB300\uD559\uAD50
+    \uC138\uC885\uCEA0\uD37C\uC2A4 \uAC8C\uC784\uC18C\uD504\uD2B8\uC6E8\uC5B4\uD559\uACFC\n\uC81C\uC791 
+    \uC774\uC775\uC900 (C093196)\n\uC9C0\uB3C4\uAD50\uC218  \uAC15\uC2E0\uC9C4 \uAD50\uC218\uB2D8\n\uC81C\uC791
+    \uAE30\uAC04  \uC57D 4\uAC1C\uC6D4\nGitHub  github.com/ikjun811/TD_SHOOT_ROUGELIKE\n\n<b>\uAC1C\uBC1C
+    \uD658\uACBD</b>\nUnity 6 (URP)\n\n<b>\uC0AC\uC6A9 \uC5D0\uC14B</b>\n\uCE90\uB9AD\uD130\xB7\uC801 
+    Horrors(pack), SciFi Space Soldier\n\uB9F5  SciFi TopDown SpaceStation\n\uC774\uB3D9\xB7\uC0AC\uACA9
+    \uAE30\uBC18  Julhiecio TPS Controller\nUI  PixelUISciFiFree\n\uC774\uD399\uD2B8 
+    Vefects Flipbook VFX Bundle Lite\n\uD3F0\uD2B8  \uAC08\uBB34\uB9AC11, Pretendard
+    (SIL Open Font License)\n\uBC30\uACBD\uC74C  Pixabay \u2014 eisenvater, brvhrtz,
+    fnx_sound, KK Sample / Freesound \u2014 timbre"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}
   m_sharedMaterial: {fileID: 7485158455947444112, guid: c1e4803812d9a2040ba1a01aee3fc09c, type: 2}

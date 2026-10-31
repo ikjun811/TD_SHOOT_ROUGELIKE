@@ -191,7 +191,7 @@ public class RunResultManager : MonoBehaviour
         RectTransform panel = CreateImage("Panel", root, PanelColor);
         panel.sizeDelta = new Vector2(760f, 640f);
 
-        CreateText("Title", panel, cleared ? "GAME CLEAR" : "GAME OVER", 60f, cleared ? ClearColor : GameOverColor,
+        CreateText("Title", panel, cleared ? "SURFACE REACHED" : "MISSION FAILED", 60f, cleared ? ClearColor : GameOverColor,
                    new Vector2(0f, 250f), new Vector2(700f, 90f), FontStyles.Bold, role: UIFontRole.Heading);
 
         CreateText("Stats", panel, BuildStatsText(), 30f, Color.white,

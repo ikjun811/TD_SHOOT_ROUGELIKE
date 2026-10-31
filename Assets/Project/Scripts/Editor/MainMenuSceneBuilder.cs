@@ -15,15 +15,24 @@ public static class MainMenuSceneBuilder
     private const string ScenePath = "Assets/Scenes/MainMenu.unity";
     internal const string GameTitle = "DEPTH ZERO"; // 사용자 채택 2026-10-30 (지하 시설에서 지상(깊이 0)까지 한 층씩 탈출)
 
-    private const string InfoText =
-        "<b>졸업작품 정보</b>\n\n" +
-        "학교 / 학과: \n" +
-        "제작자: \n" +
-        "지도교수: \n" +
-        "제작 기간: \n\n" +
-        "사용 엔진: Unity 6 (URP)\n" +
-        "사용 에셋: JU TPS Controller, PixelUISciFiFree, SciFi Space Soldier, SciFi Warehouse Kit, RPG/FPS Industrial Assets\n\n" +
-        "(이 글은 MainMenu 씬의 InfoPanel > Body에서 수정)";
+    // 게임 정보 (사용자 제공 2026-10-31). 기존 씬 글은 Tools > TD Shoot > Apply Game Info To Main Menu로 교체
+    internal const string InfoText =
+        "<b>졸업작품 정보</b>\n" +
+        "홍익대학교 세종캠퍼스 게임소프트웨어학과\n" +
+        "제작  이익준 (C093196)\n" +
+        "지도교수  강신진 교수님\n" +
+        "제작 기간  약 4개월\n" +
+        "GitHub  github.com/ikjun811/TD_SHOOT_ROUGELIKE\n\n" +
+        "<b>개발 환경</b>\n" +
+        "Unity 6 (URP)\n\n" +
+        "<b>사용 에셋</b>\n" +
+        "캐릭터·적  Horrors(pack), SciFi Space Soldier\n" +
+        "맵  SciFi TopDown SpaceStation\n" +
+        "이동·사격 기반  Julhiecio TPS Controller\n" +
+        "UI  PixelUISciFiFree\n" +
+        "이펙트  Vefects Flipbook VFX Bundle Lite\n" +
+        "폰트  갈무리11, Pretendard (SIL Open Font License)\n" +
+        "배경음  Pixabay — eisenvater, brvhrtz, fnx_sound, KK Sample / Freesound — timbre";
 
     private const string ControlsText =
         "<b>전투</b>\n" +

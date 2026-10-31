@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,7 +6,8 @@ using UnityEngine.UI;
 // 결과 씬 (ResultScene): RunResultData를 에디터에서 배치한 UI에 채움 (GDD 8-6 #10)
 //   클리어/실패 제목·색, 전투 기록 카드(총 피해량·최고 한 방·사망·획득 모듈), 라운드·시간·처치, 최고 기록 + NEW
 //   최종 빌드: 장착 무기 아이콘(레어도 테두리 + 작동 모듈 변형 실루엣) + 그리드 미리보기(모듈 경계선)
-//   씬은 Tools > TD Shoot > Create Result Scene으로 만들 수 있음
+//   등장 연출(R2): 제목 깜빡임·선 → 부제 → 카드(숫자 올라감) → 요약·NEW 맥박 → 빌드 → 버튼, 아무 키·클릭이면 건너뜀
+//   씬은 Tools > TD Shoot > Create Result Scene으로 만들 수 있음 (스타일은 Restyle Result Scene (Minimal))
 public class ResultSceneUI : MonoBehaviour
 {
     [Header("Title")]
@@ -36,6 +38,40 @@ public class ResultSceneUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button mainMenuButton;
 
+    [Header("등장 연출 (R2)")]
+    [SerializeField] private bool playReveal = true;
+    [Tooltip("숫자가 0부터 올라가는 시간(초)")]
+    [SerializeField] private float countDuration = 0.8f;
+    [Tooltip("나타날 때 아래에서 올라오는 거리(px)")]
+    [SerializeField] private float revealRise = 12f;
+
+    // 차례로 나타나는 요소 하나 (실제 시간, 아무 키·클릭이면 즉시 끝)
+    private class RevealItem
+    {
+        public CanvasGroup group;
+        public RectTransform rect;
+        public Vector2 basePosition;
+        public float start;
+        public float duration;
+        public bool flicker;     // 제목: 깜빡이며 켜짐
+        public bool growX;       // 선: 왼쪽에서 그어짐
+        public bool pop;         // NEW: 크게 나타났다 돌아옴 + 이후 맥박
+    }
+
+    private class Counter
+    {
+        public TextMeshProUGUI text;
+        public float value;
+        public float start;
+    }
+
+    private readonly List<RevealItem> revealItems = new List<RevealItem>();
+    private readonly List<Counter> counters = new List<Counter>();
+    private readonly List<RectTransform> pulsing = new List<RectTransform>();
+    private float revealTime;
+    private float revealEnd;
+    private bool revealing;
+
     private void Awake()
     {
         Time.timeScale = 1f;
@@ -57,8 +93,11 @@ public class ResultSceneUI : MonoBehaviour
         bool cleared = RunResultData.Cleared;
         if (titleText != null)
         {
-            titleText.text = cleared ? "GAME CLEAR" : "GAME OVER";
+            titleText.text = cleared ? "SURFACE REACHED" : "MISSION FAILED"; // 사용자 채택 2026-10-31 (이전 GAME CLEAR / GAME OVER)
             titleText.color = cleared ? clearColor : failColor;
+            // 제목 아래 선(Restyle Result Scene이 생성)도 제목 색
+            if (titleText.transform.parent.Find("TitleLine") is Transform line && line.TryGetComponent(out Image lineImage))
+                lineImage.color = titleText.color;
         }
         // 깊이 표시 D-3: 라운드 → 깊이 (클리어 = 지상 = DEPTH ZERO)
         int depth = cleared ? 0 : DepthDisplay.FromRound(RunResultData.Round, RunResultData.MaxRound);
@@ -90,7 +129,149 @@ public class ResultSceneUI : MonoBehaviour
 
         ShowWeapons();
         BuildGridPreview();
+        if (playReveal) BeginReveal();
     }
+
+    #region 등장 연출 (R2)
+
+    // 순서: 제목(깜빡임)·선 → 부제 → 구역 제목 → 카드 4개(숫자 올라감) → 요약 줄·NEW → 무기 슬롯 → 그리드 → 요약·최고 기록 → 버튼
+    private void BeginReveal()
+    {
+        Add(titleText, 0f, 0.35f, flicker: true);
+        if (titleText != null && titleText.transform.parent.Find("TitleLine") is RectTransform line) Add(line, 0.15f, 0.35f, growX: true);
+        Add(subtitleText, 0.4f, 0.3f);
+
+        Transform root = transform;
+        float t = 0.6f;
+        foreach (string header in new[] { "RecordsHeader", "BuildHeader" })
+        {
+            Add(root.Find(header), t, 0.3f);
+            if (root.Find(header + "Rule") is RectTransform rule) Add(rule, t, 0.4f, growX: true);
+        }
+
+        t = 0.8f;
+        AddCard(totalDamageText, RunResultData.TotalDamage, ref t);
+        AddCard(maxHitText, RunResultData.MaxHit, ref t);
+        AddCard(deathsText, RunResultData.Deaths, ref t);
+        AddCard(modulesText, RunResultData.ModulesCollected, ref t);
+
+        t = 1.5f;
+        foreach (TextMeshProUGUI value in new[] { roundText, timeText, killsText })
+        {
+            if (value == null) continue;
+            string row = value.name.EndsWith("Value") ? value.name.Substring(0, value.name.Length - 5) : value.name;
+            Add(value.transform.parent.Find(row + "Label"), t, 0.25f);
+            Add(value, t, 0.25f);
+            t += 0.1f;
+        }
+        Add(newRoundBadge != null && newRoundBadge.activeSelf ? newRoundBadge.transform : null, t, 0.35f, pop: true);
+        Add(newTimeBadge != null && newTimeBadge.activeSelf ? newTimeBadge.transform : null, t + 0.1f, 0.35f, pop: true);
+
+        t = 1.7f;
+        if (weaponSlots != null)
+        {
+            foreach (Image slot in weaponSlots)
+            {
+                Add(slot, t, 0.3f);
+                t += 0.1f;
+            }
+        }
+        Add(gridContainer, t, 0.45f);
+        Add(buildSummaryText, t + 0.3f, 0.3f);
+        Add(bestRecordText, 2.1f, 0.3f);
+        Add(mainMenuButton, 2.4f, 0.3f);
+
+        revealEnd = 0f;
+        foreach (RevealItem item in revealItems) revealEnd = Mathf.Max(revealEnd, item.start + item.duration);
+        foreach (Counter c in counters) revealEnd = Mathf.Max(revealEnd, c.start + countDuration);
+        if (mainMenuButton != null) mainMenuButton.interactable = false;
+        revealTime = 0f;
+        revealing = true;
+        ApplyReveal();
+    }
+
+    // 카드 = 숫자 텍스트의 부모, 숫자는 0부터 올라감
+    private void AddCard(TextMeshProUGUI value, float target, ref float t)
+    {
+        if (value == null) return;
+        Add(value.transform.parent, t, 0.3f);
+        counters.Add(new Counter { text = value, value = target, start = t + 0.1f });
+        t += 0.08f;
+    }
+
+    private void Add(Component target, float start, float duration, bool flicker = false, bool growX = false, bool pop = false)
+    {
+        if (target == null) return;
+        RectTransform rect = target.transform as RectTransform;
+        CanvasGroup group = target.GetComponent<CanvasGroup>();
+        if (group == null) group = target.gameObject.AddComponent<CanvasGroup>();
+        revealItems.Add(new RevealItem
+        {
+            group = group, rect = rect, basePosition = rect != null ? rect.anchoredPosition : Vector2.zero,
+            start = start, duration = duration, flicker = flicker, growX = growX, pop = pop
+        });
+        if (pop && rect != null) pulsing.Add(rect);
+    }
+
+    private void Update()
+    {
+        if (revealing)
+        {
+            revealTime += Time.unscaledDeltaTime;
+            if (Input.anyKeyDown) revealTime = revealEnd; // 건너뛰기
+            ApplyReveal();
+            if (revealTime >= revealEnd)
+            {
+                revealing = false;
+                if (mainMenuButton != null) mainMenuButton.interactable = true;
+            }
+        }
+
+        // NEW: 나타난 뒤 천천히 맥박
+        if (!revealing || revealTime > 2f)
+        {
+            float a = 0.6f + 0.4f * (Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * 0.8f) * 0.5f + 0.5f);
+            foreach (RectTransform badge in pulsing)
+            {
+                if (badge != null && badge.TryGetComponent(out CanvasGroup g) && !IsAnimating(g)) g.alpha = a;
+            }
+        }
+    }
+
+    private bool IsAnimating(CanvasGroup group)
+    {
+        foreach (RevealItem item in revealItems)
+        {
+            if (item.group == group) return revealTime < item.start + item.duration;
+        }
+        return false;
+    }
+
+    private void ApplyReveal()
+    {
+        foreach (RevealItem item in revealItems)
+        {
+            float k = Mathf.Clamp01((revealTime - item.start) / Mathf.Max(0.01f, item.duration));
+            float ease = 1f - (1f - k) * (1f - k) * (1f - k);
+            float alpha = ease;
+            if (item.flicker && k > 0f && k < 1f) alpha = Mathf.PerlinNoise(revealTime * 40f, 0.3f) > 0.45f ? 1f : 0.15f;
+            item.group.alpha = alpha;
+            if (item.rect == null) continue;
+
+            if (item.growX) item.rect.localScale = new Vector3(ease, 1f, 1f);
+            else if (item.pop) item.rect.localScale = Vector3.one * Mathf.Lerp(1.5f, 1f, ease);
+            else item.rect.anchoredPosition = item.basePosition - new Vector2(0f, revealRise * (1f - ease));
+        }
+
+        foreach (Counter c in counters)
+        {
+            float k = Mathf.Clamp01((revealTime - c.start) / Mathf.Max(0.01f, countDuration));
+            float ease = 1f - Mathf.Pow(1f - k, 3f);
+            c.text.text = (k >= 1f ? c.value : Mathf.Floor(c.value * ease)).ToString("N0");
+        }
+    }
+
+    #endregion
 
     private void ShowWeapons()
     {

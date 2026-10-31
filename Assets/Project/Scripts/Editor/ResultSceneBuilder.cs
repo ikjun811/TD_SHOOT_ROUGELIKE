@@ -46,7 +46,7 @@ public static class ResultSceneBuilder
         Vector2 center = new Vector2(0.5f, 0.5f);
 
         // 제목
-        TextMeshProUGUI title = MainMenuSceneBuilder.CreateText("Title", canvas, "GAME CLEAR", 110f, FontStyles.Bold, TextAlignmentOptions.Center);
+        TextMeshProUGUI title = MainMenuSceneBuilder.CreateText("Title", canvas, "SURFACE REACHED", 110f, FontStyles.Bold, TextAlignmentOptions.Center);
         MainMenuSceneBuilder.SetRect(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(1400f, 130f), new Vector2(0.5f, 1f));
         TextMeshProUGUI subtitle = MainMenuSceneBuilder.CreateText("Subtitle", canvas, "15라운드 탈출 성공", 36f, FontStyles.Normal, TextAlignmentOptions.Center);
         MainMenuSceneBuilder.SetRect(subtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -205f), new Vector2(1200f, 50f), new Vector2(0.5f, 1f));

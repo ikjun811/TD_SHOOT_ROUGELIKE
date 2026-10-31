@@ -164,7 +164,7 @@ public class EnemyBase : MonoBehaviour
         {
             WorldHealthBar bar = gameObject.AddComponent<WorldHealthBar>();
             bar.showOnlyWhenDamaged = !IsElite;
-            bar.fillColor = IsElite ? eliteColor : new Color(0.9f, 0.2f, 0.2f);
+            bar.SetEnemyStyle(IsElite ? eliteColor : new Color(0.9f, 0.2f, 0.2f), IsElite);
         }
 
         // 벽 뒤 실루엣 (일반: 빨강 / 엘리트: 보라). 엘리트 크기·색 적용 뒤라 복제 렌더러에 섞이지 않음

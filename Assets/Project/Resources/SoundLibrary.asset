@@ -75,9 +75,9 @@ MonoBehaviour:
     minInterval: 0.08
   grenadeReady:
     clips:
-    - {fileID: 8300000, guid: 7b887711b3e728648909f7c5cea92e00, type: 3}
-    volume: 0.6
-    pitchRandom: 0.05
+    - {fileID: 8300000, guid: 563c8b70fee5c8d4e91f57d90ac1bfc4, type: 3}
+    volume: 0.5
+    pitchRandom: 0
     minInterval: 0.2
   lifesteal:
     clips:

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 //   분위기 조명·후처리는 전투 씬과 같은 코드(AtmosphereLighting·GameplayPostProcess)를 그대로 생성
 //   초점에 플레이어 빛 대신 따뜻한 포인트 라이트, 메뉴 쪽(왼쪽)은 그라데이션으로 어둡게 해 글자 가독성 확보
 //   씬 배치: Tools > TD Shoot > Add Arena Backdrop To Main Menu (생성기 복사 + 카메라 각도 기록)
+//   결과 화면(R3)도 같은 배경: Add Arena Backdrop To Result Scene — 클리어 = 차가운 흰빛(실패는 일반 조명 + 감시 카메라 화면), 화면 전체를 고르게 어둡게
 public class MainMenuBackdrop : MonoBehaviour
 {
     [Header("카메라 (도구가 전투 씬 카메라 각도로 채움)")]
@@ -31,6 +32,11 @@ public class MainMenuBackdrop : MonoBehaviour
     [SerializeField] private float focusLightIntensity = 3f;
     [SerializeField] private float focusLightHeight = 2.5f;
 
+    [Header("결과 화면 (R3)")]
+    [Tooltip("켜면 RunResultData에 따라 조명 분위기: 클리어 = 지상 흰빛, 실패 = 일반")]
+    [SerializeField] private bool moodFromResult = false;
+    [SerializeField] private Color daylightFocusColor = new Color(0.85f, 0.93f, 1f);
+
     [Header("메뉴 쪽 그라데이션")]
     [Range(0f, 1f)] [SerializeField] private float shadeAlpha = 0.85f;
     [Tooltip("화면 왼쪽부터 이 비율까지 진하게 유지")]
@@ -48,10 +54,33 @@ public class MainMenuBackdrop : MonoBehaviour
     private int targetZone = -1;
     private Texture2D shadeTexture;
 
+    // 결과 화면 연출(ResultBackdropEffects)이 카메라를 직접 조종할 때 사용
+    public bool PanEnabled { get; set; } = true;
+    public bool IsReady => zones.Count > 0;
+    public float FarClip => cameraDistance + 60f;
+    public Vector3 Focus { get => focus; set { focus = value; velocity = Vector3.zero; } }
+    public float OrthographicSize { get => orthographicSize; set => orthographicSize = value; }
+    public Vector3 CameraEuler { get => cameraEuler; set => cameraEuler = value; }
+
+    // 무작위 구역으로 바로 이동 (감시 카메라 화면 전환)
+    public void JumpToRandomZone()
+    {
+        if (zones.Count == 0) return;
+        Focus = zones[Random.Range(0, zones.Count)];
+    }
+
     private void Start()
     {
-        AtmosphereLighting.EnsureCreated();
+        AtmosphereLighting atmosphere = AtmosphereLighting.EnsureCreated();
         GameplayPostProcess.EnsureCreated();
+        bool daylight = false;
+        if (moodFromResult && RunResultData.HasData)
+        {
+            // AtmosphereLighting.Start(첫 조명 배치)보다 먼저 설정됨
+            // 실패는 감시 카메라 흑백 화면(ResultBackdropEffects)이라 비상등 붉은색이 안 보이고 어둡기만 해서 일반 조명
+            daylight = RunResultData.Cleared;
+            if (daylight) atmosphere.moodOverride = AtmosphereLighting.MoodOverride.Daylight;
+        }
 
         cam = Camera.main;
         if (cam != null)
@@ -77,7 +106,7 @@ public class MainMenuBackdrop : MonoBehaviour
         lightObj.transform.SetParent(transform, false);
         focusLight = lightObj.AddComponent<Light>();
         focusLight.type = LightType.Point;
-        focusLight.color = focusLightColor;
+        focusLight.color = daylight ? daylightFocusColor : focusLightColor;
         focusLight.range = focusLightRange;
         focusLight.intensity = focusLightIntensity;
         focusLight.shadows = LightShadows.None;
@@ -95,7 +124,7 @@ public class MainMenuBackdrop : MonoBehaviour
     private void LateUpdate()
     {
         float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);
-        if (targetZone >= 0)
+        if (PanEnabled && targetZone >= 0)
         {
             Vector3 toTarget = zones[targetZone] - focus;
             toTarget.y = 0f;
@@ -112,6 +141,8 @@ public class MainMenuBackdrop : MonoBehaviour
         if (focusLight != null) focusLight.transform.position = focus + Vector3.up * focusLightHeight;
         if (cam == null) return;
         Transform t = cam.transform;
+        cam.orthographicSize = orthographicSize;
+        cam.farClipPlane = Mathf.Max(FarClip, orthographicSize * 2f + cameraDistance);
         t.rotation = Quaternion.Euler(cameraEuler);
         // 초점을 화면 오른쪽에 두려면 카메라를 왼쪽으로 옮김
         float halfWidth = orthographicSize * cam.aspect;
@@ -136,7 +167,7 @@ public class MainMenuBackdrop : MonoBehaviour
         if (recent.Count > Mathf.Max(1, zones.Count / 2)) recent.RemoveAt(0);
     }
 
-    // 메뉴 캔버스 뒤(정렬 순서 -100) 오버레이: 왼쪽 진하게 → 오른쪽 투명 (디오라마 배경도 사용, 텍스처는 호출 쪽에서 파괴)
+    // 메뉴 캔버스 뒤(정렬 순서 -100) 오버레이: 왼쪽 진하게 → 오른쪽 투명 (텍스처는 호출 쪽에서 파괴)
     internal static Texture2D CreateShadeOverlay(Transform parent, float shadeAlpha, float shadeSolidUntil, float shadeFadeUntil, float overallShade)
     {
         GameObject canvasObj = new GameObject("BackdropShade", typeof(Canvas), typeof(CanvasScaler));
