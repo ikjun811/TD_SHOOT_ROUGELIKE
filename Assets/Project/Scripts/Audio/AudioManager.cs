@@ -5,6 +5,7 @@ using UnityEngine;
 //   배경음: 채널 2개를 번갈아 쓰며 서서히 전환 (unscaledDeltaTime — 정비 중 timeScale 0에서도 동작)
 //   효과음: 2D·3D 소스 풀, 같은 칸은 minInterval 안에 1번만, 음높이 무작위
 //   음량: 칸 음량 x GameSettings.MusicVolume / SfxVolume (전체 음량은 AudioListener) — 설정 변경이 매 프레임 반영
+//   곡 선택은 MusicDirector(같은 오브젝트)가 씬·상태를 보고 자동으로, 정비 중엔 SetMusicMuffled로 먹먹하게
 // 사용: AudioManager.PlaySfx(AudioManager.Library.enemyHit, 위치) / AudioManager.PlayMusic(AudioManager.Library.combat)
 public class AudioManager : MonoBehaviour
 {
@@ -39,6 +40,10 @@ public class AudioManager : MonoBehaviour
     private int activeMusic;
     private MusicEntry currentMusic;
     private float fadeSpeed = 1f;
+    private readonly AudioLowPassFilter[] musicFilters = new AudioLowPassFilter[2];
+    private bool musicMuffled;
+    private float muffle; // 0~1 (정비 먹먹함)
+    private const float OpenCutoff = 22000f;
 
     private readonly List<AudioSource> pool2D = new List<AudioSource>();
     private readonly List<AudioSource> pool3D = new List<AudioSource>();
@@ -77,7 +82,11 @@ public class AudioManager : MonoBehaviour
             source.loop = true;
             source.priority = 0;
             musicSources[i] = source;
+            AudioLowPassFilter filter = source.gameObject.AddComponent<AudioLowPassFilter>();
+            filter.cutoffFrequency = OpenCutoff;
+            musicFilters[i] = filter;
         }
+        gameObject.AddComponent<MusicDirector>();
         for (int i = 0; i < Pool2DSize; i++)
         {
             pool2D.Add(CreateSource("Sfx2D_" + i, false));
@@ -120,12 +129,17 @@ public class AudioManager : MonoBehaviour
     private void Update()
     {
         float dt = Time.unscaledDeltaTime;
-        float musicVolume = GameSettings.MusicVolume;
+        SoundLibrary lib = Library;
+        muffle = Mathf.MoveTowards(muffle, musicMuffled ? 1f : 0f, dt / Mathf.Max(0.01f, lib.muffleFadeTime));
+        // 차단 주파수는 귀에 고르게 들리도록 지수 보간
+        float cutoff = OpenCutoff * Mathf.Pow(Mathf.Clamp(lib.maintenanceCutoff, 10f, OpenCutoff) / OpenCutoff, muffle);
+        float musicVolume = GameSettings.MusicVolume * Mathf.Lerp(1f, lib.maintenanceVolume, muffle);
         for (int i = 0; i < 2; i++)
         {
             float target = i == activeMusic && currentMusic != null ? 1f : 0f;
             musicFade[i] = Mathf.MoveTowards(musicFade[i], target, fadeSpeed * dt);
             AudioSource source = musicSources[i];
+            musicFilters[i].cutoffFrequency = cutoff;
             source.volume = musicEntryVolume[i] * musicFade[i] * musicVolume;
             if (musicFade[i] <= 0f && source.isPlaying && i != activeMusic) source.Stop();
         }
@@ -144,6 +158,8 @@ public class AudioManager : MonoBehaviour
 
     #region Music
 
+    public static bool IsMusicPlaying => Instance != null && Instance.currentMusic != null;
+
     // 같은 곡이면 무시, null·빈 칸이면 서서히 정지
     public static void PlayMusic(MusicEntry entry, float fadeTime = -1f)
     {
@@ -153,6 +169,12 @@ public class AudioManager : MonoBehaviour
     public static void StopMusic(float fadeTime = -1f)
     {
         EnsureCreated().PlayMusicInternal(null, fadeTime);
+    }
+
+    // 정비 중 먹먹하게 (로우패스 + 음량, 라이브러리 muffleFadeTime에 걸쳐 전환)
+    public static void SetMusicMuffled(bool muffled)
+    {
+        EnsureCreated().musicMuffled = muffled;
     }
 
     private void PlayMusicInternal(MusicEntry entry, float fadeTime)

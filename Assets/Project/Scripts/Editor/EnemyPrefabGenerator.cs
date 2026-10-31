@@ -589,7 +589,7 @@ public static class EnemyPrefabGenerator
     }
 
     // 폴더에서 이름이 "@접미사"로 끝나는 모델 파일(없으면 접미사로 끝나는 파일)의 클립, loop면 가져오기 설정 Loop Time 켬
-    private static AnimationClip FindClip(string folder, string suffix, bool loop)
+    internal static AnimationClip FindClip(string folder, string suffix, bool loop)
     {
         if (string.IsNullOrEmpty(suffix)) return null;
         string found = null;

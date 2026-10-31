@@ -6,6 +6,7 @@ using UnityEngine;
 //   Create Sound Library: Assets/Project/Resources/SoundLibrary.asset 생성 (이미 있으면 선택만)
 //   Fill Sound Library (Vefects) (V3a): Vefects 동봉 효과음(단발 23개, 반복용 루프 제외)을 비어 있는 칸에만 연결 + 칸별 음량·간격
 //     채워진 칸(직접 고른 소리)은 건드리지 않음 — 들어 보고 Inspector에서 교체·음량 조절
+//   Apply BGM Loops: Assets/BGM/Loops 배경음 6곡을 음악 칸에 연결 (스트리밍·Vorbis 가져오기 설정)
 public static class SoundLibraryTools
 {
     private const string Folder = "Assets/Project/Resources";
@@ -59,6 +60,54 @@ public static class SoundLibraryTools
         Selection.activeObject = lib;
         EditorGUIUtility.PingObject(lib);
         Debug.Log($"[SoundLibraryTools] 빈 칸 {filled}개에 Vefects 효과음 연결 (이미 채워진 칸은 그대로) -> {AssetPath}");
+    }
+
+    // 배경음 연결: Assets/BGM/Loops (원본에서 루프 길이로 자르고 음량을 -16 LUFS로 맞춘 wav)
+    //   가져오기 설정 = 스트리밍·Vorbis, 음악 칸은 덮어씀 (정비 칸은 비움 → 전투 곡을 먹먹하게)
+    private const string BgmFolder = "Assets/BGM/Loops/";
+    private const float BgmVolume = 0.6f;
+
+    [MenuItem("Tools/TD Shoot/Apply BGM Loops")]
+    public static void ApplyBgm()
+    {
+        SoundLibrary lib = LoadOrCreate();
+        int linked = 0;
+        linked += SetMusic(lib.mainMenu, "BGM_MainMenu.wav");
+        linked += SetMusic(lib.combat, "BGM_Combat.wav");
+        linked += SetMusic(lib.finalRound, "BGM_FinalFloor.wav");
+        linked += SetMusic(lib.resultClear, "BGM_ResultClear.wav");
+        linked += SetMusic(lib.resultFail, "BGM_ResultFail.wav");
+        linked += SetMusic(lib.tutorial, "BGM_Tutorial.wav");
+        lib.maintenance.clip = null;
+
+        EditorUtility.SetDirty(lib);
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = lib;
+        EditorGUIUtility.PingObject(lib);
+        Debug.Log($"[SoundLibraryTools] 배경음 {linked}/6칸 연결, 정비 = 전투 곡 먹먹하게 -> {AssetPath}");
+    }
+
+    private static int SetMusic(MusicEntry entry, string fileName)
+    {
+        string path = BgmFolder + fileName;
+        AudioImporter importer = AssetImporter.GetAtPath(path) as AudioImporter;
+        if (importer == null)
+        {
+            Debug.LogWarning($"[SoundLibraryTools] 배경음 없음: {path}");
+            return 0;
+        }
+        AudioImporterSampleSettings settings = importer.defaultSampleSettings;
+        if (settings.loadType != AudioClipLoadType.Streaming || settings.compressionFormat != AudioCompressionFormat.Vorbis)
+        {
+            settings.loadType = AudioClipLoadType.Streaming;
+            settings.compressionFormat = AudioCompressionFormat.Vorbis;
+            settings.quality = 0.7f;
+            importer.defaultSampleSettings = settings;
+            importer.SaveAndReimport();
+        }
+        entry.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        entry.volume = BgmVolume;
+        return entry.clip != null ? 1 : 0;
     }
 
     private static SoundLibrary LoadOrCreate()

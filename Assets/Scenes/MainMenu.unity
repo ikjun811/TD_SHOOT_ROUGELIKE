@@ -2114,6 +2114,150 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 393494058}
   m_CullTransparentMesh: 1
+--- !u!1 &401143684
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 401143687}
+  - component: {fileID: 401143686}
+  - component: {fileID: 401143685}
+  m_Layer: 0
+  m_Name: ArenaBackdrop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &401143685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 401143684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd2983a93a5733049b6a8375a32f4cab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuBackdrop
+  cameraEuler: {x: 25.000002, y: 45, z: -0.00000094203483}
+  orthographicSize: 9
+  cameraDistance: 30
+  focusScreenOffset: 0.3
+  panSpeed: 1.4
+  panAcceleration: 0.6
+  nextZoneCandidates: 3
+  arriveDistance: 4
+  focusLightColor: {r: 1, g: 0.82, b: 0.6, a: 1}
+  focusLightRange: 12
+  focusLightIntensity: 3
+  focusLightHeight: 2.5
+  shadeAlpha: 0.85
+  shadeSolidUntil: 0.25
+  shadeFadeUntil: 0.6
+  overallShade: 0.1
+--- !u!114 &401143686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 401143684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d20b820694c268498e31547b6fb1923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BspArenaGenerator
+  seed: 0
+  generateOnStart: 1
+  lastGeneratedSeed: 661905549
+  arenaSize: 90
+  minLeafSize: 18
+  maxDepth: 4
+  minSplitRatio: 0.35
+  laneWidth: 6
+  centerClearSize: 8
+  obstaclesPerLeaf: {x: 2, y: 4}
+  obstacleSpacing: 2
+  wallLengthRange: {x: 6, y: 10}
+  pillarSize: 3
+  obstacleHeight: 3
+  placementAttemptsPerObstacle: 15
+  boundaryHeight: 4
+  boundaryThickness: 2
+  floorThickness: 2
+  outerFloorMargin: 4
+  floorMaterial: {fileID: 0}
+  wallMaterial: {fileID: 0}
+  wallLayerName: Walls
+  pillarPrefab: {fileID: 6142104402874403390, guid: f114f772e260b3e42ae603d836bb597f, type: 3}
+  wallPrefab: {fileID: 6142104402874403390, guid: f114f772e260b3e42ae603d836bb597f, type: 3}
+  boundaryPrefab: {fileID: 0}
+  floorTilePrefabs:
+  - {fileID: 1000010655486726, guid: 32f01941b7ab75d4791c8d0d65d80086, type: 3}
+  floorTileSize: 10
+  randomFloorRotation: 1
+  kitFloorExtraMargin: 18
+  useGridFloor: 1
+  gridCellSize: 3
+  gridBaseColor: {r: 0.16, g: 0.17, b: 0.18, a: 1}
+  gridLineColor: {r: 0.3, g: 0.42, b: 0.45, a: 1}
+  gridLineEmission: {r: 0.03, g: 0.09, b: 0.1, a: 1}
+  gridCellVariation: 0.04
+  gridSmoothness: 0.25
+  floorTexture: {fileID: 2800000, guid: 1d4c6c02f2a89884bb5f96c13b583e47, type: 3}
+  floorNormalMap: {fileID: 2800000, guid: b67e5e8c602059f43848a50f16248f81, type: 3}
+  floorTextureWorldSize: 6
+  floorNormalScale: 0.5
+  floorMetallic: 0.2
+  floorSmoothness: 0.4
+  boundaryWallPrefabs:
+  - {fileID: 198328, guid: 9c41cadd6e9e85144ba8b87162f52603, type: 3}
+  boundaryAccentPrefabs:
+  - {fileID: 198328, guid: b835879852108454e8e391da5dd468a8, type: 3}
+  boundaryAccentChance: 0.2
+  kitWallSink: 1.5
+  flipWallFacing: 0
+  boundaryCornerPrefab: {fileID: 129136, guid: 3aa929777719b5946953bd920d448b71, type: 3}
+  wallPropPrefabs:
+  - {fileID: 198328, guid: 9c41cadd6e9e85144ba8b87162f52603, type: 3}
+  - {fileID: 198328, guid: b835879852108454e8e391da5dd468a8, type: 3}
+  pillarPropPrefabs:
+  - {fileID: 129136, guid: 3aa929777719b5946953bd920d448b71, type: 3}
+  - {fileID: 142880, guid: 729c32a4b7ab48e4f998824c9176d273, type: 3}
+  - {fileID: 168082, guid: 894af78155bead04dba8568ba31e40b1, type: 3}
+  propTargetHeight: 1.8
+  propMaxStretch: 1.3
+  propYawJitter: 3
+  fitColliderToProps: 1
+  largePropPrefabs: []
+  largeObstacleChance: 0.35
+  propMaxHeight: 2.5
+  largePilePrefabs:
+  - {fileID: 142880, guid: 729c32a4b7ab48e4f998824c9176d273, type: 3}
+  pileCountX: {x: 3, y: 4}
+  pileCountZ: {x: 2, y: 3}
+  pileTallChance: 0.5
+  playerSpawnHeight: 0.1
+--- !u!4 &401143687
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 401143684}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &428669473
 GameObject:
   m_ObjectHideFlags: 0
@@ -8843,3 +8987,4 @@ SceneRoots:
   - {fileID: 331336558}
   - {fileID: 799040705}
   - {fileID: 9840329}
+  - {fileID: 401143687}

@@ -270,26 +270,36 @@ public class AtmosphereLighting : MonoBehaviour
             bool last = i == centers.Count - 1;
             if (Random.value > litChance && !(last && lit == 0)) continue;
             lit++;
-
-            Vector3 center = centers[i];
-            GameObject go = new GameObject("ZoneLamp");
-            go.transform.SetParent(transform, false);
-            go.transform.SetPositionAndRotation(new Vector3(center.x, lampHeight, center.z), Quaternion.Euler(90f, 0f, 0f)); // 아래를 비춤
-            Light light = go.AddComponent<Light>();
-            light.type = LightType.Spot;
-            light.spotAngle = lampSpotAngle;
-            light.innerSpotAngle = lampSpotAngle * 0.55f;
-            light.color = currentLampColor;
-            light.range = lampRange;
-            light.intensity = lampIntensity;
-            light.shadows = LightShadows.None;
-            Renderer shaft = CreateShaft(go.transform);
-            Renderer bulb = CreateBulb(go.transform);
-            CreateDust(go.transform);
-            lamps.Add(new Lamp { light = light, shaft = shaft, bulb = bulb, flicker = Random.value < flicker });
+            CreateLamp(centers[i], Random.value < flicker);
         }
 
         BuildFog(generator);
+    }
+
+    // 맵 없이 조명 하나만 직접 배치 (메인 화면 디오라마) — 바닥 지점 위 lampHeight에 천장등·빛줄기·전구·먼지
+    public void AddLamp(Vector3 groundPoint, bool flicker)
+    {
+        if (currentLampColor.a <= 0f) currentLampColor = lampColor; // 맵 생성(BuildLamps)을 거치지 않았으면 1층 색
+        CreateLamp(groundPoint, flicker);
+    }
+
+    private void CreateLamp(Vector3 center, bool flicker)
+    {
+        GameObject go = new GameObject("ZoneLamp");
+        go.transform.SetParent(transform, false);
+        go.transform.SetPositionAndRotation(new Vector3(center.x, lampHeight, center.z), Quaternion.Euler(90f, 0f, 0f)); // 아래를 비춤
+        Light light = go.AddComponent<Light>();
+        light.type = LightType.Spot;
+        light.spotAngle = lampSpotAngle;
+        light.innerSpotAngle = lampSpotAngle * 0.55f;
+        light.color = currentLampColor;
+        light.range = lampRange;
+        light.intensity = lampIntensity;
+        light.shadows = LightShadows.None;
+        Renderer shaft = CreateShaft(go.transform);
+        Renderer bulb = CreateBulb(go.transform);
+        CreateDust(go.transform);
+        lamps.Add(new Lamp { light = light, shaft = shaft, bulb = bulb, flicker = flicker });
     }
 
     private float PoolRadius => lampHeight * Mathf.Tan(lampSpotAngle * 0.5f * Mathf.Deg2Rad);

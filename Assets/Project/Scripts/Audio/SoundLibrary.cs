@@ -65,9 +65,19 @@ public class SoundLibrary : ScriptableObject
     public MusicEntry mainMenu = new MusicEntry();
     public MusicEntry combat = new MusicEntry();
     public MusicEntry finalRound = new MusicEntry();
+    [Tooltip("비우면 전투 곡을 끊지 않고 이어 틀며 먹먹하게 (아래 정비 먹먹함 값)")]
     public MusicEntry maintenance = new MusicEntry();
     public MusicEntry resultClear = new MusicEntry();
     public MusicEntry resultFail = new MusicEntry();
+    [Tooltip("비우면 전투 곡")]
+    public MusicEntry tutorial = new MusicEntry();
+
+    [Header("정비 먹먹함 (정비 곡이 비어 있을 때)")]
+    [Tooltip("로우패스 차단 주파수(Hz) — 낮을수록 벽 너머처럼")]
+    public float maintenanceCutoff = 900f;
+    [Range(0f, 1f)] public float maintenanceVolume = 0.7f;
+    [Tooltip("먹먹해지고 돌아오는 시간(초, 실제 시간)")]
+    public float muffleFadeTime = 0.5f;
 
     [Header("플레이어")]
     public SoundEntry playerHurt = new SoundEntry();
