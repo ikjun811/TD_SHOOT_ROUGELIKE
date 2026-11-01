@@ -95,6 +95,6 @@
 | PixelUISciFiFree | UI 스프라이트 |
 | Vefects Flipbook VFX Bundle Lite URP | 폭발 이펙트·일부 효과음 |
 | 갈무리11, Pretendard (SIL OFL) | 제목·본문 폰트 |
-| 배경음 Pixabay (eisenvater, brvhrtz, fnx_sound, KK Sample), Freesound 752647 (timbre) | 전투·최종층·결과·튜토리얼 배경음 — Freesound 곡 라이선스, 메인 화면 곡(bgmMainMenu) 출처 확인 필요 |
+| 배경음 Pixabay (eisenvater, brvhrtz, fnx_sound, KK Sample), Freesound 752647 (timbre) | 메인·전투·최종층·결과·튜토리얼 배경음 — Pixabay Content License(출처 표기 의무 없음, 메인 화면 곡 bgmMainMenu도 Pixabay), Freesound 752647 = CC0(표기 의무 없음, 감사 표기로 유지) — 확인 완료 2026-11-01 |
 | 수류탄 충전 알림음 | 코드로 합성 (Assets/Project/Audio/SFX) |
 | (검토 후 미사용) SciFi Warehouse Kit, RPG_FPS_game_assets_industrial, Free LowPoly SciFi Pack | 이전 맵 외형 — 쓰지 않으면 빌드 전 정리 |

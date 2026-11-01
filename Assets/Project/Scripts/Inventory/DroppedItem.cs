@@ -94,6 +94,10 @@ public class DroppedItem : MonoBehaviour
         targetPlayer = player;
         isFlyingToPlayer = true;
 
+        // 흡수 비행 중엔 레어도 빛 끔 (빛기둥도 이때 숨음)
+        Light glow = itemLight != null ? itemLight : GetComponentInChildren<Light>();
+        if (glow != null) glow.enabled = false;
+
         // 거리에 비례하여 출발 속도 연산 (멀리 있을수록 더 폭발적으로 시작)
         float distance = Vector3.Distance(transform.position, player.position);
         currentFlySpeed = Mathf.Max(12f, distance * 2.0f);
@@ -140,7 +144,14 @@ public class DroppedItem : MonoBehaviour
             if (cube != null) cube.enabled = false;
         }
         Light glow = itemLight != null ? itemLight : GetComponentInChildren<Light>();
-        if (glow != null) glow.color = rarityColor; // 레어도 색 빛 (프리팹 자식 Point Light)
+        if (glow != null)
+        {
+            glow.color = rarityColor; // 레어도 색 빛 (프리팹 자식 Point Light)
+            // 조명 정리 (2026-11-01): 일반 모듈은 발광 블록만으로 충분 → 빛 끔(빛기둥과 같은 기준, 희귀 이상만).
+            //   무기는 모델에 발광이 없어 어둠에 묻히므로 레어도와 무관하게 유지, 흡수 비행 중엔 끔
+            bool commonModule = category == ItemCategory.Module && moduleData != null && moduleData.rarity == RarityType.Common;
+            glow.enabled = !commonModule && !isFlyingToPlayer;
+        }
 
         // 레어도 빛기둥 (C1)
         if (category == ItemCategory.Weapon && weaponData != null)

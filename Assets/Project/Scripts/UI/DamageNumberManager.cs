@@ -44,6 +44,7 @@ public class DamageNumberManager : MonoBehaviour
     private readonly List<Popup> activePopups = new List<Popup>();
     private readonly Stack<Popup> popupPool = new Stack<Popup>();
     private Camera mainCamera;
+    private Material sharedOutlineMaterial; // 모든 피해 숫자가 함께 쓰는 외곽선 재질 (매니저 파괴 시 해제)
 
     // GameplayBootstrap이 전투 씬 로드마다 호출
     public static void EnsureCreated()
@@ -55,6 +56,11 @@ public class DamageNumberManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        if (sharedOutlineMaterial != null) Destroy(sharedOutlineMaterial);
     }
 
     private void OnEnable()
@@ -145,8 +151,19 @@ public class DamageNumberManager : MonoBehaviour
         UITheme.Current.ApplyFont(tmp, UIFontRole.Heading); // 외곽선(재질) 설정 전에 폰트부터
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.fontStyle = FontStyles.Normal;
-        tmp.outlineWidth = 0.12f;
-        tmp.outlineColor = new Color32(0, 0, 0, 200);
+
+        // 재질 공유 (2026-11-01): outlineWidth를 글자마다 설정하면 TMP가 글자마다 재질 복사본을 만들어 묶어 그리기가 깨짐
+        //   → 첫 글자에서 외곽선 재질을 한 번 만들고 이후 글자는 그 재질을 공유 (외곽선 값은 모두 같음, 색은 정점 색이라 글자별 유지)
+        if (sharedOutlineMaterial == null)
+        {
+            tmp.outlineWidth = 0.12f;
+            tmp.outlineColor = new Color32(0, 0, 0, 200);
+            sharedOutlineMaterial = tmp.fontMaterial; // 위 설정으로 생긴 복사본
+        }
+        else
+        {
+            tmp.fontSharedMaterial = sharedOutlineMaterial;
+        }
         tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.GetComponent<MeshRenderer>().sortingOrder = 20;
 
