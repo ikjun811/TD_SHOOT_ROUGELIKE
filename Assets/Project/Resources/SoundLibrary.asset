@@ -18,25 +18,25 @@ MonoBehaviour:
   musicFadeTime: 1.5
   mainMenu:
     clip: {fileID: 8300000, guid: a0a3cb34253ab7d459307f3a63837fb4, type: 3}
-    volume: 0.6
+    volume: 1
   combat:
     clip: {fileID: 8300000, guid: e568fac2b0a755348b8f319f06866024, type: 3}
-    volume: 0.6
+    volume: 1
   finalRound:
     clip: {fileID: 8300000, guid: 2d9c4cafbec9945498810c55c0c45ed1, type: 3}
-    volume: 0.6
+    volume: 1
   maintenance:
     clip: {fileID: 0}
     volume: 0.7
   resultClear:
     clip: {fileID: 8300000, guid: 19f2fe2df2661064b8918240a6d0f9f5, type: 3}
-    volume: 0.6
+    volume: 1
   resultFail:
     clip: {fileID: 8300000, guid: 769f1f4ef55518045a3ceb5bc6d34049, type: 3}
-    volume: 0.6
+    volume: 1
   tutorial:
     clip: {fileID: 8300000, guid: 01dce9a4bbb7a1e459199cf4077b6dff, type: 3}
-    volume: 0.6
+    volume: 1
   maintenanceCutoff: 900
   maintenanceVolume: 0.7
   muffleFadeTime: 0.5

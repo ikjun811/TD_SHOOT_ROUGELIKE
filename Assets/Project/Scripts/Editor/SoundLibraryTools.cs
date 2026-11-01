@@ -93,7 +93,7 @@ public static class SoundLibraryTools
     // 배경음 연결: Assets/BGM/Loops (원본에서 루프 길이로 자르고 음량을 -16 LUFS로 맞춘 wav)
     //   가져오기 설정 = 스트리밍·Vorbis, 음악 칸은 덮어씀 (정비 칸은 비움 → 전투 곡을 먹먹하게)
     private const string BgmFolder = "Assets/BGM/Loops/";
-    private const float BgmVolume = 0.6f;
+    private const float BgmVolume = 1f; // 0.6 → 1 (사용자 2026-11-01: 음악이 작음, 1이 AudioSource 최대 — 더 필요하면 곡 파일을 -14 LUFS로 다시 가공)
 
     [MenuItem("Tools/TD Shoot/Apply BGM Loops")]
     public static void ApplyBgm()
