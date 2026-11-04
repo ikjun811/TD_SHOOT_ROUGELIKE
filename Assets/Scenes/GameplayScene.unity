@@ -3668,7 +3668,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -4404,6 +4404,10 @@ MonoBehaviour:
   crateWeaponLengthRatio: 0.85
   crateWeaponYaw: 18
   crateColor: {r: 1, g: 0.75, b: 0.1, a: 1}
+  medicalCrateCount: 1
+  medicalHealRatio: 0.5
+  medicalTint: {r: 1, g: 1, b: 1, a: 1}
+  medicalCrossColor: {r: 2.2, g: 0.25, b: 0.25, a: 1}
   corpsePrefabs:
   - {fileID: 1000013644470712, guid: 4ad9f9b0f8ed93846af55322db491ef8, type: 3}
   - {fileID: 1000010199362048, guid: cfb0fa32fefc8084aa66e8ec2fc7c65d, type: 3}
@@ -4956,7 +4960,6 @@ MonoBehaviour:
     rare: 35
     elite: 40
     legendary: 15
-  ownedWeaponTypeWeight: 0.3
   statCategoryWeight: 67
   mechanismCategoryWeight: 13
   specialCategoryWeight: 20
@@ -6349,12 +6352,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldHealthBar
   showOnlyWhenDamaged: 0
   visibleDuration: 3
-  fillColor: {r: 0.3, g: 0.85, b: 0.3, a: 1}
-  trailColor: {r: 1, g: 0.85, b: 0.2, a: 1}
-  backgroundColor: {r: 0, g: 0, b: 0, a: 0.6}
+  healthHighColor: {r: 0.55, g: 0.92, b: 1, a: 1}
+  healthLowColor: {r: 1, g: 0.28, b: 0.22, a: 1}
+  colorBlendStart: 0.6
+  colorBlendEnd: 0.25
+  barTrailColor: {r: 1, g: 1, b: 1, a: 0.8}
+  barBackColor: {r: 0.02, g: 0.035, b: 0.05, a: 0.85}
+  barFrameColor: {r: 0.35, g: 0.8, b: 0.9, a: 0.7}
+  tickColor: {r: 0.02, g: 0.035, b: 0.05, a: 0.8}
+  tickHealth: 25
+  maxTicks: 12
+  hitFlashTime: 0.12
   barSize: {x: 1, y: 0.12}
   extraHeight: 0.4
   trailSpeed: 0.8
+  frameWidth: 0.8
+  innerPadding: 0.6
 --- !u!114 &1873019221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6370,16 +6383,24 @@ MonoBehaviour:
   sideOffset: 0.8
   heightOffset: 0.8
   ringSize: 0.6
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
-  lowAmmoColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-  reloadColor: {r: 0.3, g: 0.85, b: 1, a: 1}
-  backgroundColor: {r: 0, g: 0, b: 0, a: 0.5}
+  ammoColor: {r: 0.92, g: 0.97, b: 1, a: 1}
+  ammoLowColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  ammoReloadColor: {r: 0.35, g: 0.88, b: 1, a: 1}
+  slotColor: {r: 0.6, g: 0.8, b: 0.9, a: 0.16}
+  ringFrameColor: {r: 0.35, g: 0.85, b: 1, a: 0.45}
+  discColor: {r: 0.02, g: 0.035, b: 0.05, a: 0.6}
+  magazineTextColor: {r: 0.7, g: 0.8, b: 0.88, a: 0.75}
   lowAmmoThreshold: 0.25
+  maxSegments: 30
+  segmentGapPixels: 4
   grenadeReadyColor: {r: 1, g: 0.6, b: 0.15, a: 1}
   grenadeChargingColor: {r: 1, g: 0.6, b: 0.15, a: 0.35}
-  grenadeBarWidth: 14
-  grenadeBarGap: 8
-  grenadeSegmentGap: 6
+  grenadeSlotColor: {r: 1, g: 0.6, b: 0.15, a: 0.15}
+  grenadeFrameColor: {r: 0.02, g: 0.035, b: 0.05, a: 0.85}
+  grenadeIconSize: 15
+  grenadeIconGap: 5
+  grenadeRingGap: 6
+  grenadeReadyFlashTime: 0.3
 --- !u!114 &1873019222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6407,7 +6428,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04579bdd72814b64385f453c7b110f55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GrenadeSkill
-  grenadeKey: 103
+  throwButton: 324
   cooldown: 10
   maxCharges: 2
   maxCooldownReduction: 0.7
@@ -6551,11 +6572,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
-  m_ScreenMatchMode: 0
+  m_ReferenceResolution: {x: 1920, y: 1080}
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96

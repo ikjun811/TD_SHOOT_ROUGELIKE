@@ -38,9 +38,7 @@ public static class ResultSceneBuilder
         GameObject canvasObj = new GameObject("ResultCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasObj.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0f;
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         RectTransform canvas = canvasObj.GetComponent<RectTransform>();
 
         Vector2 center = new Vector2(0.5f, 0.5f);

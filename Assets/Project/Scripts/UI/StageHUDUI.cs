@@ -443,9 +443,7 @@ public class StageHUDUI : MonoBehaviour
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 30;
             CanvasScaler scaler = rootObj.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         }
         root.anchorMin = Vector2.zero;
         root.anchorMax = Vector2.one;

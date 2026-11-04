@@ -4263,6 +4263,9 @@ MonoBehaviour:
   timeText: {fileID: 497412187}
   killsText: {fileID: 1846141097}
   bestRecordText: {fileID: 1283409988}
+  streakLabelColor: {r: 0.62, g: 0.7, b: 0.78, a: 0.85}
+  streakColor: {r: 1, g: 0.55, b: 0.15, a: 1}
+  streakGap: 36
   newRoundBadge: {fileID: 741482705}
   newTimeBadge: {fileID: 927503081}
   weaponSlots:
@@ -4307,7 +4310,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -4764,8 +4767,11 @@ MonoBehaviour:
   signalLostDuration: 1.4
   cctvOrthographicSize: 8
   cctvPitch: 52
-  noiseAlpha: 0.07
+  glitchNoiseAlpha: 0.45
+  signalLostNoiseAlpha: 0.75
   scanlineAlpha: 0.28
+  filmGrain: 0.35
+  shadeMultiplier: 0.5
 --- !u!1 &1953808372
 GameObject:
   m_ObjectHideFlags: 0

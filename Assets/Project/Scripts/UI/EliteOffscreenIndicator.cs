@@ -42,9 +42,7 @@ public class EliteOffscreenIndicator : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 35;
         CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         root = (RectTransform)transform;
 
         arrowSprite = CreateArrowSprite();

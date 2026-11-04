@@ -162,9 +162,7 @@ public class CrosshairUI : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 80; // HUD·알림 위, 일시정지 메뉴(90) 아래
         CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0f;
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         canvas.enabled = false;
 
         GameObject rootObj = new GameObject("Crosshair", typeof(RectTransform));

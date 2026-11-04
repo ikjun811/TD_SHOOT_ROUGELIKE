@@ -124,9 +124,7 @@ public class KillStreakUI : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 32;
         CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
 
         GameObject rootObj = new GameObject("Streak", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform root = rootObj.GetComponent<RectTransform>();

@@ -342,7 +342,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -2156,6 +2156,8 @@ MonoBehaviour:
   focusLightRange: 12
   focusLightIntensity: 3
   focusLightHeight: 2.5
+  moodFromResult: 0
+  daylightFocusColor: {r: 0.85, g: 0.93, b: 1, a: 1}
   shadeAlpha: 0.85
   shadeSolidUntil: 0.25
   shadeFadeUntil: 0.6

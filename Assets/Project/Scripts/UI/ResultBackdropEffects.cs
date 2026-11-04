@@ -85,9 +85,7 @@ public class ResultBackdropEffects : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = -90;
         CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0f;
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         overlay = canvasObj.GetComponent<RectTransform>();
     }
 

@@ -87,9 +87,7 @@ public static class MainMenuSceneBuilder
         GameObject canvasObj = new GameObject("MainMenuCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasObj.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0f; // 정비 화면 캔버스와 같은 기준 (UITheme pixelScale 3 전제)
+        UICanvasScaling.Apply(scaler); // 1920x1080 Expand (UICanvasScaling)
         RectTransform canvas = canvasObj.GetComponent<RectTransform>();
 
         // 제목
