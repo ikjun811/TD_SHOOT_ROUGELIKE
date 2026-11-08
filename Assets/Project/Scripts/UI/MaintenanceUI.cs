@@ -37,7 +37,27 @@ public class MaintenanceUI : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+        StretchFixedHeightColumns();
         CreateControlsHint();
+    }
+
+    // 캔버스가 Expand라 16:10·4:3에선 높이가 1080보다 커짐 → 높이 고정(가운데 정렬) 열(전리품·그리드)을
+    // 장착·금고 열처럼 위아래 끝까지 늘려 세 열의 위아래를 맞춤. 16:9에선 결과 동일
+    private void StretchFixedHeightColumns()
+    {
+        if (maintenancePanel == null) return;
+        foreach (Transform child in maintenancePanel.transform)
+        {
+            RectTransform rect = child as RectTransform;
+            if (rect == null) continue;
+            if (!Mathf.Approximately(rect.anchorMin.y, 0.5f) || !Mathf.Approximately(rect.anchorMax.y, 0.5f)) continue;
+            if (rect.sizeDelta.y < 1000f) continue;
+
+            rect.anchorMin = new Vector2(rect.anchorMin.x, 0f);
+            rect.anchorMax = new Vector2(rect.anchorMax.x, 1f);
+            rect.sizeDelta = new Vector2(rect.sizeDelta.x, 0f);
+            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, 0f);
+        }
     }
 
     // 정비 패널 아래에 조작 키 안내 한 줄 (흐린 글자)

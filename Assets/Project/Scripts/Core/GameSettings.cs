@@ -56,15 +56,34 @@ public static class GameSettings
             ? new Vector2Int(PlayerPrefs.GetInt(ResolutionWidthKey), PlayerPrefs.GetInt(ResolutionHeightKey))
             : (launchResolution.x > 0 && launchResolution.y > 0 ? launchResolution : new Vector2Int(Screen.width, Screen.height));
 
-    // 모니터가 지원하는 해상도 (가로x세로 중복 제거, 작은 것부터)
+    // 설정 목록에 남길 화면 비율 (사용자 2026-11-08: 주요 비율만 — 16:9·16:10)
+    //   비율 차이 허용 0.01 → 1366x768·1360x768 같은 근사 16:9도 포함
+    private static readonly float[] AllowedAspects = { 16f / 9f, 16f / 10f };
+    private const float AspectTolerance = 0.01f;
+
+    public static bool IsAllowedAspect(Vector2Int size)
+    {
+        if (size.x <= 0 || size.y <= 0) return false;
+        float aspect = (float)size.x / size.y;
+        foreach (float allowed in AllowedAspects)
+        {
+            if (Mathf.Abs(aspect - allowed) <= AspectTolerance) return true;
+        }
+        return false;
+    }
+
+    // 모니터가 지원하는 해상도 중 주요 비율만 (가로x세로 중복 제거, 작은 것부터)
+    //   하나도 없으면(특이한 모니터) 비율 제한 없이 전체 목록
     public static List<Vector2Int> GetAvailableResolutions()
     {
-        List<Vector2Int> list = new List<Vector2Int>();
+        List<Vector2Int> all = new List<Vector2Int>();
         foreach (Resolution r in Screen.resolutions)
         {
             Vector2Int size = new Vector2Int(r.width, r.height);
-            if (!list.Contains(size)) list.Add(size);
+            if (!all.Contains(size)) all.Add(size);
         }
+        List<Vector2Int> list = all.FindAll(IsAllowedAspect);
+        if (list.Count == 0) list = all;
         if (list.Count == 0) list.Add(new Vector2Int(Screen.width, Screen.height));
         list.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
         return list;
