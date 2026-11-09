@@ -74,6 +74,7 @@ public class ActiveEffectsPanelUI : MonoBehaviour
     private void AddModuleSection(string title, List<GridInventorySystem.PlacedModule> placed, System.Predicate<ModuleDataSO> filter, UITheme theme)
     {
         bool headerAdded = false;
+        bool autoThrowActive = HasActiveAutoThrow(placed);
         foreach (var pm in placed)
         {
             ModuleDataSO m = pm.moduleData;
@@ -83,9 +84,32 @@ public class ActiveEffectsPanelUI : MonoBehaviour
             bool active = GridInventorySystem.Instance.IsEffectActive(pm);
             string text = $"{m.moduleName} · {ItemTooltipUI.GetTargetName(m.target)}";
             if (!active) text += "  (중복 – 효과 없음)";
+            else if (autoThrowActive && IsDisabledByAutoThrow(m.effect))
+            {
+                active = false;
+                text += "  (자동 투척 – 효과 없음)";
+            }
             AddRow(text, null, theme.GetCategoryColor(m.category), active ? theme.effectsTextColor : theme.effectsInactiveColor,
                 new List<GridInventorySystem.PlacedModule> { pm }, theme);
         }
+    }
+
+    // 자동 투척이 켜져 있으면 충전을 쓰지 않아 충전 +1·처치 시 쿨감은 무효 (GrenadeSkill.ApplyModules와 같은 규칙)
+    private static bool IsDisabledByAutoThrow(ModuleEffect effect)
+    {
+        return effect == ModuleEffect.ExtraCharge || effect == ModuleEffect.KillCooldownRefund;
+    }
+
+    private static bool HasActiveAutoThrow(List<GridInventorySystem.PlacedModule> placed)
+    {
+        // PlayerStatAndWeaponSync.FindGrenadeModule과 같은 판정 (작동 계열은 항상 반영)
+        foreach (var pm in placed)
+        {
+            ModuleDataSO m = pm.moduleData;
+            if (m == null || m.target != ModuleTarget.Grenade || m.effect != ModuleEffect.AutoThrow) continue;
+            if (m.category == ModuleCategory.Mechanism || GridInventorySystem.Instance.IsEffectActive(pm)) return true;
+        }
+        return false;
     }
 
     private void AddHeader(string text, UITheme theme, Color? color = null)

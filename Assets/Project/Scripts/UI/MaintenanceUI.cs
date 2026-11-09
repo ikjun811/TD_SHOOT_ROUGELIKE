@@ -39,6 +39,59 @@ public class MaintenanceUI : MonoBehaviour
         else Destroy(gameObject);
         StretchFixedHeightColumns();
         CreateControlsHint();
+        StyleColumnHeaders();
+    }
+
+    // 장착·금고 열 제목을 결과 화면 구역 제목과 같은 모양으로 (갈무리 24 청록 왼쪽 정렬 + 아래 흐린 선)
+    // 씬 금고 제목의 기본 회색 막대(Image 자식)는 숨김
+    private void StyleColumnHeaders()
+    {
+        if (maintenancePanel == null) return;
+        StyleColumnHeader(FindDeep(maintenancePanel.transform, "Txt_HeaderWeapon"), null);
+        StyleColumnHeader(FindDeep(maintenancePanel.transform, "Txt_VaultStatus"), "금고 보관함");
+    }
+
+    private static void StyleColumnHeader(Transform target, string text)
+    {
+        if (target == null || !target.TryGetComponent(out TextMeshProUGUI header)) return;
+        UITheme theme = UITheme.Current;
+        Color accent = theme.gridHighlightBorderColor;
+
+        foreach (Transform child in header.transform)
+            if (child.TryGetComponent(out Image bar)) bar.enabled = false;
+
+        theme.ApplyFont(header, UIFontRole.Heading);
+        if (!string.IsNullOrEmpty(text)) header.text = text;
+        header.enableAutoSizing = false;
+        header.fontSize = 24f;
+        header.fontStyle = FontStyles.Normal;
+        header.characterSpacing = 6f;
+        header.color = accent;
+        header.alignment = TextAlignmentOptions.BottomLeft;
+        header.textWrappingMode = TextWrappingModes.NoWrap;
+
+        GameObject ruleObj = new GameObject("HeaderRule", typeof(RectTransform), typeof(Image));
+        RectTransform rule = ruleObj.GetComponent<RectTransform>();
+        rule.SetParent(header.transform, false);
+        rule.anchorMin = new Vector2(0f, 0f);
+        rule.anchorMax = new Vector2(1f, 0f);
+        rule.pivot = new Vector2(0.5f, 1f);
+        rule.anchoredPosition = new Vector2(0f, -6f);
+        rule.sizeDelta = new Vector2(0f, 2f); // 1px는 창 모드 축소(1 미만 배율)에서 위치에 따라 사라질 수 있음
+        Image ruleImage = ruleObj.GetComponent<Image>();
+        ruleImage.color = new Color(accent.r, accent.g, accent.b, 0.35f);
+        ruleImage.raycastTarget = false;
+    }
+
+    private static Transform FindDeep(Transform parent, string name)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == name) return child;
+            Transform found = FindDeep(child, name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     // 캔버스가 Expand라 16:10·4:3에선 높이가 1080보다 커짐 → 높이 고정(가운데 정렬) 열(전리품·그리드)을
